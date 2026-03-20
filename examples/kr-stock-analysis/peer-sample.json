@@ -1,0 +1,32 @@
+{
+  "asOf": "2026-03-20",
+  "marketCapLabel": "KRW tn",
+  "companies": [
+    {
+      "ticker": "005930.KS",
+      "name": "Samsung Electronics",
+      "price": 73400,
+      "marketCapB": 438.0,
+      "pe": 16.2,
+      "evEbitda": 8.4,
+      "fcfYield": 4.8,
+      "ps": 1.8,
+      "revenueGrowth": 11.3,
+      "grossMargin": 38.4,
+      "opMargin": 16.7
+    },
+    {
+      "ticker": "000660.KS",
+      "name": "SK hynix",
+      "price": 198500,
+      "marketCapB": 144.5,
+      "pe": 13.8,
+      "evEbitda": 6.9,
+      "fcfYield": 5.1,
+      "ps": 2.2,
+      "revenueGrowth": 22.8,
+      "grossMargin": 42.1,
+      "opMargin": 23.4
+    }
+  ]
+}

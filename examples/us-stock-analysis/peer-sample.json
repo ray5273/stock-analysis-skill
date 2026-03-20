@@ -1,0 +1,32 @@
+{
+  "asOf": "2026-03-20",
+  "marketCapLabel": "$B",
+  "companies": [
+    {
+      "ticker": "MSFT",
+      "name": "Microsoft",
+      "price": 420.15,
+      "marketCapB": 3120.0,
+      "pe": 34.2,
+      "evEbitda": 24.8,
+      "fcfYield": 2.9,
+      "ps": 13.1,
+      "revenueGrowth": 15.4,
+      "grossMargin": 69.4,
+      "opMargin": 44.6
+    },
+    {
+      "ticker": "GOOGL",
+      "name": "Alphabet",
+      "price": 176.4,
+      "marketCapB": 2190.0,
+      "pe": 24.7,
+      "evEbitda": 16.9,
+      "fcfYield": 4.1,
+      "ps": 6.5,
+      "revenueGrowth": 12.3,
+      "grossMargin": 57.8,
+      "opMargin": 31.2
+    }
+  ]
+}

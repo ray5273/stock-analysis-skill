@@ -1,0 +1,26 @@
+{
+  "ticker": "NVDA",
+  "name": "NVIDIA",
+  "bars": [
+    { "date": "2026-02-23", "open": 117, "high": 119, "low": 116, "close": 118, "volume": 33000000 },
+    { "date": "2026-02-24", "open": 118, "high": 120, "low": 117, "close": 119, "volume": 33500000 },
+    { "date": "2026-02-25", "open": 119, "high": 121, "low": 118, "close": 120, "volume": 33800000 },
+    { "date": "2026-02-26", "open": 120, "high": 122, "low": 119, "close": 121, "volume": 34000000 },
+    { "date": "2026-02-27", "open": 121, "high": 123, "low": 120, "close": 122, "volume": 34500000 },
+    { "date": "2026-03-02", "open": 122, "high": 124, "low": 121, "close": 123, "volume": 35000000 },
+    { "date": "2026-03-03", "open": 123, "high": 125, "low": 122, "close": 124, "volume": 35500000 },
+    { "date": "2026-03-04", "open": 124, "high": 126, "low": 123, "close": 125, "volume": 36000000 },
+    { "date": "2026-03-05", "open": 125, "high": 127, "low": 124, "close": 126, "volume": 36500000 },
+    { "date": "2026-03-06", "open": 126, "high": 128, "low": 125, "close": 127, "volume": 37000000 },
+    { "date": "2026-03-09", "open": 127, "high": 129, "low": 126, "close": 128, "volume": 37500000 },
+    { "date": "2026-03-10", "open": 128, "high": 130, "low": 127, "close": 129, "volume": 38000000 },
+    { "date": "2026-03-11", "open": 129, "high": 131, "low": 128, "close": 130, "volume": 38500000 },
+    { "date": "2026-03-12", "open": 130, "high": 132, "low": 129, "close": 131, "volume": 39000000 },
+    { "date": "2026-03-13", "open": 131, "high": 133, "low": 130, "close": 132, "volume": 39500000 },
+    { "date": "2026-03-16", "open": 132, "high": 134, "low": 131, "close": 133, "volume": 40000000 },
+    { "date": "2026-03-17", "open": 133, "high": 135, "low": 132, "close": 134, "volume": 40500000 },
+    { "date": "2026-03-18", "open": 134, "high": 136, "low": 133, "close": 135, "volume": 41000000 },
+    { "date": "2026-03-19", "open": 135, "high": 137, "low": 134, "close": 136, "volume": 41500000 },
+    { "date": "2026-03-20", "open": 136, "high": 139, "low": 135, "close": 138, "volume": 52000000 }
+  ]
+}
