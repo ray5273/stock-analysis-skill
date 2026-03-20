@@ -4,7 +4,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $skillsRoot = Join-Path $repoRoot "skills"
 $requiredFiles = @(
     "SKILL.md",
-    "agents\openai.yaml"
+    "agents/openai.yaml"
 )
 
 $skillDirs = Get-ChildItem -Path $skillsRoot -Directory

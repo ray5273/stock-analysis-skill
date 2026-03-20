@@ -6,6 +6,7 @@ Use these lists after completing the base workflow. Keep the analysis tied to cu
 
 ### Business and Demand Quality
 
+- Check whether product mix or customer mix explains the growth narrative, not only total sales.
 - Check whether growth is driven by volume, pricing, mix, exports, or one-off cycle strength.
 - Check whether growth depends on one customer, one memory cycle, one product ramp, or one policy tailwind.
 - Check whether backlog, order book, utilization, or ASP trend supports the growth narrative.
@@ -31,6 +32,8 @@ Use these lists after completing the base workflow. Keep the analysis tied to cu
 ### Valuation and Expectations
 
 - Prefer P/E, EV/EBITDA, EV/EBIT, FCF yield, or price to sales depending on the business model.
+- Show the current snapshot with trailing P/E, forward P/E, EV/EBITDA, P/B, FCF yield, and EV/Sales when available.
+- Check where the stock sits versus its own 3-5 year P/E, EV/EBITDA, and P/B bands before calling it cheap or expensive.
 - Compare valuation against growth durability and margin potential, not growth alone.
 - Check whether the stock already prices in a full cycle recovery or perfect execution.
 - Stress test the thesis for both earnings misses and multiple compression.
@@ -66,12 +69,15 @@ Use these lists after completing the base workflow. Keep the analysis tied to cu
 - Check whether buybacks are cancelled or simply held as treasury shares indefinitely.
 - Check dividend coverage and payout stability through the cycle.
 - Check whether management has a history of value-destructive acquisitions or unfair related-party moves.
+- Check board independence, chair or CEO split, and whether minority holders have a realistic path to better capital allocation.
 - Check insider incentives and whether controlling shareholder incentives diverge from minorities.
 - Check whether restructuring, spin-offs, treasury share cancellation, or policy shifts have a credible path to unlock value.
 
 ### Valuation
 
 - Prefer normalized P/E, EV/EBIT, EV/EBITDA, FCF yield, P/B, dividend yield, or sum-of-the-parts depending on the business.
+- Show the current snapshot with trailing P/E, forward P/E, EV/EBITDA, P/B, FCF yield, and EV/Sales when available.
+- Check where the stock sits versus its own 3-5 year P/E, EV/EBITDA, and P/B bands before calling it statistically cheap.
 - Bridge from current earnings to mid-cycle earnings.
 - Compare the stock to peers on both quality and valuation to avoid false bargains.
 - Check what rerating is plausible without assuming heroic margin recovery.
@@ -89,6 +95,7 @@ Use these lists after completing the base workflow. Keep the analysis tied to cu
 
 - Identify listed stakes, unlisted stakes, net cash, debt, and treasury shares.
 - Estimate look-through NAV and note key assumptions.
+- Check board, ownership, and related-party governance because discount persistence is often a governance issue, not only a valuation issue.
 - Check whether major subsidiaries trade at high or low valuations versus history.
 - Check whether the discount has a catalyst to close or is structurally persistent.
 - Check governance events, succession risk, and restructuring probability.

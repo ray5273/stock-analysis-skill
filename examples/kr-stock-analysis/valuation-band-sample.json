@@ -1,0 +1,20 @@
+{
+  "ticker": "005930.KS",
+  "name": "Samsung Electronics",
+  "asOf": "2026-03-20",
+  "historyYears": 3,
+  "series": [
+    { "date": "2023-03-31", "pe": 15.2, "evEbitda": 7.8, "pbr": 1.9 },
+    { "date": "2023-06-30", "pe": 14.6, "evEbitda": 7.4, "pbr": 1.8 },
+    { "date": "2023-09-30", "pe": 13.8, "evEbitda": 7.0, "pbr": 1.7 },
+    { "date": "2023-12-31", "pe": 14.1, "evEbitda": 7.2, "pbr": 1.8 },
+    { "date": "2024-03-31", "pe": 16.5, "evEbitda": 8.1, "pbr": 2.0 },
+    { "date": "2024-06-30", "pe": 17.4, "evEbitda": 8.5, "pbr": 2.1 },
+    { "date": "2024-09-30", "pe": 16.8, "evEbitda": 8.2, "pbr": 2.0 },
+    { "date": "2024-12-31", "pe": 15.9, "evEbitda": 7.9, "pbr": 1.9 },
+    { "date": "2025-03-31", "pe": 16.2, "evEbitda": 8.0, "pbr": 2.0 },
+    { "date": "2025-06-30", "pe": 17.0, "evEbitda": 8.4, "pbr": 2.1 },
+    { "date": "2025-09-30", "pe": 16.6, "evEbitda": 8.1, "pbr": 2.0 },
+    { "date": "2025-12-31", "pe": 15.7, "evEbitda": 7.7, "pbr": 1.9 }
+  ]
+}

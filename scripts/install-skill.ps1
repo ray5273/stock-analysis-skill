@@ -3,9 +3,12 @@ param(
     [string]$SkillName
 )
 
+$ErrorActionPreference = "Stop"
+
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourcePath = Join-Path $repoRoot "skills\$SkillName"
-$targetRoot = Join-Path $HOME ".codex\skills"
+$codexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME ".codex" }
+$targetRoot = Join-Path $codexHome "skills"
 $targetPath = Join-Path $targetRoot $SkillName
 
 if (-not (Test-Path $sourcePath)) {
@@ -13,7 +16,7 @@ if (-not (Test-Path $sourcePath)) {
     exit 1
 }
 
-New-Item -ItemType Directory -Force $targetRoot | Out-Null
-Copy-Item -Path $sourcePath -Destination $targetRoot -Recurse -Force
+New-Item -ItemType Directory -Force $targetPath | Out-Null
+Get-ChildItem -Path $sourcePath -Force | Copy-Item -Destination $targetPath -Recurse -Force
 
 Write-Host "Installed $SkillName to $targetPath"

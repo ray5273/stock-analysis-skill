@@ -1,6 +1,6 @@
 ---
 name: kr-stock-analysis
-description: Build dated, source-backed analysis for KRX-listed companies and Korean ETFs. Use when Codex needs to analyze a Korean ticker, compare Korean stocks, prepare a pre-earnings or post-earnings memo, assess valuation, summarize an investment thesis, review catalysts and risks, or add Korea-specific checks for governance, holding-company discounts, export sensitivity, shareholder returns, ETF structure, peer valuation, or chart analysis using DART, KRX, company IR materials, and recent news.
+description: Build dated, source-backed analysis for KRX-listed companies and Korean ETFs. Use when Codex needs to analyze a Korean ticker, compare Korean stocks, prepare a pre-earnings or post-earnings memo, assess valuation, summarize an investment thesis, review catalysts and risks, or add Korea-specific checks for revenue mix, governance, holding-company discounts, export sensitivity, shareholder returns, ETF structure, peer valuation, valuation bands, or chart analysis using DART, KRX, company IR materials, and recent news.
 ---
 
 # Korean Stock Analysis
@@ -39,6 +39,7 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 - Use `scripts/peer-valuation.js` when the user provides peer metrics and you need a consistent markdown comparison table.
 - Use `scripts/etf-overlap.js` when the user provides two ETF holdings files and you need weighted overlap, common names, and top overlaps.
 - Use `scripts/chart-basics.js` when the user provides OHLCV price history and you need a basic technical read on trend, momentum, and volume regime.
+- Use `scripts/valuation-bands.js` when the user provides 3-5 years of historical valuation multiples and you need markdown tables plus ASCII band charts for P/E, EV/EBITDA, and P/B.
 - Run all bundled scripts with `node`.
 
 ## Operating Rules
@@ -48,6 +49,7 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 - Separate verified facts from your inference.
 - Prefer ranges and scenarios over false precision.
 - Say when data is missing or uncertain.
+- If revenue mix, customer concentration, or a valuation metric is not disclosed cleanly, say so and explain what the current source set does and does not provide.
 - Distinguish ordinary shares, preferred shares, holding companies, and operating subsidiaries when the listing structure matters.
 
 ## Source Priority
@@ -61,8 +63,11 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 
 - Summary judgment
 - What the business does and what matters most
+- Revenue mix across product or segment, geography, and customer concentration when disclosed
 - Evidence from current results, balance sheet, and capital allocation
-- Valuation view with at least one comparable metric
+- Current valuation snapshot with price, market cap, trailing PER, forward PER, EV/EBITDA, P/B, and FCF yield
+- Historical valuation bands for P/E, EV/EBITDA, and P/B over 3-5 years when the data can be assembled
+- Governance and structure checks with why they matter
 - Catalysts
 - Risks and disconfirming evidence
 - Clear "what would change my mind" section

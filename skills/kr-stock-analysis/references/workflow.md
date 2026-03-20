@@ -24,6 +24,8 @@ If a number matters to the conclusion, trace it back to a primary source when po
 ### Business Quality
 
 - Describe the core business, segments, and revenue drivers.
+- Build a 3-axis revenue mix view: product or segment, geography, and customer concentration.
+- If one of the three axes is not separately disclosed, say that directly and continue with the disclosed layers.
 - Identify whether the business is domestic-demand driven, export-driven, cyclical, or policy-sensitive.
 - Identify what must go right for the thesis to work.
 
@@ -33,10 +35,12 @@ If a number matters to the conclusion, trace it back to a primary source when po
 - Check operating margin, EBITDA quality, and free cash flow trend.
 - Check leverage, liquidity, debt maturity, lease burden, and capex needs.
 - Check treasury shares, dilution, dividends, buybacks, and cancellation behavior.
-- Check segment mix, geography mix, or customer concentration if material.
+- Check segment mix, geography mix, and customer concentration where disclosed.
 
 ### Governance and Structure
 
+- Check controlling shareholder, ownership structure, and beneficial ownership where disclosed.
+- Check board composition, outside director mix, and whether the CEO and chair roles are split.
 - Check related-party transactions, cross-holdings, and ownership structure when relevant.
 - Check whether a holding-company discount or subsidiary discount may matter.
 - Check shareholder return policy, treasury stock treatment, and capital allocation credibility.
@@ -51,6 +55,26 @@ Pick methods that fit the business model:
 - Financials: P/B, ROE, dividend yield, capital ratios
 - Holding companies: NAV discount, look-through sum-of-the-parts, treasury shares adjustment
 - ETF: holdings concentration, fees, benchmark fit, liquidity, NAV gap
+
+For a standard single-stock memo, always assemble a current valuation snapshot with:
+
+- Current price
+- Market cap
+- Trailing P/E
+- Forward P/E
+- EV/EBITDA
+- P/B
+- FCF yield
+
+Add EV/Sales, dividend yield, ROE, net debt or net cash, and treasury share ratio when available.
+
+If you can gather 3-5 years of historical multiples, add valuation bands for:
+
+- P/E
+- EV/EBITDA
+- P/B
+
+State clearly when a metric is not meaningful because earnings, EBITDA, or book value make the multiple noisy or non-comparable.
 
 Use peer comparisons only if the peer set is genuinely comparable.
 
@@ -97,6 +121,7 @@ When comparing tickers:
 
 - Use a common date and source set.
 - Normalize the comparison around a few metrics that matter for the sector.
+- Include revenue mix quality, governance, and current valuation in the normalized comparison set.
 - Distinguish quality from price.
 - Show why the cheaper stock may deserve to be cheaper.
 - End with "best business", "cheapest optically", and "best risk/reward" if useful.
@@ -109,11 +134,13 @@ Use this flow for pre-earnings and post-earnings requests:
 2. Identify the 3-5 numbers or comments most likely to move the stock.
 3. Compare reported results or expectations versus prior guidance and consensus when available.
 4. Separate one-off effects from durable trend changes.
-5. Explain whether the stock move looks fundamentally justified.
+5. Add a short current valuation read and note whether governance or capital allocation changes affect the event read-through.
+6. Explain whether the stock move looks fundamentally justified.
 
 ## Failure Modes To Avoid
 
 - Repeating stale price or valuation figures from memory
+- Pretending revenue mix, customer concentration, or valuation metrics exist when they are not separately disclosed
 - Ignoring treasury shares or holding-company structure
 - Treating management commentary as fact without checking reported numbers
 - Giving a target price with false precision
