@@ -1,7 +1,7 @@
 interface:
   display_name: "Korean Stock Analysis"
   short_description: "Analyze KRX stocks and Korean ETFs with DART, valuation, governance checks, and chart context."
-  default_prompt: "Use $kr-stock-analysis to prepare a dated memo for a Korean stock or ETF with thesis, valuation, governance checks, catalysts, risks, and chart context."
+  default_prompt: "Use $kr-stock-analysis to prepare a dated memo for a Korean stock or ETF with thesis, valuation, governance checks, catalysts, risks, and chart context, and write or update analysis-example/kr/<company>.md when the workspace is writable."
 
 policy:
   allow_implicit_invocation: true

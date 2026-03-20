@@ -12,6 +12,8 @@ Use this skill to produce equity research style analysis for Korean stocks and K
 - Treat prices, market caps, earnings, guidance, shareholder return policy, regulations, and news as time-sensitive. Verify them with current sources before using them.
 - Prefer primary sources first: DART filings, KRX disclosures, company IR pages, earnings presentations, ETF fact sheets, and official macro data.
 - Pin the scope before analyzing: ticker, market, share class, analysis horizon, comparison set, and desired output type.
+- If the workspace is writable, treat the default deliverable as a markdown report file, not just a chat reply. For a Korean stock or ETF, create or update `analysis-example/kr/<company>.md`.
+- If you generate a chart PNG for the memo, keep it under `analysis-example/kr/assets/` and link it from the markdown file.
 - State an explicit "as of" date in the final answer.
 
 ## Workflow
@@ -27,7 +29,7 @@ Use this skill to produce equity research style analysis for Korean stocks and K
 5. Value the security.
    Use simple, defensible valuation methods that fit the business. Do not force a DCF when the inputs are too weak.
 6. Write the answer.
-   Lead with the conclusion, then show evidence, valuation, catalysts, risks, and what would change the view.
+   Create or update the report file first when the workspace is writable, then lead with the conclusion, evidence, valuation, catalysts, risks, and what would change the view.
 
 Read [references/workflow.md](references/workflow.md) for the detailed checklist.
 Read [references/kr-market-checklists.md](references/kr-market-checklists.md) when analyzing KRX growth stocks, value stocks, exporters, holding companies, or Korean ETFs.
@@ -52,6 +54,7 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 - Say when data is missing or uncertain.
 - If revenue mix, customer concentration, or a valuation metric is not disclosed cleanly, say so and explain what the current source set does and does not provide.
 - Distinguish ordinary shares, preferred shares, holding companies, and operating subsidiaries when the listing structure matters.
+- If you produced a full single-stock memo, keep the file deliverable synchronized with the final chat answer rather than letting the report drift.
 
 ## Source Priority
 
