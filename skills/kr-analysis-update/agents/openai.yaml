@@ -1,0 +1,7 @@
+interface:
+  display_name: "KR Analysis Update"
+  short_description: "Update an existing Korean stock memo with dated follow-up analysis after the memo date."
+  default_prompt: "Use $kr-analysis-update to read an existing Korean stock memo under analysis-example/kr/<company>.md, gather only company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file while refreshing 최근 업데이트일."
+
+policy:
+  allow_implicit_invocation: true

@@ -7,6 +7,8 @@
 - When you add a new example file, update `README.md` with a direct markdown link to it.
 - When a commit changes a skill's required output shape, refresh any affected example documents so they still match the current skill behavior.
 - When an example document embeds a chart image, refresh the linked PNG asset together with the markdown file so the visual stays in sync with the text.
+- When you update an existing Korean memo with follow-up analysis, preserve the original `기준일`, refresh `최근 업데이트일`, and append or replace a dated block under `## Update Log` instead of rewriting the whole memo by default.
+- For dated follow-up updates, search only for company-specific disclosures, IR materials, and news published after the memo's `기준일`, then deduplicate against existing update dates and source URLs when possible.
 - Treat example analysis documents as time-sensitive. Before committing changes to an example document, refresh prices, valuation metrics, disclosures, and source dates with current sources.
 - If the example must mix metrics from sources with different refresh cadences, keep the document honest by stating the exact date for each metric block or row.
 - Do not invent revenue mix, customer concentration, governance facts, or valuation metrics that are not disclosed in the current source set. State what is not separately disclosed.
