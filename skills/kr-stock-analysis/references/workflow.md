@@ -20,6 +20,7 @@ If a number matters to the conclusion, trace it back to a primary source when po
 - Identify whether the listing is an operating company, holding company, preferred shares line, REIT, or ETF.
 - Identify the analysis horizon: trading, next earnings, 12-24 months, or multi-year compounder view.
 - Identify the user's goal: idea generation, validation, comparison, or risk review.
+- If the workspace is writable, set the output file path early. Default to `analysis-example/kr/<company>.md` for a full report and `analysis-example/kr/assets/<company>-chart.png` for any linked chart image.
 
 ### Business Quality
 
@@ -154,6 +155,7 @@ Use this flow for pre-earnings and post-earnings requests:
 ## Failure Modes To Avoid
 
 - Repeating stale price or valuation figures from memory
+- Finishing a full memo only in chat when the workspace was writable and the skill should have produced a report file
 - Pretending revenue mix, customer concentration, or valuation metrics exist when they are not separately disclosed
 - Writing a technical read without enough price history or without saying the chart evidence is limited
 - Ignoring treasury shares or holding-company structure

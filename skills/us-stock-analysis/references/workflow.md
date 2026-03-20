@@ -20,6 +20,7 @@ If a number matters to the conclusion, trace it back to a primary source when po
 - Identify the legal listing context when it matters: ADR, common shares, preferred shares, LP structure, REIT, or ETF.
 - Identify the analysis horizon: trading, next earnings, 12-24 months, or multi-year compounder view.
 - Identify the user's goal: idea generation, validation, comparison, or risk review.
+- If the workspace is writable, set the output file path early. Default to `analysis-example/us/<company>.md` for a full report.
 
 ### Business Quality
 
@@ -112,6 +113,7 @@ Use this flow for pre-earnings and post-earnings requests:
 ## Failure Modes To Avoid
 
 - Repeating stale price or valuation figures from memory
+- Finishing a full memo only in chat when the workspace was writable and the skill should have produced a report file
 - Treating management commentary as fact without checking reported numbers
 - Using too many metrics without stating which ones actually matter
 - Giving a target price with false precision

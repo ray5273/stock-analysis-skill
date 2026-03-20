@@ -3,6 +3,7 @@
 ## Repository Rules
 
 - When you add or update a stock analysis example, keep it under `analysis-example/<market>/<company>.md`.
+- When a stock-analysis skill is invoked in this repo and the workspace is writable, create or update the matching report file under `analysis-example/<market>/<company>.md` instead of leaving the analysis only in chat.
 - When you add a new example file, update `README.md` with a direct markdown link to it.
 - When a commit changes a skill's required output shape, refresh any affected example documents so they still match the current skill behavior.
 - When an example document embeds a chart image, refresh the linked PNG asset together with the markdown file so the visual stays in sync with the text.
