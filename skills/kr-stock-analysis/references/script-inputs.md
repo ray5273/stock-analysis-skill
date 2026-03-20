@@ -68,7 +68,7 @@ Use it to compute:
 Run:
 
 ```text
-node scripts/chart-basics.js --input <path-to-json>
+node scripts/chart-basics.js --input <path-to-json> [--png-out <path-to-png>] [--image-path <markdown-relative-path>] [--chart-bars 120]
 ```
 
 Expected JSON:
@@ -80,10 +80,10 @@ Expected JSON:
   "bars": [
     {
       "date": "2026-03-16",
+      "close": 73100,
       "open": 72300,
       "high": 73500,
       "low": 71800,
-      "close": 73100,
       "volume": 18234567
     }
   ]
@@ -93,13 +93,56 @@ Expected JSON:
 Use it to compute:
 
 - latest close and latest date
-- 20-day and 50-day simple moving averages
+- 5-day, 20-day, 60-day, and 120-day simple moving averages
+- Bollinger Bands
+- Ichimoku lines and cloud state
 - 14-period RSI
 - current volume versus 20-day average volume
 - 20-day breakout and breakdown reference levels
-- a simple bullish, bearish, or mixed trend classification
+- a chart-only flow read such as bullish continuation, bearish continuation, technical rebound, pullback, or range-building
+- an optional PNG chart file plus markdown image snippet
 
-Provide at least 20 bars for the 20-day metrics and 50 bars for the 50-day average.
+Input rules:
+
+- `date` and `close` are required for every bar.
+- `high` and `low` should be present if you want Ichimoku and breakout metrics to work properly.
+- `volume` should be present if you want the volume panel and participation read.
+- Provide at least 120 bars when possible so MA120 and Ichimoku can be read properly.
+- When `--png-out` is used, the script writes a local PNG file and prints a markdown image link that can be pasted into a memo.
+- The PNG output includes labeled price, volume, and RSI panels with readable x and y axes.
+
+Example:
+
+```text
+node scripts/chart-basics.js \
+  --input /tmp/066970-chart.json \
+  --png-out analysis-example/kr/assets/엘앤에프-chart.png \
+  --image-path assets/엘앤에프-chart.png
+```
+
+## `scripts/fetch-kr-chart.js`
+
+Run:
+
+```text
+node scripts/fetch-kr-chart.js --ticker 066970 [--market kosdaq|kospi] [--range 1y] [--interval 1d] [--name "L&F"] [--output <path-to-json>]
+```
+
+Use it to fetch current KRX daily bars from Yahoo Finance and emit JSON that matches the input shape expected by `chart-basics.js`.
+
+Rules:
+
+- Pass a raw six-digit code such as `066970` or a fully qualified Yahoo symbol such as `066970.KQ`.
+- For a raw six-digit code, the script always retries an alternate Yahoo suffix if the first one fails.
+- Prefer `--range 1y --interval 1d` for the default chart section so MA120 and Ichimoku have enough history.
+- Save the result to a JSON file and feed that file into `chart-basics.js`.
+
+Example:
+
+```text
+node scripts/fetch-kr-chart.js --ticker 066970 --market kosdaq --range 1y --output /tmp/066970-chart.json
+node scripts/chart-basics.js --input /tmp/066970-chart.json --png-out analysis-example/kr/assets/엘앤에프-chart.png --image-path assets/엘앤에프-chart.png
+```
 
 ## `scripts/valuation-bands.js`
 
