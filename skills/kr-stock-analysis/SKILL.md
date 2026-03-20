@@ -67,6 +67,7 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 - Evidence from current results, balance sheet, and capital allocation
 - Current valuation snapshot with price, market cap, trailing PER, forward PER, EV/EBITDA, P/B, and FCF yield
 - Historical valuation bands for P/E, EV/EBITDA, and P/B over 3-5 years when the data can be assembled
+- Chart and positioning context with trend, momentum, volume regime, and key levels when price history can be assembled
 - Governance and structure checks with why they matter
 - Catalysts
 - Risks and disconfirming evidence

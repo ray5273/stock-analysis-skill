@@ -78,6 +78,14 @@ State clearly when a metric is not meaningful because earnings, EBITDA, or book 
 
 Use peer comparisons only if the peer set is genuinely comparable.
 
+### Chart and Positioning
+
+- Gather at least 20 daily bars for a short-term read and prefer 50 bars when possible.
+- Use `scripts/chart-basics.js` when you have OHLCV history and need a consistent trend, RSI, volume, and breakout or breakdown read.
+- Report latest close and date, 20-day and 50-day averages when available, RSI 14, volume versus 20-day average, and nearby breakout or breakdown levels.
+- Keep chart analysis secondary to fundamentals. Use it to frame positioning, momentum, and key levels, not to override business reality.
+- If you do not have enough bars, say the chart read is limited and fall back to simple price-action context such as 1-week, 1-month, 3-month, and 52-week range behavior.
+
 ### Catalysts
 
 - Next earnings date
@@ -122,6 +130,7 @@ When comparing tickers:
 - Use a common date and source set.
 - Normalize the comparison around a few metrics that matter for the sector.
 - Include revenue mix quality, governance, and current valuation in the normalized comparison set.
+- Add chart setup or momentum only if it materially changes timing or risk-reward.
 - Distinguish quality from price.
 - Show why the cheaper stock may deserve to be cheaper.
 - End with "best business", "cheapest optically", and "best risk/reward" if useful.
@@ -134,13 +143,14 @@ Use this flow for pre-earnings and post-earnings requests:
 2. Identify the 3-5 numbers or comments most likely to move the stock.
 3. Compare reported results or expectations versus prior guidance and consensus when available.
 4. Separate one-off effects from durable trend changes.
-5. Add a short current valuation read and note whether governance or capital allocation changes affect the event read-through.
+5. Add a short current valuation read, technical setup read, and note whether governance or capital allocation changes affect the event read-through.
 6. Explain whether the stock move looks fundamentally justified.
 
 ## Failure Modes To Avoid
 
 - Repeating stale price or valuation figures from memory
 - Pretending revenue mix, customer concentration, or valuation metrics exist when they are not separately disclosed
+- Writing a technical read without enough price history or without saying the chart evidence is limited
 - Ignoring treasury shares or holding-company structure
 - Treating management commentary as fact without checking reported numbers
 - Giving a target price with false precision
