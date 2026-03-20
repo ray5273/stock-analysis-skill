@@ -12,6 +12,7 @@ Use this skill to produce equity research style analysis for U.S. stocks and U.S
 - Treat prices, market caps, financial statements, guidance, analyst estimates, ownership, regulations, and news as time-sensitive. Verify them with current sources before using them.
 - Prefer primary sources first: SEC filings, investor relations pages, earnings releases, earnings decks, transcripts, exchange announcements, ETF fact sheets, and official macro data.
 - Pin the scope before analyzing: ticker, exchange, analysis horizon, comparison set, and the desired output type.
+- If the workspace is writable, treat the default deliverable as a markdown report file, not just a chat reply. For a U.S. stock or ETF, create or update `analysis-example/us/<company>.md`.
 - State an explicit "as of" date in the final answer.
 
 ## Workflow
@@ -27,7 +28,7 @@ Use this skill to produce equity research style analysis for U.S. stocks and U.S
 5. Value the security.
    Use simple, defensible valuation methods that fit the business. Do not force a DCF when the inputs are too weak.
 6. Write the answer.
-   Lead with the conclusion, then show evidence, valuation, catalysts, risks, and what would change the view.
+   Create or update the report file first when the workspace is writable, then lead with the conclusion, evidence, valuation, catalysts, risks, and what would change the view.
 
 Read [references/workflow.md](references/workflow.md) for the detailed checklist.
 Read [references/us-style-checklists.md](references/us-style-checklists.md) when analyzing U.S. growth stocks, U.S. value stocks, or ETFs.
@@ -49,6 +50,7 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 - Prefer ranges and scenarios over false precision.
 - Say when data is missing or uncertain.
 - If the user asks for portfolio sizing, tax, or personal suitability, keep the response informational unless the user provides those constraints explicitly.
+- If you produced a full single-stock memo, keep the file deliverable synchronized with the final chat answer rather than letting the report drift.
 
 ## Source Priority
 

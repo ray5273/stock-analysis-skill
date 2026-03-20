@@ -4,6 +4,8 @@
 
 Use this shape unless the user asks for something else:
 
+If the workspace is writable, write this memo to `analysis-example/us/<company>.md` and keep the file in sync with the final answer.
+
 1. Summary
    Give the conclusion in 2-4 sentences and state the "as of" date.
 2. Business and Thesis

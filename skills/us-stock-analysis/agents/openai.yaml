@@ -1,7 +1,7 @@
 interface:
   display_name: "U.S. Stock Analysis"
   short_description: "Analyze U.S. stocks and ETFs with current data, valuation, style checks, and chart context."
-  default_prompt: "Use $us-stock-analysis to prepare a dated memo for a U.S. stock or ETF with thesis, valuation, catalysts, risks, and chart context."
+  default_prompt: "Use $us-stock-analysis to prepare a dated memo for a U.S. stock or ETF with thesis, valuation, catalysts, risks, and chart context, and write or update analysis-example/us/<company>.md when the workspace is writable."
 
 policy:
   allow_implicit_invocation: true
