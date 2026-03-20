@@ -17,6 +17,7 @@ bash ./scripts/validate-skills.sh        # Linux/macOS
 **Install a single skill (Codex):**
 ```bash
 bash ./scripts/install-skill.sh kr-stock-analysis
+bash ./scripts/install-skill.sh kr-analysis-update
 bash ./scripts/install-skill.sh us-stock-analysis
 ```
 
@@ -28,6 +29,7 @@ bash ./scripts/install-all-skills.sh
 **Install a single skill (Claude Code):**
 ```bash
 bash ./scripts/install-claude-skill.sh kr-stock-analysis
+bash ./scripts/install-claude-skill.sh kr-analysis-update
 bash ./scripts/install-claude-skill.sh us-stock-analysis
 ```
 
@@ -64,6 +66,8 @@ All scripts accept JSON via `--input` and output Markdown or PNG. They use only 
 | `chart-basics.js` | Technical summary (SMA20/50, RSI14, volume) + PNG chart from OHLCV JSON |
 | `fetch-kr-chart.js` | Fetch KRX OHLCV from Yahoo Finance → JSON for chart-basics (kr only) |
 | `valuation-bands.js` | ASCII valuation band charts from historical P/E, EV/EBITDA, P/B JSON (kr only) |
+| `extract-report-baseline.js` | Parse an existing KR memo into baseline metadata for follow-up updates |
+| `normalize-update-log.js` | Render or append a dated update block to an existing KR memo |
 
 Input JSON schemas are documented in `references/script-inputs.md` with sample files under `examples/<market>/`.
 

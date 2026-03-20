@@ -11,6 +11,7 @@
 
 - `us-stock-analysis`: 미국 상장 주식과 미국 상장 ETF 분석
 - `kr-stock-analysis`: KRX 상장 주식과 한국 ETF 분석
+- `kr-analysis-update`: 기존 한국 주식 메모에 기준일 이후 업데이트를 누적 반영
 
 ## 스킬 동작 방식
 
@@ -18,7 +19,7 @@
 
 공통 동작:
 
-- Codex에서는 `$us-stock-analysis`, `$kr-stock-analysis`로 호출하고, Claude Code에서는 `/us-stock-analysis`, `/kr-stock-analysis`로 호출합니다.
+- Codex에서는 `$us-stock-analysis`, `$kr-stock-analysis`, `$kr-analysis-update`로 호출하고, Claude Code에서는 `/us-stock-analysis`, `/kr-stock-analysis`, `/kr-analysis-update`로 호출합니다.
 - 가격, 밸류에이션, 공시, 가이던스, 뉴스는 시점 민감 정보로 취급하므로, 분석 전에 최신 소스를 다시 확인합니다.
 - 워크스페이스가 쓰기 가능하면 답변만 끝내지 않고 `analysis-example/<market>/<company>.md` 경로에 마크다운 리포트를 생성하거나 갱신하는 것이 기본 동작입니다.
 - 최종 답변과 리포트 파일은 같은 기준일자를 공유하도록 맞추며, 문서 안에 명시적인 `as of` 날짜를 남깁니다.
@@ -69,6 +70,27 @@
 - `scripts/valuation-bands.js`: 3~5년 밸류에이션 밴드 요약
 - `scripts/peer-valuation.js`: 피어 밸류에이션 표 생성
 - `scripts/etf-overlap.js`: ETF 겹침 비중과 공통 종목 분석
+
+### `kr-analysis-update`
+
+주요 지침 문서:
+
+- [skills/kr-analysis-update/SKILL.md](skills/kr-analysis-update/SKILL.md)
+- [skills/kr-analysis-update/references/workflow.md](skills/kr-analysis-update/references/workflow.md)
+- [skills/kr-analysis-update/references/output-format.md](skills/kr-analysis-update/references/output-format.md)
+
+현재 동작 흐름:
+
+1. 기존 `analysis-example/kr/<company>.md` 문서를 읽어 `기준일`, 기존 업데이트 날짜, 기존 source 링크를 파악합니다.
+2. 그 `기준일` 이후 나온 회사별 공시, IR 자료, 관련 뉴스를 다시 확인합니다.
+3. 새 정보 중에서 투자 논리, 리스크, 자본배치, 모니터링 포인트를 바꾸는 내용만 남깁니다.
+4. `최근 업데이트일`을 갱신하고 같은 문서 하단 `## Update Log` 아래에 날짜별 업데이트 섹션을 누적합니다.
+5. 이미 같은 날짜 업데이트가 있으면 중복으로 추가하지 않고 해당 날짜 블록을 교체합니다.
+
+번들 스크립트:
+
+- `scripts/extract-report-baseline.js`: 기존 메모의 기준일, 업데이트 날짜, source URL 추출
+- `scripts/normalize-update-log.js`: 날짜별 업데이트 블록 생성 및 기존 메모에 반영
 
 ## 설치
 
@@ -132,6 +154,10 @@ Use $us-stock-analysis to prepare a dated investment memo for NVDA with valuatio
 Use $kr-stock-analysis to analyze 005930.KS with DART-based evidence, valuation, governance checks, and catalysts.
 ```
 
+```text
+Use $kr-analysis-update to update analysis-example/kr/엘앤에프.md with company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file.
+```
+
 ### Claude Code
 
 ```text
@@ -142,10 +168,15 @@ Use $kr-stock-analysis to analyze 005930.KS with DART-based evidence, valuation,
 /kr-stock-analysis analyze 005930.KS with DART-based evidence, valuation, governance checks, and catalysts.
 ```
 
+```text
+/kr-analysis-update update analysis-example/kr/엘앤에프.md with company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file.
+```
+
 ## 분석 예시
 
 - [KR - 엘앤에프](analysis-example/kr/엘앤에프.md)
 - [KR - LG CNS](<analysis-example/kr/LG CNS.md>)
+- [KR - 대양전기공업](analysis-example/kr/대양전기공업.md)
 
 ## 검증
 

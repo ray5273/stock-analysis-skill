@@ -11,6 +11,7 @@ Included skills:
 
 - `us-stock-analysis` for U.S. stocks and U.S.-listed ETFs
 - `kr-stock-analysis` for KRX-listed stocks and Korean ETFs
+- `kr-analysis-update` for dated follow-up updates to an existing Korean stock memo
 
 ## How The Skills Work
 
@@ -18,7 +19,7 @@ Both skills are designed to avoid stale-memory analysis.
 
 Shared behavior:
 
-- They are invoked explicitly through `$us-stock-analysis` or `$kr-stock-analysis` in Codex, and `/us-stock-analysis` or `/kr-stock-analysis` in Claude Code.
+- They are invoked explicitly through `$us-stock-analysis`, `$kr-stock-analysis`, or `$kr-analysis-update` in Codex, and `/us-stock-analysis`, `/kr-stock-analysis`, or `/kr-analysis-update` in Claude Code.
 - They treat prices, valuation, filings, guidance, and news as time-sensitive, so the workflow starts by verifying current sources instead of relying on memory.
 - When the workspace is writable, the default deliverable is a markdown report file in `analysis-example/<market>/<company>.md`, not just a chat answer.
 - The report file should stay synchronized with the final answer, with an explicit "as of" date.
@@ -69,6 +70,27 @@ Bundled helpers:
 - `scripts/valuation-bands.js` for 3-5 year valuation band summaries
 - `scripts/peer-valuation.js` for comparable-company valuation tables
 - `scripts/etf-overlap.js` for ETF overlap analysis
+
+### `kr-analysis-update`
+
+Primary instructions:
+
+- [skills/kr-analysis-update/SKILL.md](skills/kr-analysis-update/SKILL.md)
+- [skills/kr-analysis-update/references/workflow.md](skills/kr-analysis-update/references/workflow.md)
+- [skills/kr-analysis-update/references/output-format.md](skills/kr-analysis-update/references/output-format.md)
+
+Current behavior:
+
+1. Read an existing Korean stock memo under `analysis-example/kr/<company>.md`.
+2. Use the memo's `기준일` as the start date for follow-up research.
+3. Gather only company-specific disclosures, IR materials, and news published after that memo date.
+4. Judge whether those developments changed the thesis, risk, or monitoring list.
+5. Refresh `최근 업데이트일` and append a dated block under `## Update Log` in the same memo file.
+
+Bundled helpers:
+
+- `scripts/extract-report-baseline.js` for parsing memo metadata, update dates, and existing source URLs
+- `scripts/normalize-update-log.js` for rendering a normalized dated update block and writing it back into the memo
 
 ## Install
 
@@ -132,6 +154,10 @@ Use $us-stock-analysis to prepare a dated investment memo for NVDA with valuatio
 Use $kr-stock-analysis to analyze 005930.KS with DART-based evidence, valuation, governance checks, and catalysts.
 ```
 
+```text
+Use $kr-analysis-update to update analysis-example/kr/엘앤에프.md with company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file.
+```
+
 ### Claude Code
 
 ```text
@@ -142,10 +168,15 @@ Use $kr-stock-analysis to analyze 005930.KS with DART-based evidence, valuation,
 /kr-stock-analysis analyze 005930.KS with DART-based evidence, valuation, governance checks, and catalysts.
 ```
 
+```text
+/kr-analysis-update update analysis-example/kr/엘앤에프.md with company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file.
+```
+
 ## Analysis Examples
 
 - [KR - 엘앤에프](analysis-example/kr/엘앤에프.md)
 - [KR - LG CNS](<analysis-example/kr/LG CNS.md>)
+- [KR - 대양전기공업](analysis-example/kr/대양전기공업.md)
 
 ## Validation
 
