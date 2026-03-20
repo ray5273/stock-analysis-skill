@@ -15,7 +15,7 @@ jobs:
           - windows-latest
     runs-on: ${{ matrix.os }}
     env:
-      CODEX_HOME: ${{ runner.temp }}/codex-home
+      CODEX_HOME: ${{ github.workspace }}/.codex-home
 
     steps:
       - uses: actions/checkout@v4
