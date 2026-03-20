@@ -1,6 +1,6 @@
 ---
 name: kr-stock-analysis
-description: Build dated, source-backed analysis for KRX-listed companies and Korean ETFs. Use when Codex needs to analyze a Korean ticker, compare Korean stocks, prepare a pre-earnings or post-earnings memo, assess valuation, summarize an investment thesis, review catalysts and risks, or add Korea-specific checks for revenue mix, governance, holding-company discounts, export sensitivity, shareholder returns, ETF structure, peer valuation, valuation bands, or chart analysis using DART, KRX, company IR materials, and recent news.
+description: Build dated, source-backed analysis for KRX-listed companies and Korean ETFs. Use when analyzing a Korean ticker, comparing Korean stocks, preparing a pre-earnings or post-earnings memo, assessing valuation, summarizing an investment thesis, reviewing catalysts and risks, or adding Korea-specific checks for revenue mix, governance, holding-company discounts, export sensitivity, shareholder returns, ETF structure, peer valuation, valuation bands, or chart analysis using DART, KRX, company IR materials, and recent news.
 ---
 
 # Korean Stock Analysis
@@ -38,7 +38,8 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 
 - Use `scripts/peer-valuation.js` when the user provides peer metrics and you need a consistent markdown comparison table.
 - Use `scripts/etf-overlap.js` when the user provides two ETF holdings files and you need weighted overlap, common names, and top overlaps.
-- Use `scripts/chart-basics.js` when the user provides OHLCV price history and you need a basic technical read on trend, momentum, and volume regime.
+- Use `scripts/fetch-kr-chart.js` when you need current KRX daily bars and the user did not already provide OHLCV history.
+- Use `scripts/chart-basics.js` when you need a technical read plus a labeled PNG chart that can be embedded into a markdown memo.
 - Use `scripts/valuation-bands.js` when the user provides 3-5 years of historical valuation multiples and you need markdown tables plus ASCII band charts for P/E, EV/EBITDA, and P/B.
 - Run all bundled scripts with `node`.
 
@@ -67,7 +68,8 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 - Evidence from current results, balance sheet, and capital allocation
 - Current valuation snapshot with price, market cap, trailing PER, forward PER, EV/EBITDA, P/B, and FCF yield
 - Historical valuation bands for P/E, EV/EBITDA, and P/B over 3-5 years when the data can be assembled
-- Chart and positioning context with trend, momentum, volume regime, and key levels when price history can be assembled
+- Chart and positioning context with MA5, MA20, MA60, MA120, Bollinger Bands, Ichimoku, RSI, volume regime, key levels, and a chart-only flow conclusion when price history can be assembled
+- A PNG chart reference in markdown when enough price history can be fetched or assembled for a memo file
 - Governance and structure checks with why they matter
 - Catalysts
 - Risks and disconfirming evidence

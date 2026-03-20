@@ -62,3 +62,40 @@ jobs:
         run: |
           test -d "$CODEX_HOME/skills/us-stock-analysis"
           test -d "$CODEX_HOME/skills/kr-stock-analysis"
+
+      - name: Install all Claude Code skills on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          CLAUDE_HOME: ${{ github.workspace }}/.claude-home
+        run: .\scripts\install-all-claude-skills.ps1
+
+      - name: Install all Claude Code skills on Unix
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          CLAUDE_HOME: ${{ github.workspace }}/.claude-home
+        run: bash ./scripts/install-all-claude-skills.sh
+
+      - name: Verify Claude Code installed skills on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          CLAUDE_HOME: ${{ github.workspace }}/.claude-home
+        run: |
+          if (-not (Test-Path (Join-Path $env:CLAUDE_HOME "skills\us-stock-analysis"))) {
+            throw "Missing us-stock-analysis"
+          }
+
+          if (-not (Test-Path (Join-Path $env:CLAUDE_HOME "skills\kr-stock-analysis"))) {
+            throw "Missing kr-stock-analysis"
+          }
+
+      - name: Verify Claude Code installed skills on Unix
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          CLAUDE_HOME: ${{ github.workspace }}/.claude-home
+        run: |
+          test -d "$CLAUDE_HOME/skills/us-stock-analysis"
+          test -d "$CLAUDE_HOME/skills/kr-stock-analysis"

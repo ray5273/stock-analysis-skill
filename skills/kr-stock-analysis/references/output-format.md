@@ -17,7 +17,7 @@ Use this shape unless the user asks for something else:
 6. Historical Valuation Bands
    Show 3-5 years of P/E, EV/EBITDA, and P/B bands with a markdown summary and ASCII charts when the time series can be assembled. If a metric is not meaningful, explain why.
 7. Chart and Positioning
-   Add a short technical read with price trend, moving averages when available, RSI, volume regime, and nearby breakout or breakdown levels. If you do not have enough OHLCV history, say that directly and give a lighter price-action read instead.
+   Add a short technical read with price trend, MA5, MA20, MA60, MA120, Bollinger Bands, Ichimoku, RSI, volume regime, and nearby breakout or breakdown levels. If you are writing a memo file, place a PNG chart image at the top of this section with a normal markdown image link, and make sure the image has readable axes and labels. End the section with a chart-only flow conclusion. If you do not have enough OHLCV history, say that directly and give a lighter price-action read instead.
 8. Governance and Structure
    Always include ownership, board composition, CEO or chair split, treasury share treatment, shareholder return policy, and related-party or cross-holding issues when relevant. For each point, say why it matters for minority holders.
 9. Catalysts
