@@ -82,6 +82,7 @@ Use $kr-stock-analysis to analyze 005930.KS with DART-based evidence, valuation,
 ## Analysis Examples
 
 - [KR - 엘앤에프](analysis-example/kr/엘앤에프.md)
+- [KR - LG CNS](<analysis-example/kr/LG CNS.md>)
 
 ## Validation
 
