@@ -1,6 +1,6 @@
 ---
 name: us-stock-analysis
-description: Build dated, source-backed analysis for U.S. public companies and U.S.-listed ETFs. Use when Codex needs to analyze a U.S. ticker, compare U.S. stocks, prepare a pre-earnings or post-earnings memo, assess valuation, summarize an investment thesis, review catalysts and risks, or add style-specific U.S. growth stock, U.S. value stock, ETF, peer valuation, or chart analysis using current filings, investor materials, and recent news.
+description: Build dated, source-backed analysis for U.S. public companies and U.S.-listed ETFs. Use when analyzing a U.S. ticker, comparing U.S. stocks, preparing a pre-earnings or post-earnings memo, assessing valuation, summarizing an investment thesis, reviewing catalysts and risks, or adding style-specific U.S. growth stock, U.S. value stock, ETF, peer valuation, or chart analysis using current filings, investor materials, and recent news.
 ---
 
 # U.S. Stock Analysis
