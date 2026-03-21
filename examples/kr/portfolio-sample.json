@@ -1,0 +1,20 @@
+[
+  {
+    "ticker": "066970.KQ",
+    "name": "L&F",
+    "quantity": 100,
+    "avgCost": 95000
+  },
+  {
+    "ticker": "001120.KS",
+    "name": "LG CNS",
+    "quantity": 200,
+    "avgCost": 61800
+  },
+  {
+    "ticker": "005930.KS",
+    "name": "삼성전자",
+    "quantity": 50,
+    "avgCost": 74000
+  }
+]
