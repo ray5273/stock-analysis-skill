@@ -71,7 +71,7 @@ if (!pattern.test(text)) {
         BASELINE_OUT="$TMP_ROOT/kr-analysis-update-baseline.json"
 
         node "$BASELINE_SCRIPT" --input "$REPORT_SAMPLE" --output "$BASELINE_OUT" >/dev/null
-        if ! rg -q '"memoDate": "2026-03-20"' "$BASELINE_OUT"; then
+        if ! grep -q '"memoDate": "2026-03-20"' "$BASELINE_OUT"; then
             echo "Baseline parser did not capture the memo date." >&2
             exit 1
         fi
@@ -137,19 +137,19 @@ EOF
         node "$NORMALIZE_SCRIPT" --input "$UPDATE_JSON" --report "$UPDATED_REPORT" >/dev/null
         node "$NORMALIZE_SCRIPT" --input "$UPDATE_JSON_REPLACE" --report "$UPDATED_REPORT" >/dev/null
 
-        if [ "$(rg -c '^### 2026-03-27 Update$' "$UPDATED_REPORT")" -ne 1 ]; then
+        if [ "$(grep -c '^### 2026-03-27 Update$' "$UPDATED_REPORT")" -ne 1 ]; then
             echo "Expected exactly one dated update block after replacement." >&2
             exit 1
         fi
-        if ! rg -q '^최근 업데이트일: 2026-03-27$' "$UPDATED_REPORT"; then
+        if ! grep -q '^최근 업데이트일: 2026-03-27$' "$UPDATED_REPORT"; then
             echo "Expected 최근 업데이트일 to be inserted or refreshed." >&2
             exit 1
         fi
-        if ! rg -q 'Replacement update for the same date\.' "$UPDATED_REPORT"; then
+        if ! grep -q 'Replacement update for the same date\.' "$UPDATED_REPORT"; then
             echo "Expected replacement content to exist in updated report." >&2
             exit 1
         fi
-        if rg -q 'Validation placeholder source' "$UPDATED_REPORT"; then
+        if grep -q 'Validation placeholder source' "$UPDATED_REPORT"; then
             echo "Expected previous same-date content to be replaced, not duplicated." >&2
             exit 1
         fi
