@@ -18,6 +18,7 @@ bash ./scripts/validate-skills.sh        # Linux/macOS
 ```bash
 bash ./scripts/install-skill.sh kr-stock-analysis
 bash ./scripts/install-skill.sh kr-analysis-update
+bash ./scripts/install-skill.sh kr-portfolio-monitor
 bash ./scripts/install-skill.sh us-stock-analysis
 ```
 
@@ -30,6 +31,7 @@ bash ./scripts/install-all-skills.sh
 ```bash
 bash ./scripts/install-claude-skill.sh kr-stock-analysis
 bash ./scripts/install-claude-skill.sh kr-analysis-update
+bash ./scripts/install-claude-skill.sh kr-portfolio-monitor
 bash ./scripts/install-claude-skill.sh us-stock-analysis
 ```
 
@@ -43,6 +45,7 @@ bash ./scripts/install-all-claude-skills.sh
 node skills/kr-stock-analysis/scripts/chart-basics.js --input examples/kr/chart-sample.json --png-out chart.png
 node skills/kr-stock-analysis/scripts/peer-valuation.js --input examples/kr/peer-sample.json
 node skills/kr-stock-analysis/scripts/fetch-kr-chart.js --ticker 066970 --range 3mo
+node skills/kr-stock-analysis/scripts/portfolio-snapshot.js --input examples/kr/portfolio-sample.json
 ```
 
 ## Architecture
@@ -68,6 +71,7 @@ All scripts accept JSON via `--input` and output Markdown or PNG. They use only 
 | `valuation-bands.js` | ASCII valuation band charts from historical P/E, EV/EBITDA, P/B JSON (kr only) |
 | `extract-report-baseline.js` | Parse an existing KR memo into baseline metadata for follow-up updates |
 | `normalize-update-log.js` | Render or append a dated update block to an existing KR memo |
+| `portfolio-snapshot.js` | SMA20 deviation + RSI14 snapshot table across multiple KRX positions from JSON (kr only, MCP fallback) |
 
 Input JSON schemas are documented in `references/script-inputs.md` with sample files under `examples/<market>/`.
 
