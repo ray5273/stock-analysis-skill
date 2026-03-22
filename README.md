@@ -12,14 +12,15 @@ Included skills:
 - `us-stock-analysis` for U.S. stocks and U.S.-listed ETFs
 - `kr-stock-analysis` for KRX-listed stocks and Korean ETFs
 - `kr-analysis-update` for dated follow-up updates to an existing Korean stock memo
+- `kr-portfolio-monitor` for multi-position KRX portfolio snapshots via Kiwoom REST API or Yahoo fallback
 
 ## How The Skills Work
 
-Both skills are designed to avoid stale-memory analysis.
+These skills are designed to avoid stale-memory analysis.
 
 Shared behavior:
 
-- They are invoked explicitly through `$us-stock-analysis`, `$kr-stock-analysis`, or `$kr-analysis-update` in Codex, and `/us-stock-analysis`, `/kr-stock-analysis`, or `/kr-analysis-update` in Claude Code.
+- They are invoked explicitly through `$us-stock-analysis`, `$kr-stock-analysis`, `$kr-analysis-update`, or `$kr-portfolio-monitor` in Codex, and `/us-stock-analysis`, `/kr-stock-analysis`, `/kr-analysis-update`, or `/kr-portfolio-monitor` in Claude Code.
 - They treat prices, valuation, filings, guidance, and news as time-sensitive, so the workflow starts by verifying current sources instead of relying on memory.
 - When the workspace is writable, the default deliverable is a markdown report file in `analysis-example/<market>/<company>.md`, not just a chat answer.
 - The report file should stay synchronized with the final answer, with an explicit "as of" date.
@@ -92,6 +93,29 @@ Bundled helpers:
 - `scripts/extract-report-baseline.js` for parsing memo metadata, update dates, and existing source URLs
 - `scripts/normalize-update-log.js` for rendering a normalized dated update block and writing it back into the memo
 
+### `kr-portfolio-monitor`
+
+Primary instructions:
+
+- [skills/kr-portfolio-monitor/SKILL.md](skills/kr-portfolio-monitor/SKILL.md)
+- [skills/kr-portfolio-monitor/references/workflow.md](skills/kr-portfolio-monitor/references/workflow.md)
+- [skills/kr-portfolio-monitor/references/output-format.md](skills/kr-portfolio-monitor/references/output-format.md)
+- [skills/kr-portfolio-monitor/references/mcp-setup.md](skills/kr-portfolio-monitor/references/mcp-setup.md)
+
+Current behavior:
+
+1. Check `kiwoom-mcp` connectivity first, then retrieve account balance, live prices, and 30-day daily bars in one pass.
+2. Restrict live coverage to domestic KRX holdings supported by Kiwoom REST API. Overseas stocks are out of scope for this skill and must not be implied as covered.
+3. Compute SMA20 deviation and RSI14 per holding, flag stretched positions, and summarize total unrealized P&L.
+4. Write the rolling snapshot to `analysis-example/kr/portfolio-snapshot.md` when the workspace is writable.
+5. If live MCP access is unavailable, fall back to `portfolio-snapshot.js` with manual KRX holdings JSON and Yahoo Finance market data.
+
+Bundled helpers:
+
+- `skills/kr-stock-analysis/scripts/portfolio-snapshot.js` for KRX portfolio snapshots from manual JSON input
+- `scripts/test-kiwoom-token.js` for checking Kiwoom OAuth token issuance from `.env.kiwoom`
+- `scripts/run-kiwoom-mcp.js` for launching `kiwoom-mcp` locally with repo-managed environment variables
+
 ## Install
 
 ### Codex
@@ -158,6 +182,10 @@ Use $kr-stock-analysis to analyze 005930.KS with DART-based evidence, valuation,
 Use $kr-analysis-update to update analysis-example/kr/엘앤에프.md with company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file.
 ```
 
+```text
+Use $kr-portfolio-monitor to scan current Kiwoom-supported KRX holdings, compute SMA20 deviation and RSI14, and write the result to analysis-example/kr/portfolio-snapshot.md.
+```
+
 ### Claude Code
 
 ```text
@@ -172,8 +200,13 @@ Use $kr-analysis-update to update analysis-example/kr/엘앤에프.md with compa
 /kr-analysis-update update analysis-example/kr/엘앤에프.md with company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file.
 ```
 
+```text
+/kr-portfolio-monitor scan current Kiwoom-supported KRX holdings, compute SMA20 deviation and RSI14, and write the result to analysis-example/kr/portfolio-snapshot.md.
+```
+
 ## Analysis Examples
 
+- [KR - Portfolio Snapshot](analysis-example/kr/portfolio-snapshot.md)
 - [KR - 엘앤에프](analysis-example/kr/엘앤에프.md)
 - [KR - LG CNS](<analysis-example/kr/LG CNS.md>)
 - [KR - 대양전기공업](analysis-example/kr/대양전기공업.md)

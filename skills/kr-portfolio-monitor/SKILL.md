@@ -1,15 +1,16 @@
 ---
 name: kr-portfolio-monitor
-description: Scan a Korean stock portfolio using kiwoom-mcp tools to retrieve live positions, current prices, and 30-day chart data, then compute SMA20 deviation and RSI14 for each holding and produce a dated markdown snapshot table with flagged positions and next-step recommendations. Use when the user wants a quick health check across multiple KRX positions at once rather than a deep single-stock memo.
+description: Scan a Korean domestic stock portfolio using kiwoom-mcp tools to retrieve live positions, current prices, and 30-day chart data, then compute SMA20 deviation and RSI14 for each holding and produce a dated markdown snapshot table with flagged positions and next-step recommendations. Use when the user wants a quick health check across multiple KRX positions at once rather than a deep single-stock memo.
 ---
 
 # Korean Portfolio Monitor
 
-Use this skill to produce a dated portfolio snapshot across all KRX positions in a single pass. It replaces reading accounts and price data one ticker at a time by using kiwoom-mcp tools to retrieve everything in a structured flow.
+Use this skill to produce a dated portfolio snapshot across domestic KRX positions in a single pass. It replaces reading accounts and price data one ticker at a time by using kiwoom-mcp tools to retrieve everything in a structured flow.
 
 ## Quick Start
 
 - Check whether `kiwoom-mcp` is configured before anything else. If MCP is unavailable, fall back to `scripts/portfolio-snapshot.js` with a manual JSON input.
+- Keep the scope explicit: Kiwoom REST API coverage in this workflow is domestic KRX holdings only. Do not present overseas stocks as included.
 - Pull live data: balance, current prices, and 30 days of daily bars per position.
 - Compute SMA20 deviation and RSI14 for each holding from the daily bar data.
 - Write a dated markdown table. Flag positions where RSI14 > 70 or RSI14 < 30 or SMA20 deviation exceeds ±5%.
@@ -19,7 +20,7 @@ Use this skill to produce a dated portfolio snapshot across all KRX positions in
 ## Workflow
 
 1. Check MCP connectivity.
-   Verify that kiwoom-mcp tools are reachable. If any tool call fails with a connection error, stop and instruct the user to configure kiwoom-mcp using `references/mcp-setup.md`, then fall back to `scripts/portfolio-snapshot.js` with manual input.
+   Verify that kiwoom-mcp tools are reachable. If any tool call fails with a connection error, stop and instruct the user to configure kiwoom-mcp using `references/mcp-setup.md`, then fall back to `scripts/portfolio-snapshot.js` with manual input. If the user asks for overseas holdings, stop and clarify that this skill only covers domestic KRX positions exposed by Kiwoom REST API.
 2. Retrieve account balance.
    Call `get_account_balance` to get the full list of current holdings: ticker, name, quantity, average cost, current price, and unrealized P&L.
 3. Retrieve market data for each position.
@@ -66,6 +67,7 @@ node skills/kr-stock-analysis/scripts/portfolio-snapshot.js \
 
 - Never use stale prices. All price and P&L data must come from live MCP tool calls or live Yahoo Finance fetches in the same session.
 - State the data retrieval timestamp in the output header.
+- State that live Kiwoom coverage is limited to domestic KRX holdings when that could affect interpretation.
 - Separate live MCP data from any manually entered data when both are present.
 - Do not compute a weighted portfolio return — the account balance response provides unrealized P&L directly per position.
 - If any single ticker lookup fails, note the failure in the table row and continue with the remaining positions.
@@ -81,6 +83,7 @@ node skills/kr-stock-analysis/scripts/portfolio-snapshot.js \
 ## Minimum Output Standard
 
 - Snapshot date and retrieval time
+- Scope note when live Kiwoom data is used: domestic KRX holdings only
 - Markdown table with: ticker, name, current price, 1-day change, SMA20 deviation, RSI14, unrealized P&L, return %, status flag
 - Highlighted "주의 포지션" section listing any flagged holdings with the specific condition
 - "다음 단계" section linking flagged positions to `/kr-stock-analysis` or `/kr-analysis-update`

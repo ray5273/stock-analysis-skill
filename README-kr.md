@@ -12,14 +12,15 @@
 - `us-stock-analysis`: 미국 상장 주식과 미국 상장 ETF 분석
 - `kr-stock-analysis`: KRX 상장 주식과 한국 ETF 분석
 - `kr-analysis-update`: 기존 한국 주식 메모에 기준일 이후 업데이트를 누적 반영
+- `kr-portfolio-monitor`: 키움 REST API 기반 국내주식 포트폴리오 스냅샷
 
 ## 스킬 동작 방식
 
-두 스킬 모두 오래된 기억에 의존하지 않고, 최신 근거를 확인한 뒤 분석하는 흐름으로 설계되어 있습니다.
+각 스킬은 오래된 기억에 의존하지 않고, 최신 근거를 확인한 뒤 분석하는 흐름으로 설계되어 있습니다.
 
 공통 동작:
 
-- Codex에서는 `$us-stock-analysis`, `$kr-stock-analysis`, `$kr-analysis-update`로 호출하고, Claude Code에서는 `/us-stock-analysis`, `/kr-stock-analysis`, `/kr-analysis-update`로 호출합니다.
+- Codex에서는 `$us-stock-analysis`, `$kr-stock-analysis`, `$kr-analysis-update`, `$kr-portfolio-monitor`로 호출하고, Claude Code에서는 `/us-stock-analysis`, `/kr-stock-analysis`, `/kr-analysis-update`, `/kr-portfolio-monitor`로 호출합니다.
 - 가격, 밸류에이션, 공시, 가이던스, 뉴스는 시점 민감 정보로 취급하므로, 분석 전에 최신 소스를 다시 확인합니다.
 - 워크스페이스가 쓰기 가능하면 답변만 끝내지 않고 `analysis-example/<market>/<company>.md` 경로에 마크다운 리포트를 생성하거나 갱신하는 것이 기본 동작입니다.
 - 최종 답변과 리포트 파일은 같은 기준일자를 공유하도록 맞추며, 문서 안에 명시적인 `as of` 날짜를 남깁니다.
@@ -92,6 +93,29 @@
 - `scripts/extract-report-baseline.js`: 기존 메모의 기준일, 업데이트 날짜, source URL 추출
 - `scripts/normalize-update-log.js`: 날짜별 업데이트 블록 생성 및 기존 메모에 반영
 
+### `kr-portfolio-monitor`
+
+주요 지침 문서:
+
+- [skills/kr-portfolio-monitor/SKILL.md](skills/kr-portfolio-monitor/SKILL.md)
+- [skills/kr-portfolio-monitor/references/workflow.md](skills/kr-portfolio-monitor/references/workflow.md)
+- [skills/kr-portfolio-monitor/references/output-format.md](skills/kr-portfolio-monitor/references/output-format.md)
+- [skills/kr-portfolio-monitor/references/mcp-setup.md](skills/kr-portfolio-monitor/references/mcp-setup.md)
+
+현재 동작 흐름:
+
+1. 먼저 `kiwoom-mcp` 연결을 확인한 뒤 계좌 잔고, 현재가, 최근 30일 일봉을 한 번에 조회합니다.
+2. 라이브 조회 범위는 키움 REST API가 제공하는 국내주식(KRX) 보유분으로 제한합니다. 해외주식은 이 스킬 범위 밖이며 포함된 것처럼 쓰지 않습니다.
+3. 각 종목별로 SMA20 괴리율과 RSI14를 계산해 과열/과매도 여부를 표시하고 총 미실현손익을 요약합니다.
+4. 워크스페이스가 쓰기 가능하면 결과를 `analysis-example/kr/portfolio-snapshot.md`에 롤링 업데이트합니다.
+5. MCP 연결이 불가능하면 수동 KRX 보유 종목 JSON과 Yahoo Finance 데이터를 사용하는 `portfolio-snapshot.js` fallback으로 전환합니다.
+
+번들 도구:
+
+- `skills/kr-stock-analysis/scripts/portfolio-snapshot.js`: 수동 JSON 입력 기반 KRX 포트폴리오 스냅샷 생성
+- `scripts/test-kiwoom-token.js`: `.env.kiwoom` 기준 OAuth 토큰 발급 여부 확인
+- `scripts/run-kiwoom-mcp.js`: 저장소 환경변수 파일을 읽어 `kiwoom-mcp`를 로컬에서 실행
+
 ## 설치
 
 ### Codex
@@ -158,6 +182,10 @@ Use $kr-stock-analysis to analyze 005930.KS with DART-based evidence, valuation,
 Use $kr-analysis-update to update analysis-example/kr/엘앤에프.md with company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file.
 ```
 
+```text
+Use $kr-portfolio-monitor to scan current Kiwoom-supported KRX holdings, compute SMA20 deviation and RSI14, and write the result to analysis-example/kr/portfolio-snapshot.md.
+```
+
 ### Claude Code
 
 ```text
@@ -172,8 +200,13 @@ Use $kr-analysis-update to update analysis-example/kr/엘앤에프.md with compa
 /kr-analysis-update update analysis-example/kr/엘앤에프.md with company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file.
 ```
 
+```text
+/kr-portfolio-monitor scan current Kiwoom-supported KRX holdings, compute SMA20 deviation and RSI14, and write the result to analysis-example/kr/portfolio-snapshot.md.
+```
+
 ## 분석 예시
 
+- [KR - Portfolio Snapshot](analysis-example/kr/portfolio-snapshot.md)
 - [KR - 엘앤에프](analysis-example/kr/엘앤에프.md)
 - [KR - LG CNS](<analysis-example/kr/LG CNS.md>)
 - [KR - 대양전기공업](analysis-example/kr/대양전기공업.md)
