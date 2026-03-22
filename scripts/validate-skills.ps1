@@ -130,18 +130,19 @@ foreach ($skillDir in $skillDirs) {
         node $normalizeScript --input $updateJsonReplace --report $updatedReport | Out-Null
 
         $updatedText = Get-Content -Raw $updatedReport
-        $headingCount = ([regex]::Matches($updatedText, '^### 2026-03-27 Update$', 'Multiline')).Count
-        $recentUpdateCount = ([regex]::Matches($updatedText, '^최근 업데이트일: 2026-03-27$', 'Multiline')).Count
+        $normalizedUpdatedText = $updatedText -replace "`r`n?", "`n"
+        $headingCount = ([regex]::Matches($normalizedUpdatedText, '^### 2026-03-27 Update$', 'Multiline')).Count
+        $recentUpdateCount = ([regex]::Matches($normalizedUpdatedText, '^최근 업데이트일: 2026-03-27$', 'Multiline')).Count
         if ($headingCount -ne 1) {
             Write-Error "Expected exactly one dated update block after replacement."
         }
         if ($recentUpdateCount -ne 1) {
             Write-Error "Expected 최근 업데이트일 to be inserted or refreshed."
         }
-        if ($updatedText -notmatch 'Replacement update for the same date\.') {
+        if ($normalizedUpdatedText -notmatch 'Replacement update for the same date\.') {
             Write-Error "Expected replacement content to exist in updated report."
         }
-        if ($updatedText -match 'Validation placeholder source') {
+        if ($normalizedUpdatedText -match 'Validation placeholder source') {
             Write-Error "Expected previous same-date content to be replaced, not duplicated."
         }
     }

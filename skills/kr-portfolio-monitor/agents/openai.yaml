@@ -1,0 +1,7 @@
+interface:
+  display_name: "Korean Portfolio Monitor"
+  short_description: "Scan all KRX holdings via kiwoom-mcp for live prices, SMA20 deviation, and RSI14, then produce a dated snapshot table with flagged positions."
+  default_prompt: "Use $kr-portfolio-monitor to retrieve account balance and market data via kiwoom-mcp, compute SMA20 deviation and RSI14 for each holding, and write a dated portfolio snapshot to analysis-example/kr/portfolio-snapshot.md when the workspace is writable."
+
+policy:
+  allow_implicit_invocation: false
