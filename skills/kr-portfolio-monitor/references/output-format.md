@@ -6,6 +6,7 @@
 # 포트폴리오 스냅샷 — {YYYY-MM-DD HH:MM KST}
 
 조회 기준: kiwoom-mcp | 총 미실현손익: {+/-X,XXX,XXX}원 ({+/-X.X%}) | 보유 종목 {N}개
+조회 범위: 국내주식(KRX) 보유분만 포함
 
 | 티커 | 종목명 | 현재가 | 1일변동 | SMA20 괴리 | RSI14 | 미실현손익 | 수익률 | 상태 |
 |---|---|---|---|---|---|---|---|---|
@@ -58,6 +59,7 @@ When MCP is unavailable and the script fallback is used:
 # 포트폴리오 스냅샷 — {YYYY-MM-DD}
 
 조회 기준: Yahoo Finance (kiwoom-mcp 미연결) | 총 미실현손익: 수동 입력 기준
+조회 범위: 국내주식(KRX) 보유분만 포함
 ```
 
 ## File Location

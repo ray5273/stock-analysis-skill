@@ -6,6 +6,7 @@
 - If the call returns a connection error or the tool is not listed, halt MCP flow immediately.
 - Tell the user: "kiwoom-mcp is not reachable. Please follow `references/mcp-setup.md` to install and configure it. Falling back to `scripts/portfolio-snapshot.js`."
 - In fallback mode, instruct the user to provide `examples/kr/portfolio-sample.json` and run the Node.js script.
+- If the user asks for overseas or mixed global holdings, stop and clarify that this skill only covers domestic KRX positions supported by Kiwoom REST API and the bundled fallback.
 
 ## Step 2 — Retrieve Account Balance
 
@@ -71,6 +72,7 @@ If RSI and SMA20 conditions both apply, include both flags separated by ` / `.
 ```
 # 포트폴리오 스냅샷 — YYYY-MM-DD HH:MM KST
 조회 기준: kiwoom-mcp (또는 fallback: Yahoo Finance)
+조회 범위: 국내주식(KRX) 보유분만 포함
 ```
 
 ### Summary Line
@@ -120,6 +122,7 @@ List only flagged positions (those not labeled `정상`). For each:
 ## Failure Modes To Avoid
 
 - Using prices from step 2 without confirming via `get_stock_price` when a more recent price is needed.
+- Implying that overseas holdings were checked when the Kiwoom REST API flow only covers domestic KRX positions.
 - Returning RSI when fewer than 15 closing prices are available (need 14 periods of differences plus at least 1 warmup bar).
 - Conflating unrealized P&L in the MCP response with realized gains.
 - Recommending buys or sells — the skill produces a monitoring snapshot, not investment advice.
