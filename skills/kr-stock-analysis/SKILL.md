@@ -1,49 +1,50 @@
 ---
 name: kr-stock-analysis
-description: Build dated, source-backed analysis for KRX-listed companies and Korean ETFs. Use when analyzing a Korean ticker, comparing Korean stocks, preparing a pre-earnings or post-earnings memo, assessing valuation, summarizing an investment thesis, reviewing catalysts and risks, or adding Korea-specific checks for revenue mix, governance, holding-company discounts, export sensitivity, shareholder returns, ETF structure, peer valuation, valuation bands, or chart analysis using DART, KRX, company IR materials, and recent news.
+description: Build dated, source-backed analysis for KRX-listed companies. Use when analyzing a Korean ticker, writing a quick view, a full memo, a pre-earnings note, a post-earnings note, or a same-date pair compare for KRX-listed operating companies, holding companies, or preferred-share lines using DART, KRX, company IR materials, valuation checks, and chart context. Do not use for ETF analysis, portfolio monitoring, scope-only planning, or incremental memo updates.
 ---
 
 # Korean Stock Analysis
 
-Use this skill to produce equity research style analysis for Korean stocks and Korean ETFs without relying on stale memory.
+Use this skill to write the final Korean stock memo or event note.
 
 ## Quick Start
 
-- Treat prices, market caps, earnings, guidance, shareholder return policy, regulations, and news as time-sensitive. Verify them with current sources before using them.
-- Prefer primary sources first: DART filings, KRX disclosures, company IR pages, earnings presentations, ETF fact sheets, and official macro data.
-- Pin the scope before analyzing: ticker, market, share class, analysis horizon, comparison set, and desired output type.
-- If the workspace is writable, treat the default deliverable as a markdown report file, not just a chat reply. For a Korean stock or ETF, create or update `analysis-example/kr/<company>.md`.
-- If you generate a chart PNG for the memo, keep it under `analysis-example/kr/assets/` and link it from the markdown file.
-- State an explicit "as of" date in the final answer.
+- Treat prices, market caps, earnings, guidance, shareholder return policy, regulations, and company news as time-sensitive.
+- Prefer using a scoped brief from `kr-stock-plan` and a fact pack from `kr-stock-data-pack` before drafting.
+- Route the output mode early.
+  - `quick view` for compact decision support
+  - `full memo` for deeper initiation-style analysis
+  - `pre-earnings note` or `post-earnings note` for event reads
+  - `pair compare` for same-date stock comparisons
+- If the workspace is writable, create or update `analysis-example/kr/<company>.md`.
+- State an explicit `기준일` in the memo and keep each metric block honest about its source date.
 
 ## Workflow
 
-1. Define the task.
-   Capture the security, market, user goal, time horizon, and whether the user wants a quick view, a deep memo, a comparison, or an event-driven read.
-2. Gather verified facts.
-   Read current price context, recent DART and KRX disclosures, the latest earnings materials, and any recent company-specific news needed for the question.
-3. Build the thesis.
-   Explain what drives the business, why the market may be underpricing or overpricing it, and which metrics matter most for this business model.
-4. Stress test the idea.
-   Check balance sheet strength, cash generation, capex load, governance, treasury shares, cross-holdings, export sensitivity, and plausible bear cases.
-5. Value the security.
-   Use simple, defensible valuation methods that fit the business. Do not force a DCF when the inputs are too weak.
-6. Write the answer.
-   Create or update the report file first when the workspace is writable, then lead with the conclusion, evidence, valuation, catalysts, risks, and what would change the view.
+1. Lock the mode.
+   Confirm whether the user wants a quick view, full memo, event note, or pair compare.
+2. Load prior work.
+   Reuse the planning brief and data pack when available instead of re-scoping from scratch.
+3. Refresh material facts.
+   Verify only the latest company facts needed to support the conclusion.
+4. Build the memo.
+   Separate verified facts from inference and keep section boundaries clean.
+5. Use the right helpers.
+   Pull chart, valuation-band, and peer-comparison helpers only when they materially improve the output.
+6. Write the file deliverable.
+   Keep the markdown memo synchronized with the final answer.
 
-Read [references/workflow.md](references/workflow.md) for the detailed checklist.
-Read [references/kr-market-checklists.md](references/kr-market-checklists.md) when analyzing KRX growth stocks, value stocks, exporters, holding companies, or Korean ETFs.
-Read [references/output-format.md](references/output-format.md) for answer templates.
+Read [references/workflow.md](references/workflow.md) for the analysis checklist.
+Read [references/kr-market-checklists.md](references/kr-market-checklists.md) when analyzing Korean growth stocks, value stocks, exporters, or holding companies.
+Read [references/output-format.md](references/output-format.md) for the default memo shapes.
 Read [references/script-inputs.md](references/script-inputs.md) when using the bundled scripts with structured JSON inputs.
 
 ## Bundled Scripts
 
 - Use `scripts/peer-valuation.js` when the user provides peer metrics and you need a consistent markdown comparison table.
-- Use `scripts/etf-overlap.js` when the user provides two ETF holdings files and you need weighted overlap, common names, and top overlaps.
 - Use `scripts/fetch-kr-chart.js` when you need current KRX daily bars and the user did not already provide OHLCV history.
 - Use `scripts/chart-basics.js` when you need a technical read plus a labeled PNG chart that can be embedded into a markdown memo.
 - Use `scripts/valuation-bands.js` when the user provides 3-5 years of historical valuation multiples and you need markdown tables plus ASCII band charts for P/E, EV/EBITDA, and P/B.
-- Use `scripts/portfolio-snapshot.js` when kiwoom-mcp is not configured and the user wants a portfolio health check across multiple KRX positions from a manual JSON file.
 - Run all bundled scripts with `node`.
 
 ## Operating Rules
@@ -56,12 +57,13 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 - If revenue mix, customer concentration, or a valuation metric is not disclosed cleanly, say so and explain what the current source set does and does not provide.
 - Distinguish ordinary shares, preferred shares, holding companies, and operating subsidiaries when the listing structure matters.
 - If you produced a full single-stock memo, keep the file deliverable synchronized with the final chat answer rather than letting the report drift.
+- Route ETF work elsewhere instead of bending this skill back into mixed security coverage.
 
 ## Source Priority
 
 1. DART filings, KRX disclosures, and official company IR materials
-2. ETF sponsor documents and KRX ETF disclosures
-3. Official macro or industry data
+2. Official governance pages, shareholder-return disclosures, and exchange notices
+3. Official macro or industry data when company context requires it
 4. Reputable local financial media and transcripts for context
 
 ## Minimum Output Standard
@@ -77,4 +79,4 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 - Governance and structure checks with why they matter
 - Catalysts
 - Risks and disconfirming evidence
-- Clear "what would change my mind" section
+- Clear `what would change my mind` section

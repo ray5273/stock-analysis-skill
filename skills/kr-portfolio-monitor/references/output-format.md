@@ -16,13 +16,13 @@
 
 ## 주의 포지션
 
-- **LG CNS (001120.KS)**: RSI 72.1 (과매수) — 기존 메모가 있다면 `/kr-analysis-update 001120.KS`로 thesis 점검 권장
+- **LG CNS (001120.KS)**: RSI 72.1 (과매수) — 기존 메모가 있다면 `/kr-stock-update 001120.KS`로 thesis 점검 권장
 - **삼성전자 (005930.KS)**: SMA20 대비 −6.2% 이탈 — `/kr-stock-analysis 005930.KS`로 수급 및 펀더멘털 점검 권장
 
 ## 다음 단계
 
 - 심층 분석: /kr-stock-analysis [티커]
-- 기존 메모 업데이트: /kr-analysis-update [티커]
+- 기존 메모 업데이트: /kr-stock-update [티커]
 ```
 
 ## Column Definitions

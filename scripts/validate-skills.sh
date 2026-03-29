@@ -4,7 +4,10 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 SKILLS_ROOT="$REPO_ROOT/skills"
-TMP_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/stock-skill-validate.XXXXXX")
+TMP_BASE="$REPO_ROOT/.tmp"
+mkdir -p "$TMP_BASE"
+TMP_ROOT=$(mktemp -d "$TMP_BASE/stock-skill-validate.XXXXXX")
+SECTOR_SKILLS="kr-sector-plan kr-sector-data-pack kr-sector-analysis kr-sector-compare kr-sector-audit kr-sector-update"
 
 cleanup() {
     rm -rf "$TMP_ROOT"
@@ -30,6 +33,19 @@ find "$SKILLS_ROOT" -mindepth 1 -maxdepth 1 -type d | sort | while IFS= read -r 
     if [ ! -f "$SKILL_DIR/agents/openai.yaml" ]; then
         echo "Warning: $SKILL_DIR/agents/openai.yaml not found (required for Codex, not needed for Claude Code)"
     fi
+
+    case " $SECTOR_SKILLS " in
+        *" $SKILL_NAME "*)
+            if [ ! -f "$SKILL_DIR/references/workflow.md" ]; then
+                echo "Missing required sector reference file: $SKILL_DIR/references/workflow.md" >&2
+                exit 1
+            fi
+            if [ ! -f "$SKILL_DIR/references/output-format.md" ]; then
+                echo "Missing required sector reference file: $SKILL_DIR/references/output-format.md" >&2
+                exit 1
+            fi
+            ;;
+    esac
 
     node -e '
 const fs = require("fs");
@@ -61,14 +77,14 @@ if (!pattern.test(text)) {
         node "$FETCH_SCRIPT" --help >/dev/null
     fi
 
-    if [ "$SKILL_NAME" = "kr-analysis-update" ]; then
+    if [ "$SKILL_NAME" = "kr-stock-update" ]; then
         BASELINE_SCRIPT="$SKILL_DIR/scripts/extract-report-baseline.js"
         NORMALIZE_SCRIPT="$SKILL_DIR/scripts/normalize-update-log.js"
-        REPORT_SAMPLE="$REPO_ROOT/analysis-example/kr/엘앤에프.md"
-        UPDATE_JSON="$TMP_ROOT/kr-analysis-update.json"
-        UPDATE_JSON_REPLACE="$TMP_ROOT/kr-analysis-update-replace.json"
-        UPDATED_REPORT="$TMP_ROOT/kr-analysis-update.md"
-        BASELINE_OUT="$TMP_ROOT/kr-analysis-update-baseline.json"
+        REPORT_SAMPLE="$REPO_ROOT/analysis-example/kr/LG CNS.md"
+        UPDATE_JSON="$TMP_ROOT/kr-stock-update.json"
+        UPDATE_JSON_REPLACE="$TMP_ROOT/kr-stock-update-replace.json"
+        UPDATED_REPORT="$TMP_ROOT/kr-stock-update.md"
+        BASELINE_OUT="$TMP_ROOT/kr-stock-update-baseline.json"
 
         node "$BASELINE_SCRIPT" --input "$REPORT_SAMPLE" --output "$BASELINE_OUT" >/dev/null
         if ! grep -q '"memoDate": "2026-03-20"' "$BASELINE_OUT"; then
@@ -155,5 +171,23 @@ EOF
         fi
     fi
 done
+
+SECTOR_EXAMPLE_ROOT="$REPO_ROOT/analysis-example/kr-sector"
+if [ ! -d "$SECTOR_EXAMPLE_ROOT" ]; then
+    echo "Missing sector analysis example directory: $SECTOR_EXAMPLE_ROOT" >&2
+    exit 1
+fi
+
+STOCK_PLAN_EXAMPLE_COUNT=$(find "$REPO_ROOT/analysis-example/kr" -maxdepth 1 -type f -name "LG CNS-*.md" | wc -l | tr -d '[:space:]')
+if [ "$STOCK_PLAN_EXAMPLE_COUNT" -lt 1 ]; then
+    echo "Missing stock planning example file under analysis-example/kr matching LG CNS-*.md" >&2
+    exit 1
+fi
+
+SECTOR_EXAMPLE_COUNT=$(find "$SECTOR_EXAMPLE_ROOT" -maxdepth 1 -type f -name "*.md" | wc -l | tr -d '[:space:]')
+if [ "$SECTOR_EXAMPLE_COUNT" -lt 2 ]; then
+    echo "Expected at least two sector example markdown files under $SECTOR_EXAMPLE_ROOT" >&2
+    exit 1
+fi
 
 echo "Validation passed."

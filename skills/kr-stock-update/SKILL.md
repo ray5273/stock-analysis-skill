@@ -1,9 +1,9 @@
 ---
-name: kr-analysis-update
-description: Update an existing Korean stock memo using only company-specific disclosures, IR materials, and news published after the memo date. Use when a prior `analysis-example/kr/<company>.md` already exists and the user wants a dated incremental update instead of a fresh memo.
+name: kr-stock-update
+description: Update an existing Korean stock memo using only company-specific disclosures, IR materials, and news published after the memo date. Use when a prior `analysis-example/kr/<company>.md` already exists and the user wants a dated incremental stock update instead of a fresh memo.
 ---
 
-# Korean Analysis Update
+# Korean Stock Update
 
 Use this skill when the user already has a Korean stock memo and wants follow-up analysis only for what changed after that memo was written.
 
@@ -56,7 +56,7 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 ## Source Priority
 
 1. DART filings, KRX disclosures, and official company IR materials
-2. Exchange notices, shareholder return disclosures, and governance pages
+2. Exchange notices, shareholder-return disclosures, and governance pages
 3. Reputable local financial media for context when primary sources do not fully explain the move
 
 ## Minimum Output Standard
