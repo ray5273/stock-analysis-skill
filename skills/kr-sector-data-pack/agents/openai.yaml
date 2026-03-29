@@ -1,0 +1,8 @@
+interface:
+  display_name: "Korean Sector Data Pack"
+  short_description: "Collect a dated fact pack for Korea sector research before drafting."
+  default_prompt: "Use $kr-sector-data-pack to gather a Korea-focused sector fact pack with market definition, dated metrics, policy changes, value-chain mapping, and listed-company references before writing the final report."
+
+policy:
+  allow_implicit_invocation: true
+
