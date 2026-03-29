@@ -1,0 +1,7 @@
+interface:
+  display_name: "Korean Stock Data Pack"
+  short_description: "Collect a dated company fact pack before writing a Korean stock memo."
+  default_prompt: "Use $kr-stock-data-pack to gather a Korean stock fact pack with price context, dated filings, earnings facts, governance data, valuation inputs, and chart inputs before writing the final memo."
+
+policy:
+  allow_implicit_invocation: true

@@ -71,7 +71,7 @@ node skills/kr-stock-analysis/scripts/portfolio-snapshot.js \
 - Separate live MCP data from any manually entered data when both are present.
 - Do not compute a weighted portfolio return — the account balance response provides unrealized P&L directly per position.
 - If any single ticker lookup fails, note the failure in the table row and continue with the remaining positions.
-- Do not provide a buy or sell recommendation. The snapshot flags technical conditions only. Link to `/kr-stock-analysis` or `/kr-analysis-update` for deeper analysis.
+- Do not provide a buy or sell recommendation. The snapshot flags technical conditions only. Link to `/kr-stock-analysis` or `/kr-stock-update` for deeper analysis.
 - Keep the snapshot file as a rolling single-file update. Do not create a new file per run.
 
 ## Source Priority
@@ -86,5 +86,5 @@ node skills/kr-stock-analysis/scripts/portfolio-snapshot.js \
 - Scope note when live Kiwoom data is used: domestic KRX holdings only
 - Markdown table with: ticker, name, current price, 1-day change, SMA20 deviation, RSI14, unrealized P&L, return %, status flag
 - Highlighted "주의 포지션" section listing any flagged holdings with the specific condition
-- "다음 단계" section linking flagged positions to `/kr-stock-analysis` or `/kr-analysis-update`
+- "다음 단계" section linking flagged positions to `/kr-stock-analysis` or `/kr-stock-update`
 - Total portfolio unrealized P&L and overall return summary line

@@ -7,7 +7,7 @@ Use this shape unless the user asks for something else:
 If the workspace is writable, write this memo to `analysis-example/kr/<company>.md` and keep the file in sync with the final answer.
 
 1. Summary
-   Give the conclusion in 2-4 sentences and state the "as of" date.
+   Give the conclusion in 2-4 sentences and state the `기준일`.
 2. Business and Thesis
    Explain what the company does, what drives value, and the core thesis.
 3. Revenue Mix
@@ -29,7 +29,18 @@ If the workspace is writable, write this memo to `analysis-example/kr/<company>.
 11. What Would Change My Mind
    State concrete conditions that would flip the view.
 
-## Quick Compare
+## Quick View
+
+Keep it compact:
+
+1. One-line judgment
+2. What matters most right now
+3. Latest result or disclosure read-through
+4. Current valuation snapshot
+5. Key catalysts
+6. Key risks
+
+## Pair Compare
 
 Use a short table or bullet set with:
 
@@ -74,5 +85,5 @@ Use:
 - Be direct and analytical.
 - Distinguish facts from inference.
 - Avoid hype language.
-- Use short "not disclosed" notes instead of inventing mix splits or missing metrics.
+- Use short `not disclosed` notes instead of inventing mix splits or missing metrics.
 - Avoid personalized financial advice unless the user explicitly asks for it and provides the needed constraints.

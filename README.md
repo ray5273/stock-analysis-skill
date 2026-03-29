@@ -10,8 +10,10 @@ Language docs:
 Included skills:
 
 - `us-stock-analysis` for U.S. stocks and U.S.-listed ETFs
-- `kr-stock-analysis` for KRX-listed stocks and Korean ETFs
-- `kr-analysis-update` for dated follow-up updates to an existing Korean stock memo
+- `kr-stock-plan` for scoping Korean stock research into an execution-ready brief
+- `kr-stock-data-pack` for gathering structured company fact packs before drafting
+- `kr-stock-analysis` for Korean stock quick views, full memos, event notes, and pair compares
+- `kr-stock-update` for dated follow-up updates to an existing Korean stock memo
 - `kr-portfolio-monitor` for multi-position KRX portfolio snapshots via Kiwoom REST API or Yahoo fallback
 - `kr-sector-plan` for scoping Korea sector research into an execution-ready brief
 - `kr-sector-data-pack` for gathering structured sector fact packs before drafting
@@ -54,22 +56,21 @@ Bundled helpers:
 - `scripts/etf-overlap.js` for ETF overlap analysis
 - `scripts/chart-basics.js` for basic technical trend and momentum reads from provided OHLCV data
 
-### `kr-stock-analysis`
+### Korean Stock Skills
 
 Primary instructions:
 
+- [skills/kr-stock-plan/SKILL.md](skills/kr-stock-plan/SKILL.md)
+- [skills/kr-stock-data-pack/SKILL.md](skills/kr-stock-data-pack/SKILL.md)
 - [skills/kr-stock-analysis/SKILL.md](skills/kr-stock-analysis/SKILL.md)
-- [skills/kr-stock-analysis/references/workflow.md](skills/kr-stock-analysis/references/workflow.md)
-- [skills/kr-stock-analysis/references/output-format.md](skills/kr-stock-analysis/references/output-format.md)
+- [skills/kr-stock-update/SKILL.md](skills/kr-stock-update/SKILL.md)
 
 Current behavior:
 
-1. Define scope first: exact ticker, market, share class, horizon, and whether the request is a memo, comparison, or event-driven read.
-2. Verify fresh inputs with Korean primary sources first, especially DART filings, KRX disclosures, company IR materials, ETF sponsor documents, and then recent news.
-3. Build the thesis with Korea-specific checks such as revenue mix disclosure quality, export sensitivity, treasury shares, governance, ownership structure, and shareholder return policy.
-4. Assemble a current valuation snapshot, and add historical valuation bands when enough data exists.
-5. Add chart context when price history is available, including a PNG chart asset for memo files under `analysis-example/kr/assets/`.
-6. Write the final output in the Korean memo format: summary, business and thesis, revenue mix, latest results, valuation snapshot, valuation bands, chart and positioning, governance and structure, catalysts, risks, and what would change the view.
+1. `kr-stock-plan` converts a vague Korean stock request into a clear security definition, output mode, and research brief.
+2. `kr-stock-data-pack` collects dated price context, filings, results, governance facts, valuation inputs, and chart inputs before drafting.
+3. `kr-stock-analysis` writes the final output as a `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, or `pair compare` for KRX-listed companies.
+4. `kr-stock-update` preserves the original memo date, refreshes `최근 업데이트일`, and appends or replaces dated follow-up blocks under `## Update Log`.
 
 Bundled helpers:
 
@@ -77,28 +78,8 @@ Bundled helpers:
 - `scripts/chart-basics.js` for technical reads plus labeled PNG chart output
 - `scripts/valuation-bands.js` for 3-5 year valuation band summaries
 - `scripts/peer-valuation.js` for comparable-company valuation tables
-- `scripts/etf-overlap.js` for ETF overlap analysis
-
-### `kr-analysis-update`
-
-Primary instructions:
-
-- [skills/kr-analysis-update/SKILL.md](skills/kr-analysis-update/SKILL.md)
-- [skills/kr-analysis-update/references/workflow.md](skills/kr-analysis-update/references/workflow.md)
-- [skills/kr-analysis-update/references/output-format.md](skills/kr-analysis-update/references/output-format.md)
-
-Current behavior:
-
-1. Read an existing Korean stock memo under `analysis-example/kr/<company>.md`.
-2. Use the memo's `기준일` as the start date for follow-up research.
-3. Gather only company-specific disclosures, IR materials, and news published after that memo date.
-4. Judge whether those developments changed the thesis, risk, or monitoring list.
-5. Refresh `최근 업데이트일` and append a dated block under `## Update Log` in the same memo file.
-
-Bundled helpers:
-
-- `scripts/extract-report-baseline.js` for parsing memo metadata, update dates, and existing source URLs
-- `scripts/normalize-update-log.js` for rendering a normalized dated update block and writing it back into the memo
+- `skills/kr-stock-update/scripts/extract-report-baseline.js` for parsing memo metadata, update dates, and existing source URLs
+- `skills/kr-stock-update/scripts/normalize-update-log.js` for rendering a normalized dated update block and writing it back into the memo
 
 ### `kr-portfolio-monitor`
 
@@ -202,11 +183,19 @@ Use $us-stock-analysis to prepare a dated investment memo for NVDA with valuatio
 ```
 
 ```text
-Use $kr-stock-analysis to analyze 005930.KS with DART-based evidence, valuation, governance checks, and catalysts.
+Use $kr-stock-plan to scope 064400.KS into a clear Korean stock research brief with ticker, share class, horizon, output mode, and key questions.
 ```
 
 ```text
-Use $kr-analysis-update to update analysis-example/kr/엘앤에프.md with company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file.
+Use $kr-stock-data-pack to gather a dated company fact pack for LG CNS with price context, filings, latest results, governance facts, valuation inputs, and chart inputs.
+```
+
+```text
+Use $kr-stock-analysis to analyze 005930.KS with DART-based evidence, valuation, governance checks, catalysts, and chart context.
+```
+
+```text
+Use $kr-stock-update to update analysis-example/kr/엘앤에프.md with company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file.
 ```
 
 ```text
@@ -244,11 +233,19 @@ Use $kr-sector-update to update analysis-example/kr-sector/국내 데이터센�
 ```
 
 ```text
-/kr-stock-analysis analyze 005930.KS with DART-based evidence, valuation, governance checks, and catalysts.
+/kr-stock-plan scope 064400.KS into a clear Korean stock research brief with ticker, share class, horizon, output mode, and key questions.
 ```
 
 ```text
-/kr-analysis-update update analysis-example/kr/엘앤에프.md with company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file.
+/kr-stock-data-pack gather a dated company fact pack for LG CNS with price context, filings, latest results, governance facts, valuation inputs, and chart inputs.
+```
+
+```text
+/kr-stock-analysis analyze 005930.KS with DART-based evidence, valuation, governance checks, catalysts, and chart context.
+```
+
+```text
+/kr-stock-update update analysis-example/kr/엘앤에프.md with company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file.
 ```
 
 ```text
@@ -283,10 +280,13 @@ Use $kr-sector-update to update analysis-example/kr-sector/국내 데이터센�
 
 - [KR - Portfolio Snapshot](analysis-example/kr/portfolio-snapshot.md)
 - [KR - 엘앤에프](analysis-example/kr/엘앤에프.md)
+- [KR - LG CNS Research Brief](<analysis-example/kr/LG CNS-리서치브리프.md>)
 - [KR - LG CNS](<analysis-example/kr/LG CNS.md>)
 - [KR - 대양전기공업](analysis-example/kr/대양전기공업.md)
 - [KR Sector - 국내 데이터센터](analysis-example/kr-sector/국내%20데이터센터.md)
 - [KR Sector - 국내 데이터센터 리서치 브리프](analysis-example/kr-sector/국내%20데이터센터-리서치브리프.md)
+- [KR Sector - 국내 IT SI 서비스](analysis-example/kr-sector/국내%20IT%20SI%20서비스.md)
+- [KR Sector - 국내 IT SI 서비스 리서치 브리프](analysis-example/kr-sector/국내%20IT%20SI%20서비스-리서치브리프.md)
 
 ## Validation
 

@@ -307,7 +307,7 @@ function buildSnapshot(positions, dateStr) {
   if (flagged.length > 0) {
     const items = flagged.map((p) => {
       const detail = p.status.replace(/⚠️ /g, "").replace(/ \/ /g, ", ");
-      return `- **${p.name} (${p.resolvedTicker || p.ticker})**: ${detail} — \`/kr-analysis-update ${p.resolvedTicker || p.ticker}\` 또는 \`/kr-stock-analysis ${p.resolvedTicker || p.ticker}\` 로 점검 권장`;
+      return `- **${p.name} (${p.resolvedTicker || p.ticker})**: ${detail} — \`/kr-stock-update ${p.resolvedTicker || p.ticker}\` 또는 \`/kr-stock-analysis ${p.resolvedTicker || p.ticker}\` 로 점검 권장`;
     });
     cautionSection = "\n## 주의 포지션\n\n" + items.join("\n") + "\n";
   }
@@ -315,7 +315,7 @@ function buildSnapshot(positions, dateStr) {
   const nextSection =
     "\n## 다음 단계\n\n" +
     "- 심층 분석: /kr-stock-analysis [티커]\n" +
-    "- 기존 메모 업데이트: /kr-analysis-update [티커]\n";
+    "- 기존 메모 업데이트: /kr-stock-update [티커]\n";
 
   return [
     header,
