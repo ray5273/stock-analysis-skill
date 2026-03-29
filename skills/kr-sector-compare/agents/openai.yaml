@@ -1,0 +1,8 @@
+interface:
+  display_name: "Korean Sector Compare"
+  short_description: "Compare two Korea sectors on the same-date basis."
+  default_prompt: "Use $kr-sector-compare to compare two Korea-focused sectors on a common date basis, covering market structure, policy tailwinds, constraints, listed-company exposure, risks, and bottom-line risk-reward."
+
+policy:
+  allow_implicit_invocation: true
+

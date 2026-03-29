@@ -1,0 +1,8 @@
+interface:
+  display_name: "Korean Sector Audit"
+  short_description: "Review a Korea sector memo for source, date, and logic issues."
+  default_prompt: "Use $kr-sector-audit to review an existing Korea-focused sector memo or report for missing sources, stale dates, unsupported claims, number conflicts, and structural gaps, and present the findings in priority order."
+
+policy:
+  allow_implicit_invocation: true
+

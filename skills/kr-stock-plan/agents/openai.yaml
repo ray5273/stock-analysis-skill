@@ -1,0 +1,7 @@
+interface:
+  display_name: "Korean Stock Plan"
+  short_description: "Scope a Korean stock request into a usable research brief."
+  default_prompt: "Use $kr-stock-plan to define the exact KRX-listed company, share class, time horizon, comparison set, and output mode, then produce an execution-ready research brief."
+
+policy:
+  allow_implicit_invocation: true

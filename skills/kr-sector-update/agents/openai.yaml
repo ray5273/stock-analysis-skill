@@ -1,0 +1,8 @@
+interface:
+  display_name: "Korean Sector Update"
+  short_description: "Incrementally update a Korea sector memo after its memo date."
+  default_prompt: "Use $kr-sector-update to update an existing Korea-focused sector memo with only the material policy, market, regulation, and company developments published after the memo date, and append the dated update block to the same file."
+
+policy:
+  allow_implicit_invocation: true
+

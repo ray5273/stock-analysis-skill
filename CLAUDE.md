@@ -17,7 +17,7 @@ bash ./scripts/validate-skills.sh        # Linux/macOS
 **Install a single skill (Codex):**
 ```bash
 bash ./scripts/install-skill.sh kr-stock-analysis
-bash ./scripts/install-skill.sh kr-analysis-update
+bash ./scripts/install-skill.sh kr-stock-update
 bash ./scripts/install-skill.sh kr-portfolio-monitor
 bash ./scripts/install-skill.sh us-stock-analysis
 ```
@@ -30,7 +30,7 @@ bash ./scripts/install-all-skills.sh
 **Install a single skill (Claude Code):**
 ```bash
 bash ./scripts/install-claude-skill.sh kr-stock-analysis
-bash ./scripts/install-claude-skill.sh kr-analysis-update
+bash ./scripts/install-claude-skill.sh kr-stock-update
 bash ./scripts/install-claude-skill.sh kr-portfolio-monitor
 bash ./scripts/install-claude-skill.sh us-stock-analysis
 ```
