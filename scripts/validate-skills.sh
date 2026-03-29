@@ -77,14 +77,14 @@ if (!pattern.test(text)) {
         node "$FETCH_SCRIPT" --help >/dev/null
     fi
 
-    if [ "$SKILL_NAME" = "kr-analysis-update" ]; then
+    if [ "$SKILL_NAME" = "kr-stock-update" ]; then
         BASELINE_SCRIPT="$SKILL_DIR/scripts/extract-report-baseline.js"
         NORMALIZE_SCRIPT="$SKILL_DIR/scripts/normalize-update-log.js"
         REPORT_SAMPLE="$REPO_ROOT/analysis-example/kr/LG CNS.md"
-        UPDATE_JSON="$TMP_ROOT/kr-analysis-update.json"
-        UPDATE_JSON_REPLACE="$TMP_ROOT/kr-analysis-update-replace.json"
-        UPDATED_REPORT="$TMP_ROOT/kr-analysis-update.md"
-        BASELINE_OUT="$TMP_ROOT/kr-analysis-update-baseline.json"
+        UPDATE_JSON="$TMP_ROOT/kr-stock-update.json"
+        UPDATE_JSON_REPLACE="$TMP_ROOT/kr-stock-update-replace.json"
+        UPDATED_REPORT="$TMP_ROOT/kr-stock-update.md"
+        BASELINE_OUT="$TMP_ROOT/kr-stock-update-baseline.json"
 
         node "$BASELINE_SCRIPT" --input "$REPORT_SAMPLE" --output "$BASELINE_OUT" >/dev/null
         if ! grep -q '"memoDate": "2026-03-20"' "$BASELINE_OUT"; then
@@ -175,6 +175,12 @@ done
 SECTOR_EXAMPLE_ROOT="$REPO_ROOT/analysis-example/kr-sector"
 if [ ! -d "$SECTOR_EXAMPLE_ROOT" ]; then
     echo "Missing sector analysis example directory: $SECTOR_EXAMPLE_ROOT" >&2
+    exit 1
+fi
+
+STOCK_PLAN_EXAMPLE_COUNT=$(find "$REPO_ROOT/analysis-example/kr" -maxdepth 1 -type f -name "LG CNS-*.md" | wc -l | tr -d '[:space:]')
+if [ "$STOCK_PLAN_EXAMPLE_COUNT" -lt 1 ]; then
+    echo "Missing stock planning example file under analysis-example/kr matching LG CNS-*.md" >&2
     exit 1
 fi
 

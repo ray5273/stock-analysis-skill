@@ -11,4 +11,4 @@
 ## 다음 단계
 
 - 심층 분석: /kr-stock-analysis [티커]
-- 기존 메모 업데이트: /kr-analysis-update [티커]
+- 기존 메모 업데이트: /kr-stock-update [티커]

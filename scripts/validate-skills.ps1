@@ -79,14 +79,14 @@ foreach ($skillDir in $skillDirs) {
         node $fetchScript --help | Out-Null
     }
 
-    if ($skillDir.Name -eq "kr-analysis-update") {
-        $baselineScript = ".\skills\kr-analysis-update\scripts\extract-report-baseline.js"
-        $normalizeScript = ".\skills\kr-analysis-update\scripts\normalize-update-log.js"
+    if ($skillDir.Name -eq "kr-stock-update") {
+        $baselineScript = ".\skills\kr-stock-update\scripts\extract-report-baseline.js"
+        $normalizeScript = ".\skills\kr-stock-update\scripts\normalize-update-log.js"
         $reportSample = ".\analysis-example\kr\LG CNS.md"
-        $updateJson = Join-Path $tempRoot "kr-analysis-update.json"
-        $updateJsonReplace = Join-Path $tempRoot "kr-analysis-update-replace.json"
-        $updatedReport = Join-Path $tempRoot "kr-analysis-update.md"
-        $baselineOut = Join-Path $tempRoot "kr-analysis-update-baseline.json"
+        $updateJson = Join-Path $tempRoot "kr-stock-update.json"
+        $updateJsonReplace = Join-Path $tempRoot "kr-stock-update-replace.json"
+        $updatedReport = Join-Path $tempRoot "kr-stock-update.md"
+        $baselineOut = Join-Path $tempRoot "kr-stock-update-baseline.json"
 
         node $baselineScript --input $reportSample --output $baselineOut | Out-Null
         if (-not ((Get-Content -Raw $baselineOut) -match '"memoDate": "2026-03-20"')) {
@@ -180,6 +180,11 @@ foreach ($skillDir in $skillDirs) {
 $sectorExampleRoot = Join-Path $repoRoot "analysis-example\kr-sector"
 if (-not (Test-Path $sectorExampleRoot)) {
     Write-Error "Missing sector analysis example directory: $sectorExampleRoot"
+}
+
+$stockPlanExample = Get-ChildItem -Path (Join-Path $repoRoot "analysis-example\kr") -Filter "LG CNS-*.md" | Select-Object -First 1
+if (-not $stockPlanExample) {
+    Write-Error "Missing stock planning example file under analysis-example\kr matching LG CNS-*.md"
 }
 
 $sectorExampleCount = (Get-ChildItem -Path $sectorExampleRoot -Filter "*.md" | Measure-Object).Count

@@ -6,7 +6,7 @@ Use this order unless the user explicitly wants a faster but lighter answer:
 
 1. Latest DART filing, business report, quarterly report, audit report, or material disclosure
 2. Latest KRX disclosure, company IR deck, earnings release, and conference call materials
-3. Investor presentation, company website disclosures, or ETF fact sheet
+3. Investor presentation, company website disclosures, or governance materials
 4. Recent company news or exchange notices relevant to the question
 5. Market data pages or reputable financial summaries for quick ratio checks
 
@@ -17,7 +17,7 @@ If a number matters to the conclusion, trace it back to a primary source when po
 ### Scope
 
 - Identify the exact ticker, market, and share class.
-- Identify whether the listing is an operating company, holding company, preferred shares line, REIT, or ETF.
+- Identify whether the listing is an operating company, holding company, preferred shares line, or restructuring case.
 - Identify the analysis horizon: trading, next earnings, 12-24 months, or multi-year compounder view.
 - Identify the user's goal: idea generation, validation, comparison, or risk review.
 - If the workspace is writable, set the output file path early. Default to `analysis-example/kr/<company>.md` for a full report and `analysis-example/kr/assets/<company>-chart.png` for any linked chart image.
@@ -55,7 +55,6 @@ Pick methods that fit the business model:
 - Asset-heavy or cyclical business: EV/EBITDA, EV/EBIT, price to book, replacement value clues
 - Financials: P/B, ROE, dividend yield, capital ratios
 - Holding companies: NAV discount, look-through sum-of-the-parts, treasury shares adjustment
-- ETF: holdings concentration, fees, benchmark fit, liquidity, NAV gap
 
 For a standard single-stock memo, always assemble a current valuation snapshot with:
 
@@ -95,7 +94,7 @@ Use peer comparisons only if the peer set is genuinely comparable.
 ### Catalysts
 
 - Next earnings date
-- Memory cycle or export cycle turns
+- Export-cycle or end-market turns
 - Shareholder return policy changes
 - Treasury share cancellation or buybacks
 - Regulatory decisions or policy support
@@ -126,8 +125,8 @@ Use the base checklist first, then add the relevant market checklist:
 
 - KRX growth stock: read `kr-market-checklists.md` and focus on reinvestment quality, margin path, and expectation risk.
 - KRX value stock: read `kr-market-checklists.md` and focus on normalized earnings power, governance, and value-trap risk.
+- Exporter: read `kr-market-checklists.md` and focus on FX sensitivity, customer concentration, and end-market cyclicality.
 - Holding company or restructuring setup: read `kr-market-checklists.md` and focus on look-through value and discount persistence.
-- Korean ETF: read `kr-market-checklists.md` and focus on index construction, liquidity, fees, NAV gap, and derivatives use.
 
 ## Comparison Checklist
 
@@ -139,7 +138,7 @@ When comparing tickers:
 - Add chart setup or momentum only if it materially changes timing or risk-reward.
 - Distinguish quality from price.
 - Show why the cheaper stock may deserve to be cheaper.
-- End with "best business", "cheapest optically", and "best risk/reward" if useful.
+- End with `best business`, `cheapest optically`, and `best risk/reward` if useful.
 
 ## Event-Driven Checklist
 
