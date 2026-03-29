@@ -144,6 +144,67 @@ node scripts/fetch-kr-chart.js --ticker 066970 --market kosdaq --range 1y --outp
 node scripts/chart-basics.js --input /tmp/066970-chart.json --png-out analysis-example/kr/assets/엘앤에프-chart.png --image-path assets/엘앤에프-chart.png
 ```
 
+## `scripts/portfolio-snapshot.js`
+
+Run:
+
+```text
+node scripts/portfolio-snapshot.js --input <path-to-json> [--output <path-to-md>]
+```
+
+Expected JSON (array of position objects):
+
+```json
+[
+  {
+    "ticker": "066970.KQ",
+    "name": "L&F",
+    "quantity": 100,
+    "avgCost": 95000
+  },
+  {
+    "ticker": "001120.KS",
+    "name": "LG CNS",
+    "quantity": 200,
+    "avgCost": 61800
+  }
+]
+```
+
+Required fields per position:
+
+- `ticker` — Yahoo Finance symbol (`066970.KQ`) or bare six-digit KRX code (`066970`). Bare codes are tried with `.KS` then `.KQ` automatically.
+- `name` — Korean company name displayed in the output table.
+- `quantity` — Number of shares held (integer).
+- `avgCost` — Average acquisition price per share in KRW.
+
+Optional fields per position:
+
+- `currentPrice` — Override the fetched closing price with a known value.
+- `unrealizedPnl` — Override the computed P&L with a value already known (e.g. from a broker statement).
+
+Use it to compute:
+
+- SMA20 and SMA20 deviation from the last 20 closing prices fetched via Yahoo Finance
+- RSI14 using the Wilder method from 30 days of daily bars
+- Unrealized P&L and return % per position
+- A dated markdown snapshot table with one row per position
+- Status flags: ⚠️ RSI 과매수 (RSI > 70), ⚠️ RSI 과매도 (RSI < 30), ⚠️ SMA20 +5%↑, ⚠️ SMA20 −5%↓, 정상
+
+Input rules:
+
+- Provide at least 3 positions; the script works with any count but the table is most useful with 5+.
+- Use `--output` to write the snapshot to a file (e.g. `analysis-example/kr/portfolio-snapshot.md`); the script also always prints to stdout.
+- When `currentPrice` is not provided, the most recent closing price from the Yahoo Finance fetch is used.
+
+Example:
+
+```text
+node skills/kr-stock-analysis/scripts/portfolio-snapshot.js \
+  --input examples/kr/portfolio-sample.json \
+  --output analysis-example/kr/portfolio-snapshot.md
+```
+
 ## `scripts/valuation-bands.js`
 
 Run:

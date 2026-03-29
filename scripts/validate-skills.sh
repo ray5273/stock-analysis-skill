@@ -35,7 +35,7 @@ find "$SKILLS_ROOT" -mindepth 1 -maxdepth 1 -type d | sort | while IFS= read -r 
     fi
 
     case " $SECTOR_SKILLS " in
-        *" $SKILL_NAME "*) 
+        *" $SKILL_NAME "*)
             if [ ! -f "$SKILL_DIR/references/workflow.md" ]; then
                 echo "Missing required sector reference file: $SKILL_DIR/references/workflow.md" >&2
                 exit 1
@@ -59,14 +59,13 @@ if (!pattern.test(text)) {
 ' "$SKILL_DIR/SKILL.md"
 
     find "$SKILL_DIR" -type f -name "*.js" | sort | while IFS= read -r JS_FILE; do
-        REL_JS_FILE=${JS_FILE#"$REPO_ROOT"/}
-        node --check "$REL_JS_FILE" >/dev/null
+        node --check "$JS_FILE" >/dev/null
     done
 
     if [ "$SKILL_NAME" = "kr-stock-analysis" ]; then
-        CHART_SAMPLE="examples/kr-stock-analysis/chart-sample.json"
-        CHART_SCRIPT="skills/kr-stock-analysis/scripts/chart-basics.js"
-        FETCH_SCRIPT="skills/kr-stock-analysis/scripts/fetch-kr-chart.js"
+        CHART_SAMPLE="$REPO_ROOT/examples/kr-stock-analysis/chart-sample.json"
+        CHART_SCRIPT="$SKILL_DIR/scripts/chart-basics.js"
+        FETCH_SCRIPT="$SKILL_DIR/scripts/fetch-kr-chart.js"
         CHART_OUT="$TMP_ROOT/$SKILL_NAME-chart.png"
 
         node "$CHART_SCRIPT" --input "$CHART_SAMPLE" --png-out "$CHART_OUT" --image-path "chart.png" >/dev/null
@@ -79,16 +78,16 @@ if (!pattern.test(text)) {
     fi
 
     if [ "$SKILL_NAME" = "kr-analysis-update" ]; then
-        BASELINE_SCRIPT="skills/kr-analysis-update/scripts/extract-report-baseline.js"
-        NORMALIZE_SCRIPT="skills/kr-analysis-update/scripts/normalize-update-log.js"
-        REPORT_SAMPLE="analysis-example/kr/LG CNS.md"
+        BASELINE_SCRIPT="$SKILL_DIR/scripts/extract-report-baseline.js"
+        NORMALIZE_SCRIPT="$SKILL_DIR/scripts/normalize-update-log.js"
+        REPORT_SAMPLE="$REPO_ROOT/analysis-example/kr/LG CNS.md"
         UPDATE_JSON="$TMP_ROOT/kr-analysis-update.json"
         UPDATE_JSON_REPLACE="$TMP_ROOT/kr-analysis-update-replace.json"
         UPDATED_REPORT="$TMP_ROOT/kr-analysis-update.md"
         BASELINE_OUT="$TMP_ROOT/kr-analysis-update-baseline.json"
 
         node "$BASELINE_SCRIPT" --input "$REPORT_SAMPLE" --output "$BASELINE_OUT" >/dev/null
-        if ! rg -q '"memoDate": "2026-03-20"' "$BASELINE_OUT"; then
+        if ! grep -q '"memoDate": "2026-03-20"' "$BASELINE_OUT"; then
             echo "Baseline parser did not capture the memo date." >&2
             exit 1
         fi
@@ -154,15 +153,19 @@ EOF
         node "$NORMALIZE_SCRIPT" --input "$UPDATE_JSON" --report "$UPDATED_REPORT" >/dev/null
         node "$NORMALIZE_SCRIPT" --input "$UPDATE_JSON_REPLACE" --report "$UPDATED_REPORT" >/dev/null
 
-        if [ "$(rg -c '^### 2026-03-27 Update$' "$UPDATED_REPORT")" -ne 1 ]; then
+        if [ "$(grep -c '^### 2026-03-27 Update$' "$UPDATED_REPORT")" -ne 1 ]; then
             echo "Expected exactly one dated update block after replacement." >&2
             exit 1
         fi
-        if ! rg -q 'Replacement update for the same date\.' "$UPDATED_REPORT"; then
+        if ! grep -q '^최근 업데이트일: 2026-03-27$' "$UPDATED_REPORT"; then
+            echo "Expected 최근 업데이트일 to be inserted or refreshed." >&2
+            exit 1
+        fi
+        if ! grep -q 'Replacement update for the same date\.' "$UPDATED_REPORT"; then
             echo "Expected replacement content to exist in updated report." >&2
             exit 1
         fi
-        if rg -q 'Validation placeholder source' "$UPDATED_REPORT"; then
+        if grep -q 'Validation placeholder source' "$UPDATED_REPORT"; then
             echo "Expected previous same-date content to be replaced, not duplicated." >&2
             exit 1
         fi

@@ -6,3 +6,5 @@ Thumbs.db
 .idea/
 .vscode/
 node_modules/
+.mcp.json
+.env.kiwoom
