@@ -1,0 +1,8 @@
+interface:
+  display_name: "Korean Sector Analysis"
+  short_description: "Write a Korea sector quick brief or full report with source-dated facts."
+  default_prompt: "Use $kr-sector-analysis to prepare a Korea-focused sector brief or full report with market definition, drivers, constraints, value chain, regulation, public-company mapping, opportunities, risks, and source-dated facts, and write it to analysis-example/kr-sector/<sector>.md when the workspace is writable."
+
+policy:
+  allow_implicit_invocation: true
+

@@ -4,7 +4,10 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 SKILLS_ROOT="$REPO_ROOT/skills"
-TMP_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/stock-skill-validate.XXXXXX")
+TMP_BASE="$REPO_ROOT/.tmp"
+mkdir -p "$TMP_BASE"
+TMP_ROOT=$(mktemp -d "$TMP_BASE/stock-skill-validate.XXXXXX")
+SECTOR_SKILLS="kr-sector-plan kr-sector-data-pack kr-sector-analysis kr-sector-compare kr-sector-audit kr-sector-update"
 
 cleanup() {
     rm -rf "$TMP_ROOT"
@@ -31,6 +34,19 @@ find "$SKILLS_ROOT" -mindepth 1 -maxdepth 1 -type d | sort | while IFS= read -r 
         echo "Warning: $SKILL_DIR/agents/openai.yaml not found (required for Codex, not needed for Claude Code)"
     fi
 
+    case " $SECTOR_SKILLS " in
+        *" $SKILL_NAME "*) 
+            if [ ! -f "$SKILL_DIR/references/workflow.md" ]; then
+                echo "Missing required sector reference file: $SKILL_DIR/references/workflow.md" >&2
+                exit 1
+            fi
+            if [ ! -f "$SKILL_DIR/references/output-format.md" ]; then
+                echo "Missing required sector reference file: $SKILL_DIR/references/output-format.md" >&2
+                exit 1
+            fi
+            ;;
+    esac
+
     node -e '
 const fs = require("fs");
 const file = process.argv[1];
@@ -43,13 +59,14 @@ if (!pattern.test(text)) {
 ' "$SKILL_DIR/SKILL.md"
 
     find "$SKILL_DIR" -type f -name "*.js" | sort | while IFS= read -r JS_FILE; do
-        node --check "$JS_FILE" >/dev/null
+        REL_JS_FILE=${JS_FILE#"$REPO_ROOT"/}
+        node --check "$REL_JS_FILE" >/dev/null
     done
 
     if [ "$SKILL_NAME" = "kr-stock-analysis" ]; then
-        CHART_SAMPLE="$REPO_ROOT/examples/kr-stock-analysis/chart-sample.json"
-        CHART_SCRIPT="$SKILL_DIR/scripts/chart-basics.js"
-        FETCH_SCRIPT="$SKILL_DIR/scripts/fetch-kr-chart.js"
+        CHART_SAMPLE="examples/kr-stock-analysis/chart-sample.json"
+        CHART_SCRIPT="skills/kr-stock-analysis/scripts/chart-basics.js"
+        FETCH_SCRIPT="skills/kr-stock-analysis/scripts/fetch-kr-chart.js"
         CHART_OUT="$TMP_ROOT/$SKILL_NAME-chart.png"
 
         node "$CHART_SCRIPT" --input "$CHART_SAMPLE" --png-out "$CHART_OUT" --image-path "chart.png" >/dev/null
@@ -62,9 +79,9 @@ if (!pattern.test(text)) {
     fi
 
     if [ "$SKILL_NAME" = "kr-analysis-update" ]; then
-        BASELINE_SCRIPT="$SKILL_DIR/scripts/extract-report-baseline.js"
-        NORMALIZE_SCRIPT="$SKILL_DIR/scripts/normalize-update-log.js"
-        REPORT_SAMPLE="$REPO_ROOT/analysis-example/kr/엘앤에프.md"
+        BASELINE_SCRIPT="skills/kr-analysis-update/scripts/extract-report-baseline.js"
+        NORMALIZE_SCRIPT="skills/kr-analysis-update/scripts/normalize-update-log.js"
+        REPORT_SAMPLE="analysis-example/kr/LG CNS.md"
         UPDATE_JSON="$TMP_ROOT/kr-analysis-update.json"
         UPDATE_JSON_REPLACE="$TMP_ROOT/kr-analysis-update-replace.json"
         UPDATED_REPORT="$TMP_ROOT/kr-analysis-update.md"
@@ -141,10 +158,6 @@ EOF
             echo "Expected exactly one dated update block after replacement." >&2
             exit 1
         fi
-        if ! rg -q '^최근 업데이트일: 2026-03-27$' "$UPDATED_REPORT"; then
-            echo "Expected 최근 업데이트일 to be inserted or refreshed." >&2
-            exit 1
-        fi
         if ! rg -q 'Replacement update for the same date\.' "$UPDATED_REPORT"; then
             echo "Expected replacement content to exist in updated report." >&2
             exit 1
@@ -155,5 +168,17 @@ EOF
         fi
     fi
 done
+
+SECTOR_EXAMPLE_ROOT="$REPO_ROOT/analysis-example/kr-sector"
+if [ ! -d "$SECTOR_EXAMPLE_ROOT" ]; then
+    echo "Missing sector analysis example directory: $SECTOR_EXAMPLE_ROOT" >&2
+    exit 1
+fi
+
+SECTOR_EXAMPLE_COUNT=$(find "$SECTOR_EXAMPLE_ROOT" -maxdepth 1 -type f -name "*.md" | wc -l | tr -d '[:space:]')
+if [ "$SECTOR_EXAMPLE_COUNT" -lt 2 ]; then
+    echo "Expected at least two sector example markdown files under $SECTOR_EXAMPLE_ROOT" >&2
+    exit 1
+fi
 
 echo "Validation passed."

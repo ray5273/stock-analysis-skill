@@ -1,0 +1,8 @@
+interface:
+  display_name: "Korean Sector Plan"
+  short_description: "Scope a Korea sector research request into a usable brief and outline."
+  default_prompt: "Use $kr-sector-plan to define the exact Korean sector, time horizon, decomposition axes, and deliverable mode, then produce an execution-ready research brief and outline."
+
+policy:
+  allow_implicit_invocation: true
+

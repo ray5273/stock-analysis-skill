@@ -1,6 +1,6 @@
-# Stock Analysis Skill
+# Stock And Sector Analysis Skill
 
-AI skills for U.S. and Korean stock analysis. Compatible with both **Codex** and **Claude Code** (Anthropic CLI).
+AI skills for U.S. and Korean stock analysis plus Korea-focused sector research. Compatible with both **Codex** and **Claude Code** (Anthropic CLI).
 
 Language docs:
 
@@ -12,16 +12,23 @@ Included skills:
 - `us-stock-analysis` for U.S. stocks and U.S.-listed ETFs
 - `kr-stock-analysis` for KRX-listed stocks and Korean ETFs
 - `kr-analysis-update` for dated follow-up updates to an existing Korean stock memo
+- `kr-sector-plan` for scoping Korea sector research into an execution-ready brief
+- `kr-sector-data-pack` for gathering structured sector fact packs before drafting
+- `kr-sector-analysis` for Korea sector quick briefs and full reports
+- `kr-sector-compare` for same-date Korea sector comparisons
+- `kr-sector-audit` for findings-first review of an existing Korea sector memo
+- `kr-sector-update` for dated incremental updates to an existing Korea sector memo
 
 ## How The Skills Work
 
-Both skills are designed to avoid stale-memory analysis.
+The skills are designed to avoid stale-memory analysis.
 
 Shared behavior:
 
-- They are invoked explicitly through `$us-stock-analysis`, `$kr-stock-analysis`, or `$kr-analysis-update` in Codex, and `/us-stock-analysis`, `/kr-stock-analysis`, or `/kr-analysis-update` in Claude Code.
-- They treat prices, valuation, filings, guidance, and news as time-sensitive, so the workflow starts by verifying current sources instead of relying on memory.
-- When the workspace is writable, the default deliverable is a markdown report file in `analysis-example/<market>/<company>.md`, not just a chat answer.
+- They are invoked explicitly through their skill names in Codex and Claude Code.
+- Stock skills treat prices, valuation, filings, guidance, and news as time-sensitive, so the workflow starts by verifying current sources instead of relying on memory.
+- Korea sector skills treat market metrics, policy changes, regulations, company exposure, and industry news as time-sensitive and keep source dates visible.
+- When the workspace is writable, the default deliverable is a markdown report file in `analysis-example/<market>/<company>.md` or `analysis-example/kr-sector/<sector>.md`, not just a chat answer.
 - The report file should stay synchronized with the final answer, with an explicit "as of" date.
 
 ### `us-stock-analysis`
@@ -92,6 +99,26 @@ Bundled helpers:
 - `scripts/extract-report-baseline.js` for parsing memo metadata, update dates, and existing source URLs
 - `scripts/normalize-update-log.js` for rendering a normalized dated update block and writing it back into the memo
 
+### Korea Sector Skills
+
+Primary instructions:
+
+- [skills/kr-sector-plan/SKILL.md](skills/kr-sector-plan/SKILL.md)
+- [skills/kr-sector-data-pack/SKILL.md](skills/kr-sector-data-pack/SKILL.md)
+- [skills/kr-sector-analysis/SKILL.md](skills/kr-sector-analysis/SKILL.md)
+- [skills/kr-sector-compare/SKILL.md](skills/kr-sector-compare/SKILL.md)
+- [skills/kr-sector-audit/SKILL.md](skills/kr-sector-audit/SKILL.md)
+- [skills/kr-sector-update/SKILL.md](skills/kr-sector-update/SKILL.md)
+
+Current behavior:
+
+1. `kr-sector-plan` converts a vague Korea sector request into a clear scope, output mode, and section outline.
+2. `kr-sector-data-pack` collects dated market metrics, policy events, regulation changes, value-chain facts, and representative public-company references.
+3. `kr-sector-analysis` writes either a `quick brief` or a `full report` under `analysis-example/kr-sector/<sector>.md`.
+4. `kr-sector-compare` keeps cross-sector comparisons on a same-date basis and ranks the setup only when the evidence supports it.
+5. `kr-sector-audit` reviews an existing memo with findings first, prioritizing source, date, and logic integrity over style comments.
+6. `kr-sector-update` preserves the original memo date, refreshes `최근 업데이트일`, and appends or replaces a dated block under `## Update Log`.
+
 ## Install
 
 ### Codex
@@ -158,6 +185,30 @@ Use $kr-stock-analysis to analyze 005930.KS with DART-based evidence, valuation,
 Use $kr-analysis-update to update analysis-example/kr/엘앤에프.md with company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file.
 ```
 
+```text
+Use $kr-sector-plan to scope a Korea data center sector report into a clean research brief with boundaries, key questions, and the right output mode.
+```
+
+```text
+Use $kr-sector-data-pack to gather a Korea-focused fact pack for the waste-battery sector with dated policy events, market metrics, and representative listed companies.
+```
+
+```text
+Use $kr-sector-analysis to write a Korea security-operations market report with market definition, drivers, constraints, value chain, regulation, company map, and source-dated facts.
+```
+
+```text
+Use $kr-sector-compare to compare Korean robotics and smart-factory sectors on a same-date basis and explain which setup has the cleaner listed exposure.
+```
+
+```text
+Use $kr-sector-audit to review analysis-example/kr-sector/국내 데이터센터.md for unsupported market claims, stale dates, and listed-exposure overreach.
+```
+
+```text
+Use $kr-sector-update to update analysis-example/kr-sector/국내 데이터센터.md with policy, regulation, and company developments after the memo date, and append a dated update block.
+```
+
 ### Claude Code
 
 ```text
@@ -172,11 +223,37 @@ Use $kr-analysis-update to update analysis-example/kr/엘앤에프.md with compa
 /kr-analysis-update update analysis-example/kr/엘앤에프.md with company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file.
 ```
 
+```text
+/kr-sector-plan scope a Korea data center sector report into a clean research brief with boundaries, key questions, and the right output mode.
+```
+
+```text
+/kr-sector-data-pack gather a Korea-focused fact pack for the waste-battery sector with dated policy events, market metrics, and representative listed companies.
+```
+
+```text
+/kr-sector-analysis write a Korea security-operations market report with market definition, drivers, constraints, value chain, regulation, company map, and source-dated facts.
+```
+
+```text
+/kr-sector-compare compare Korean robotics and smart-factory sectors on a same-date basis and explain which setup has the cleaner listed exposure.
+```
+
+```text
+/kr-sector-audit review analysis-example/kr-sector/국내 데이터센터.md for unsupported market claims, stale dates, and listed-exposure overreach.
+```
+
+```text
+/kr-sector-update update analysis-example/kr-sector/국내 데이터센터.md with policy, regulation, and company developments after the memo date, and append a dated update block.
+```
+
 ## Analysis Examples
 
 - [KR - 엘앤에프](analysis-example/kr/엘앤에프.md)
 - [KR - LG CNS](<analysis-example/kr/LG CNS.md>)
 - [KR - 대양전기공업](analysis-example/kr/대양전기공업.md)
+- [KR Sector - 국내 데이터센터](analysis-example/kr-sector/국내%20데이터센터.md)
+- [KR Sector - 국내 데이터센터 리서치 브리프](analysis-example/kr-sector/국내%20데이터센터-리서치브리프.md)
 
 ## Validation
 

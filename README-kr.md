@@ -1,6 +1,6 @@
-# Stock Analysis Skill
+# Stock And Sector Analysis Skill
 
-미국 주식과 한국 주식 분석용 AI 스킬 모음입니다. **Codex**와 **Claude Code**(Anthropic CLI) 둘 다 사용할 수 있습니다.
+미국 주식과 한국 주식 분석, 그리고 한국 섹터 리서치용 AI 스킬 모음입니다. **Codex**와 **Claude Code**(Anthropic CLI) 둘 다 사용할 수 있습니다.
 
 언어별 문서:
 
@@ -12,16 +12,23 @@
 - `us-stock-analysis`: 미국 상장 주식과 미국 상장 ETF 분석
 - `kr-stock-analysis`: KRX 상장 주식과 한국 ETF 분석
 - `kr-analysis-update`: 기존 한국 주식 메모에 기준일 이후 업데이트를 누적 반영
+- `kr-sector-plan`: 한국 섹터 리서치 범위를 실행용 브리프로 정리
+- `kr-sector-data-pack`: 섹터 보고서 작성 전에 구조화된 팩트팩 수집
+- `kr-sector-analysis`: 한국 섹터 quick brief 또는 full report 작성
+- `kr-sector-compare`: 같은 날짜 기준의 한국 섹터 비교
+- `kr-sector-audit`: 기존 한국 섹터 문서의 소스·날짜·논리 검토
+- `kr-sector-update`: 기존 한국 섹터 메모의 증분 업데이트
 
 ## 스킬 동작 방식
 
-두 스킬 모두 오래된 기억에 의존하지 않고, 최신 근거를 확인한 뒤 분석하는 흐름으로 설계되어 있습니다.
+스킬들은 오래된 기억에 의존하지 않고, 최신 근거를 확인한 뒤 분석하는 흐름으로 설계되어 있습니다.
 
 공통 동작:
 
-- Codex에서는 `$us-stock-analysis`, `$kr-stock-analysis`, `$kr-analysis-update`로 호출하고, Claude Code에서는 `/us-stock-analysis`, `/kr-stock-analysis`, `/kr-analysis-update`로 호출합니다.
-- 가격, 밸류에이션, 공시, 가이던스, 뉴스는 시점 민감 정보로 취급하므로, 분석 전에 최신 소스를 다시 확인합니다.
-- 워크스페이스가 쓰기 가능하면 답변만 끝내지 않고 `analysis-example/<market>/<company>.md` 경로에 마크다운 리포트를 생성하거나 갱신하는 것이 기본 동작입니다.
+- Codex와 Claude Code에서는 각 스킬 이름으로 명시 호출합니다.
+- 주식 스킬은 가격, 밸류에이션, 공시, 가이던스, 뉴스를 시점 민감 정보로 취급하므로 분석 전에 최신 소스를 다시 확인합니다.
+- 한국 섹터 스킬은 시장 지표, 정책 변화, 규제, 상장사 노출도, 업계 뉴스를 시점 민감 정보로 취급하고 각 수치의 날짜를 드러냅니다.
+- 워크스페이스가 쓰기 가능하면 답변만 끝내지 않고 `analysis-example/<market>/<company>.md` 또는 `analysis-example/kr-sector/<sector>.md` 경로에 마크다운 리포트를 생성하거나 갱신하는 것이 기본 동작입니다.
 - 최종 답변과 리포트 파일은 같은 기준일자를 공유하도록 맞추며, 문서 안에 명시적인 `as of` 날짜를 남깁니다.
 
 ### `us-stock-analysis`
@@ -92,6 +99,26 @@
 - `scripts/extract-report-baseline.js`: 기존 메모의 기준일, 업데이트 날짜, source URL 추출
 - `scripts/normalize-update-log.js`: 날짜별 업데이트 블록 생성 및 기존 메모에 반영
 
+### `kr-sector-*` 스킬 세트
+
+주요 지침 문서:
+
+- [skills/kr-sector-plan/SKILL.md](skills/kr-sector-plan/SKILL.md)
+- [skills/kr-sector-data-pack/SKILL.md](skills/kr-sector-data-pack/SKILL.md)
+- [skills/kr-sector-analysis/SKILL.md](skills/kr-sector-analysis/SKILL.md)
+- [skills/kr-sector-compare/SKILL.md](skills/kr-sector-compare/SKILL.md)
+- [skills/kr-sector-audit/SKILL.md](skills/kr-sector-audit/SKILL.md)
+- [skills/kr-sector-update/SKILL.md](skills/kr-sector-update/SKILL.md)
+
+현재 동작 흐름:
+
+1. `kr-sector-plan`은 모호한 한국 섹터 요청을 범위, 출력 모드, 핵심 질문, 섹션 outline으로 정리합니다.
+2. `kr-sector-data-pack`은 시장 정의, 날짜가 붙은 지표, 정책 이벤트, 규제 변화, 밸류체인 팩트, 대표 상장사 노출도를 구조화해 모읍니다.
+3. `kr-sector-analysis`는 `quick brief` 또는 `full report`를 `analysis-example/kr-sector/<sector>.md` 아래에 작성합니다.
+4. `kr-sector-compare`는 섹터 비교를 같은 날짜 기준으로 맞추고, 근거가 있을 때만 우열을 정리합니다.
+5. `kr-sector-audit`는 기존 메모를 findings-first 형식으로 검토하며, 문체보다 소스·날짜·논리 오류를 우선 봅니다.
+6. `kr-sector-update`는 원래 `기준일`을 보존하고 `최근 업데이트일`과 `## Update Log`만 증분 갱신합니다.
+
 ## 설치
 
 ### Codex
@@ -158,6 +185,30 @@ Use $kr-stock-analysis to analyze 005930.KS with DART-based evidence, valuation,
 Use $kr-analysis-update to update analysis-example/kr/엘앤에프.md with company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file.
 ```
 
+```text
+Use $kr-sector-plan to scope a Korea data center sector report into a clean research brief with boundaries, key questions, and the right output mode.
+```
+
+```text
+Use $kr-sector-data-pack to gather a Korea-focused fact pack for the waste-battery sector with dated policy events, market metrics, and representative listed companies.
+```
+
+```text
+Use $kr-sector-analysis to write a Korea security-operations market report with market definition, drivers, constraints, value chain, regulation, company map, and source-dated facts.
+```
+
+```text
+Use $kr-sector-compare to compare Korean robotics and smart-factory sectors on a same-date basis and explain which setup has the cleaner listed exposure.
+```
+
+```text
+Use $kr-sector-audit to review analysis-example/kr-sector/국내 데이터센터.md for unsupported market claims, stale dates, and listed-exposure overreach.
+```
+
+```text
+Use $kr-sector-update to update analysis-example/kr-sector/국내 데이터센터.md with policy, regulation, and company developments after the memo date, and append a dated update block.
+```
+
 ### Claude Code
 
 ```text
@@ -172,11 +223,37 @@ Use $kr-analysis-update to update analysis-example/kr/엘앤에프.md with compa
 /kr-analysis-update update analysis-example/kr/엘앤에프.md with company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file.
 ```
 
+```text
+/kr-sector-plan scope a Korea data center sector report into a clean research brief with boundaries, key questions, and the right output mode.
+```
+
+```text
+/kr-sector-data-pack gather a Korea-focused fact pack for the waste-battery sector with dated policy events, market metrics, and representative listed companies.
+```
+
+```text
+/kr-sector-analysis write a Korea security-operations market report with market definition, drivers, constraints, value chain, regulation, company map, and source-dated facts.
+```
+
+```text
+/kr-sector-compare compare Korean robotics and smart-factory sectors on a same-date basis and explain which setup has the cleaner listed exposure.
+```
+
+```text
+/kr-sector-audit review analysis-example/kr-sector/국내 데이터센터.md for unsupported market claims, stale dates, and listed-exposure overreach.
+```
+
+```text
+/kr-sector-update update analysis-example/kr-sector/국내 데이터센터.md with policy, regulation, and company developments after the memo date, and append a dated update block.
+```
+
 ## 분석 예시
 
 - [KR - 엘앤에프](analysis-example/kr/엘앤에프.md)
 - [KR - LG CNS](<analysis-example/kr/LG CNS.md>)
 - [KR - 대양전기공업](analysis-example/kr/대양전기공업.md)
+- [KR Sector - 국내 데이터센터](analysis-example/kr-sector/국내%20데이터센터.md)
+- [KR Sector - 국내 데이터센터 리서치 브리프](analysis-example/kr-sector/국내%20데이터센터-리서치브리프.md)
 
 ## 검증
 
