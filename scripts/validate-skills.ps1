@@ -157,14 +157,21 @@ foreach ($skillDir in $skillDirs) {
         node $normalizeScript --input $updateJsonReplace --report $updatedReport | Out-Null
 
         $updatedText = Get-Content -Raw -Encoding utf8 $updatedReport
-        $headingCount = ([regex]::Matches($updatedText, '^### 2026-03-27 Update$', 'Multiline')).Count
+        $normalizedUpdatedText = $updatedText -replace "`r`n?", "`n"
+        $recentUpdateLabel = [string]::Concat([char[]](0xCD5C, 0xADFC, 0x20, 0xC5C5, 0xB370, 0xC774, 0xD2B8, 0xC77C, 0x3A))
+        $headingCount = ([regex]::Matches($normalizedUpdatedText, '^### 2026-03-27 Update$', 'Multiline')).Count
+        $recentUpdatePattern = "^{0}\s*2026-03-27$" -f [regex]::Escape($recentUpdateLabel)
+        $recentUpdateCount = ([regex]::Matches($normalizedUpdatedText, $recentUpdatePattern, 'Multiline')).Count
         if ($headingCount -ne 1) {
             Write-Error "Expected exactly one dated update block after replacement."
         }
-        if ($updatedText -notmatch 'Replacement update for the same date\.') {
+        if ($recentUpdateCount -ne 1) {
+            Write-Error "Expected recent update label to be inserted or refreshed."
+        }
+        if ($normalizedUpdatedText -notmatch 'Replacement update for the same date\.') {
             Write-Error "Expected replacement content to exist in updated report."
         }
-        if ($updatedText -match 'Validation placeholder source') {
+        if ($normalizedUpdatedText -match 'Validation placeholder source') {
             Write-Error "Expected previous same-date content to be replaced, not duplicated."
         }
     }
