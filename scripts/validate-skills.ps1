@@ -89,7 +89,7 @@ foreach ($skillDir in $skillDirs) {
         if (-not $skillMd.Contains("## Source Roles")) {
             Write-Error "Expected kr-stock-analysis skill rules to define source roles."
         }
-        if (-not $skillMd.Contains("For a `full memo`, add `Street / Alternative Views` before valuation and end with `Additional Research Questions`")) {
+        if (-not $skillMd.Contains('For a `full memo`, add `Street / Alternative Views` before valuation and end with `Additional Research Questions`')) {
             Write-Error "Expected kr-stock-analysis skill rules to scope Street / Alternative Views and Additional Research Questions to full memos."
         }
 
