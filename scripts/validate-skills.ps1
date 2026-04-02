@@ -79,17 +79,17 @@ foreach ($skillDir in $skillDirs) {
         node $fetchScript --help | Out-Null
 
         $stockOutputFormat = Get-Content -Raw ".\skills\kr-stock-analysis\references\output-format.md"
-        if ($stockOutputFormat -notmatch '(?m)^5\. Street / Alternative Views$') {
+        if (-not $stockOutputFormat.Contains("5. Street / Alternative Views")) {
             Write-Error "Expected full memo output format to include Street / Alternative Views."
         }
-        if ($stockOutputFormat -notmatch '(?m)^13\. Additional Research Questions$') {
+        if (-not $stockOutputFormat.Contains("13. Additional Research Questions")) {
             Write-Error "Expected full memo output format to include Additional Research Questions."
         }
 
-        if ($skillMd -notmatch '(?m)^## Source Roles$') {
+        if (-not $skillMd.Contains("## Source Roles")) {
             Write-Error "Expected kr-stock-analysis skill rules to define source roles."
         }
-        if ($skillMd -notmatch 'For a `full memo`, add `Street / Alternative Views` before valuation and end with `Additional Research Questions`') {
+        if (-not $skillMd.Contains("For a `full memo`, add `Street / Alternative Views` before valuation and end with `Additional Research Questions`")) {
             Write-Error "Expected kr-stock-analysis skill rules to scope Street / Alternative Views and Additional Research Questions to full memos."
         }
 
@@ -99,10 +99,10 @@ foreach ($skillDir in $skillDirs) {
             ".\analysis-example\kr\대양전기공업.md"
         ) | ForEach-Object {
             $reportText = Get-Content -Raw -Encoding utf8 $_
-            if ($reportText -notmatch '(?m)^## Street / Alternative Views$') {
+            if (-not $reportText.Contains("## Street / Alternative Views")) {
                 Write-Error "Expected stock memo example to include Street / Alternative Views: $_"
             }
-            if ($reportText -notmatch '(?m)^## Additional Research Questions$') {
+            if (-not $reportText.Contains("## Additional Research Questions")) {
                 Write-Error "Expected stock memo example to include Additional Research Questions: $_"
             }
         }
@@ -110,12 +110,12 @@ foreach ($skillDir in $skillDirs) {
 
     if ($skillDir.Name -eq "kr-stock-data-pack") {
         $dataPackWorkflow = Get-Content -Raw ".\skills\kr-stock-data-pack\references\workflow.md"
-        if ($dataPackWorkflow -notmatch '(?m)^## Source Roles$') {
+        if (-not $dataPackWorkflow.Contains("## Source Roles")) {
             Write-Error "Expected kr-stock-data-pack workflow to define source roles."
         }
 
         $dataPackOutputFormat = Get-Content -Raw ".\skills\kr-stock-data-pack\references\output-format.md"
-        if ($dataPackOutputFormat -notmatch '(?m)^## External Views$') {
+        if (-not $dataPackOutputFormat.Contains("## External Views")) {
             Write-Error "Expected kr-stock-data-pack output format to include External Views."
         }
     }
