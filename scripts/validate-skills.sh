@@ -75,6 +75,53 @@ if (!pattern.test(text)) {
         fi
 
         node "$FETCH_SCRIPT" --help >/dev/null
+
+        if ! grep -q '^5\. Street / Alternative Views$' "$SKILL_DIR/references/output-format.md"; then
+            echo "Expected full memo output format to include Street / Alternative Views." >&2
+            exit 1
+        fi
+
+        if ! grep -q '^13\. Additional Research Questions$' "$SKILL_DIR/references/output-format.md"; then
+            echo "Expected full memo output format to include Additional Research Questions." >&2
+            exit 1
+        fi
+
+        if ! grep -q '^## Source Roles$' "$SKILL_DIR/SKILL.md"; then
+            echo "Expected kr-stock-analysis skill rules to define source roles." >&2
+            exit 1
+        fi
+
+        if ! grep -q 'For a `full memo`, add `Street / Alternative Views` before valuation and end with `Additional Research Questions`' "$SKILL_DIR/SKILL.md"; then
+            echo "Expected kr-stock-analysis skill rules to scope Street / Alternative Views and Additional Research Questions to full memos." >&2
+            exit 1
+        fi
+
+        for REPORT_SAMPLE in \
+            "$REPO_ROOT/analysis-example/kr/LG CNS.md" \
+            "$REPO_ROOT/analysis-example/kr/엘앤에프.md" \
+            "$REPO_ROOT/analysis-example/kr/대양전기공업.md"
+        do
+            if ! grep -q '^## Street / Alternative Views$' "$REPORT_SAMPLE"; then
+                echo "Expected stock memo example to include Street / Alternative Views: $REPORT_SAMPLE" >&2
+                exit 1
+            fi
+            if ! grep -q '^## Additional Research Questions$' "$REPORT_SAMPLE"; then
+                echo "Expected stock memo example to include Additional Research Questions: $REPORT_SAMPLE" >&2
+                exit 1
+            fi
+        done
+    fi
+
+    if [ "$SKILL_NAME" = "kr-stock-data-pack" ]; then
+        if ! grep -q '^## Source Roles$' "$SKILL_DIR/references/workflow.md"; then
+            echo "Expected kr-stock-data-pack workflow to define source roles." >&2
+            exit 1
+        fi
+
+        if ! grep -q '^## External Views$' "$SKILL_DIR/references/output-format.md"; then
+            echo "Expected kr-stock-data-pack output format to include External Views." >&2
+            exit 1
+        fi
     fi
 
     if [ "$SKILL_NAME" = "kr-stock-update" ]; then
@@ -87,14 +134,14 @@ if (!pattern.test(text)) {
         BASELINE_OUT="$TMP_ROOT/kr-stock-update-baseline.json"
 
         node "$BASELINE_SCRIPT" --input "$REPORT_SAMPLE" --output "$BASELINE_OUT" >/dev/null
-        if ! grep -q '"memoDate": "2026-03-20"' "$BASELINE_OUT"; then
+        if ! grep -q '"memoDate": "2026-04-02"' "$BASELINE_OUT"; then
             echo "Baseline parser did not capture the memo date." >&2
             exit 1
         fi
 
         cat > "$UPDATE_JSON" <<'EOF'
 {
-  "date": "2026-03-27",
+  "date": "2026-04-10",
   "whatHappened": [
     "No material company-specific update found after the memo date."
   ],
@@ -114,7 +161,7 @@ if (!pattern.test(text)) {
     {
       "label": "Validation placeholder source",
       "url": "https://example.com/placeholder",
-      "date": "2026-03-27"
+      "date": "2026-04-10"
     }
   ]
 }
@@ -122,7 +169,7 @@ EOF
 
         cat > "$UPDATE_JSON_REPLACE" <<'EOF'
 {
-  "date": "2026-03-27",
+  "date": "2026-04-10",
   "whatHappened": [
     "Replacement update for the same date."
   ],
@@ -142,7 +189,7 @@ EOF
     {
       "label": "Validation replacement source",
       "url": "https://example.com/replacement",
-      "date": "2026-03-27"
+      "date": "2026-04-10"
     }
   ]
 }
@@ -153,11 +200,11 @@ EOF
         node "$NORMALIZE_SCRIPT" --input "$UPDATE_JSON" --report "$UPDATED_REPORT" >/dev/null
         node "$NORMALIZE_SCRIPT" --input "$UPDATE_JSON_REPLACE" --report "$UPDATED_REPORT" >/dev/null
 
-        if [ "$(grep -c '^### 2026-03-27 Update$' "$UPDATED_REPORT")" -ne 1 ]; then
+        if [ "$(grep -c '^### 2026-04-10 Update$' "$UPDATED_REPORT")" -ne 1 ]; then
             echo "Expected exactly one dated update block after replacement." >&2
             exit 1
         fi
-        if ! grep -q '^최근 업데이트일: 2026-03-27$' "$UPDATED_REPORT"; then
+        if ! grep -q '^최근 업데이트일: 2026-04-10$' "$UPDATED_REPORT"; then
             echo "Expected 최근 업데이트일 to be inserted or refreshed." >&2
             exit 1
         fi
