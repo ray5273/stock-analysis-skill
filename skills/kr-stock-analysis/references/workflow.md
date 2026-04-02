@@ -1,16 +1,21 @@
 # Workflow Reference
 
-## Source Order
+## Source Roles
 
-Use this order unless the user explicitly wants a faster but lighter answer:
+Use a blended-source workflow, but keep source roles explicit:
 
-1. Latest DART filing, business report, quarterly report, audit report, or material disclosure
-2. Latest KRX disclosure, company IR deck, earnings release, and conference call materials
-3. Investor presentation, company website disclosures, or governance materials
-4. Recent company news or exchange notices relevant to the question
-5. Market data pages or reputable financial summaries for quick ratio checks
+1. Primary company sources
+   Latest DART filing, quarterly report, business report, audit report, KRX disclosure, IR deck, governance material, or shareholder-return disclosure. Use these to confirm material numbers and formal facts.
+2. Sell-side and transcript summaries
+   Brokerage notes, earnings-briefing summaries, and transcript recaps. Use these to surface what the market is focusing on, how peers are framed, and where estimates or narratives diverge.
+3. Specialist media and industry reporting
+   Reputable financial media, trade press, and specialist interviews. Use these for competitive context, customer references, or sector-specific debate that the company does not spell out cleanly.
+4. Independent long-form analysis
+   Detailed blogs, newsletters, or analyst-style writeups. Use these as idea sources and stress tests, not as a substitute for primary-source verification.
+5. Market-data pages
+   Use these for quick ratio checks, price context, and consensus screens when the numbers are clearly dated.
 
-If a number matters to the conclusion, trace it back to a primary source when possible.
+If a number matters to the conclusion, trace it back to a primary source when possible. If you cannot, mark it as `street inference`, `media report`, or `unverified`.
 
 ## Single-Stock Checklist
 
@@ -37,6 +42,18 @@ If a number matters to the conclusion, trace it back to a primary source when po
 - Check leverage, liquidity, debt maturity, lease burden, and capex needs.
 - Check treasury shares, dilution, dividends, buybacks, and cancellation behavior.
 - Check segment mix, geography mix, and customer concentration where disclosed.
+
+### External Views Scan
+
+- Before finalizing a full memo, scan for outside views that go beyond the company IR narrative.
+- Prefer at least one sell-side source when coverage exists, then add specialist media or independent analysis if they materially sharpen the debate.
+- Pull only the high-signal takeaways:
+  - what the market thinks matters most now
+  - where interpretation diverges from management framing
+  - what non-company sources say about peer positioning, customer quality, or end-market risk
+  - which claims are still not verified by filings
+- If a secondary source restates a number that already exists in filings, cite the filing for the number and use the secondary source only for interpretation.
+- Do not fill the section with repetitive newsroom summaries from the company itself.
 
 ### Governance and Structure
 
@@ -119,6 +136,32 @@ State:
 - Key metrics to watch next
 - What would invalidate the thesis
 
+### Street / Alternative Views For Full Memos
+
+- Add this section after `What The Latest Results Say` and before valuation.
+- Group the takeaways into:
+  - common street view
+  - where the market is split
+  - what looks ahead of the filing
+- Tag claims when useful:
+  - `Confirmed by filing`
+  - `Street view`
+  - `Specialist media`
+  - `Independent view`
+  - `Not separately disclosed`
+- If outside sources conflict with company framing, show the conflict instead of forcing one side into the main thesis.
+- Use this section to seed `Additional Research Questions` when outside sources expose a real evidence gap.
+
+### Evidence Gaps And Follow-Up Questions For Full Memos
+
+- After drafting the memo, classify open points into `verified`, `inferred`, `not disclosed`, and `still unverified`.
+- Promote only the highest-impact gaps into `Additional Research Questions`.
+- Prioritize gaps tied to valuation, earnings durability, governance, customer concentration, capital allocation, or rerating triggers.
+- Prioritize unresolved outside claims when sell-side or independent analysis makes them central to the market debate.
+- Phrase each item as a concrete question that another analyst could answer from the next DART filing, IR deck, earnings release, shareholder meeting, or company-specific news flow.
+- Add one short line on why each question matters to the thesis.
+- Do not restate catalysts, risks, or `what to watch next` items unless they expose a current evidence gap.
+
 ## Style-Specific Routing
 
 Use the base checklist first, then add the relevant market checklist:
@@ -159,5 +202,10 @@ Use this flow for pre-earnings and post-earnings requests:
 - Writing a technical read without enough price history or without saying the chart evidence is limited
 - Ignoring treasury shares or holding-company structure
 - Treating management commentary as fact without checking reported numbers
+- Letting company newsroom releases dominate the memo when outside debate is available
+- Treating one broker note, one media article, or one blog as confirmed fact
+- Copying a secondary-source number into the memo without saying whether the filing confirms it
 - Giving a target price with false precision
 - Ignoring governance risk because valuation looks cheap
+- Ending a full memo without surfacing the highest-impact unresolved questions
+- Filling `Additional Research Questions` with generic diligence prompts or repeated catalysts

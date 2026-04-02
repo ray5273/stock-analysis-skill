@@ -11,8 +11,8 @@
 
 - `us-stock-analysis`: 미국 상장 주식과 미국 상장 ETF 분석
 - `kr-stock-plan`: 한국 주식 리서치 범위를 실행용 브리프로 정리
-- `kr-stock-data-pack`: 종목 메모 작성 전에 구조화된 팩트팩 수집
-- `kr-stock-analysis`: 한국 주식 quick view, full memo, 이벤트 노트, pair compare 작성
+- `kr-stock-data-pack`: 종목 메모 작성 전에 구조화된 팩트팩과 외부 관점 입력값 수집
+- `kr-stock-analysis`: 한국 주식 quick view, full memo, 이벤트 노트, pair compare 작성과 외부 관점 요약, 후속 리서치 질문 생성
 - `kr-stock-update`: 기존 한국 주식 메모에 기준일 이후 업데이트를 누적 반영
 - `kr-portfolio-monitor`: 키움 REST API 기반 국내주식 포트폴리오 스냅샷
 - `kr-sector-plan`: 한국 섹터 리서치 범위를 실행용 브리프로 정리
@@ -54,13 +54,14 @@
 - [skills/kr-stock-plan/SKILL.md](skills/kr-stock-plan/SKILL.md)
 - [skills/kr-stock-data-pack/SKILL.md](skills/kr-stock-data-pack/SKILL.md)
 - [skills/kr-stock-analysis/SKILL.md](skills/kr-stock-analysis/SKILL.md)
+- [skills/kr-stock-analysis/references/blended-source-notes.md](skills/kr-stock-analysis/references/blended-source-notes.md)
 - [skills/kr-stock-update/SKILL.md](skills/kr-stock-update/SKILL.md)
 
 현재 동작:
 
 1. `kr-stock-plan`은 모호한 종목 요청을 정확한 종목, 주식 종류, 기간, 출력 모드가 담긴 브리프로 정리합니다.
-2. `kr-stock-data-pack`은 가격 기준일, 공시, 실적, 거버넌스, 밸류 입력값, 차트 입력값을 구조화해서 모읍니다.
-3. `kr-stock-analysis`는 KRX 상장 주식 기준으로 `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, `pair compare`를 작성합니다.
+2. `kr-stock-data-pack`은 가격 기준일, 공시, 실적, 거버넌스, 밸류 입력값, 차트 입력값, 필요할 때는 증권사·전문매체·독립 분석의 외부 관점도 구조화해서 모읍니다.
+3. `kr-stock-analysis`는 KRX 상장 주식 기준으로 `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, `pair compare`를 작성하고, full memo에는 `Street / Alternative Views` 섹션과 현재 근거 공백에 연결된 후속 리서치 질문을 붙입니다.
 4. `kr-stock-update`는 기존 `기준일`을 보존하고 `최근 업데이트일`과 `## Update Log`만 증분 갱신합니다.
 
 번들 도구:
@@ -160,11 +161,11 @@ Use $kr-stock-plan to scope 064400.KS into a clear Korean stock research brief w
 ```
 
 ```text
-Use $kr-stock-data-pack to gather a dated company fact pack for LG CNS with price context, filings, latest results, governance facts, valuation inputs, and chart inputs.
+Use $kr-stock-data-pack to gather a dated company fact pack for LG CNS with price context, filings, latest results, governance facts, valuation inputs, chart inputs, and outside-view inputs from sell-side or specialist media.
 ```
 
 ```text
-Use $kr-stock-analysis to analyze 005930.KS with DART-based evidence, valuation, governance checks, catalysts, and chart context.
+Use $kr-stock-analysis to analyze 005930.KS with DART-based evidence, street or alternative views, valuation, governance checks, catalysts, chart context, and follow-up research questions.
 ```
 
 ```text
@@ -190,11 +191,11 @@ Use $kr-sector-analysis to write a Korea security-operations market report with 
 ```
 
 ```text
-/kr-stock-data-pack gather a dated company fact pack for LG CNS with price context, filings, latest results, governance facts, valuation inputs, and chart inputs.
+/kr-stock-data-pack gather a dated company fact pack for LG CNS with price context, filings, latest results, governance facts, valuation inputs, chart inputs, and outside-view inputs from sell-side or specialist media.
 ```
 
 ```text
-/kr-stock-analysis analyze 005930.KS with DART-based evidence, valuation, governance checks, catalysts, and chart context.
+/kr-stock-analysis analyze 005930.KS with DART-based evidence, street or alternative views, valuation, governance checks, catalysts, chart context, and follow-up research questions.
 ```
 
 ```text
