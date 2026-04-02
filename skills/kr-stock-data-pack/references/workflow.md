@@ -1,14 +1,19 @@
 # Workflow Reference
 
-## Source Order
+## Source Roles
 
-Use this order unless the user explicitly wants a faster but lighter answer:
+Use a blended pack, but keep each block honest about what role the source plays:
 
-1. Latest DART filing, quarterly report, business report, or audit report
-2. Latest KRX disclosure, earnings release, IR deck, and conference-call material
-3. Governance pages, shareholder-return disclosures, and official company website materials
-4. Recent company-specific news needed for context
-5. Market data pages for quick ratio checks
+1. Primary company sources
+   DART filings, KRX disclosures, official financial statements, IR decks, governance pages, and shareholder-return materials. Use these to anchor material numbers and formal facts.
+2. Sell-side summaries
+   Brokerage notes and earnings-commentary recaps. Use these to capture what the market is emphasizing, not to replace filing verification.
+3. Specialist media
+   Reputable financial media, trade press, or interview coverage that sharpens customer, industry, or peer context.
+4. Independent analysis
+   Detailed blogs, newsletters, or long-form writeups. Use these as idea sources and stress tests, and label them clearly.
+5. Market-data pages
+   Use these for quick price context and ratio checks with visible dates.
 
 ## Required Fact Blocks
 
@@ -22,12 +27,14 @@ For a standard company pack, try to gather:
 - governance block: controlling shareholder, board shape, shareholder-return policy, treasury shares
 - valuation inputs: trailing P/E, forward P/E, EV/EBITDA, P/B, FCF yield, plus the dates used
 - chart inputs: at least 120 daily bars when available
+- external views: a short list of outside takes with source role, date, takeaway, and verification status when the downstream memo needs more than official company framing
 
 ## Pack Discipline
 
 - Keep every important metric dated.
 - Note the source origin for each block.
 - Use `not separately disclosed` instead of inventing a split.
+- For outside-view blocks, say whether the claim is `confirmed by filing`, `street inference`, `media report`, or `independent view`.
 - Keep interpretation light. The pack may note why a fact matters, but it should not decide the investment view.
 
 ## Failure Modes To Avoid
@@ -35,4 +42,5 @@ For a standard company pack, try to gather:
 - mixing metrics from different dates without labeling them
 - turning the pack into a full memo
 - quoting media summaries when the filing already provides the number
+- treating a broker note or blog as a verified fact block without a primary-source check
 - omitting share-class or structure context when it changes the valuation frame

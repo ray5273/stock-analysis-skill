@@ -11,8 +11,8 @@ Included skills:
 
 - `us-stock-analysis` for U.S. stocks and U.S.-listed ETFs
 - `kr-stock-plan` for scoping Korean stock research into an execution-ready brief
-- `kr-stock-data-pack` for gathering structured company fact packs before drafting
-- `kr-stock-analysis` for Korean stock quick views, full memos, event notes, and pair compares
+- `kr-stock-data-pack` for gathering structured company fact packs before drafting, including optional outside-view inputs
+- `kr-stock-analysis` for Korean stock quick views, full memos, event notes, pair compares, street or alternative views in full memos, and follow-up research questions
 - `kr-stock-update` for dated follow-up updates to an existing Korean stock memo
 - `kr-portfolio-monitor` for multi-position KRX portfolio snapshots via Kiwoom REST API or Yahoo fallback
 - `kr-sector-plan` for scoping Korea sector research into an execution-ready brief
@@ -63,13 +63,14 @@ Primary instructions:
 - [skills/kr-stock-plan/SKILL.md](skills/kr-stock-plan/SKILL.md)
 - [skills/kr-stock-data-pack/SKILL.md](skills/kr-stock-data-pack/SKILL.md)
 - [skills/kr-stock-analysis/SKILL.md](skills/kr-stock-analysis/SKILL.md)
+- [skills/kr-stock-analysis/references/blended-source-notes.md](skills/kr-stock-analysis/references/blended-source-notes.md)
 - [skills/kr-stock-update/SKILL.md](skills/kr-stock-update/SKILL.md)
 
 Current behavior:
 
 1. `kr-stock-plan` converts a vague Korean stock request into a clear security definition, output mode, and research brief.
-2. `kr-stock-data-pack` collects dated price context, filings, results, governance facts, valuation inputs, and chart inputs before drafting.
-3. `kr-stock-analysis` writes the final output as a `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, or `pair compare` for KRX-listed companies.
+2. `kr-stock-data-pack` collects dated price context, filings, results, governance facts, valuation inputs, chart inputs, and optional outside-view inputs before drafting.
+3. `kr-stock-analysis` writes the final output as a `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, or `pair compare` for KRX-listed companies, and full memos now add a `Street / Alternative Views` section before valuation and end with company-specific follow-up research questions tied to current evidence gaps.
 4. `kr-stock-update` preserves the original memo date, refreshes `최근 업데이트일`, and appends or replaces dated follow-up blocks under `## Update Log`.
 
 Bundled helpers:
@@ -187,11 +188,11 @@ Use $kr-stock-plan to scope 064400.KS into a clear Korean stock research brief w
 ```
 
 ```text
-Use $kr-stock-data-pack to gather a dated company fact pack for LG CNS with price context, filings, latest results, governance facts, valuation inputs, and chart inputs.
+Use $kr-stock-data-pack to gather a dated company fact pack for LG CNS with price context, filings, latest results, governance facts, valuation inputs, chart inputs, and outside-view inputs from sell-side or specialist media.
 ```
 
 ```text
-Use $kr-stock-analysis to analyze 005930.KS with DART-based evidence, valuation, governance checks, catalysts, and chart context.
+Use $kr-stock-analysis to analyze 005930.KS with DART-based evidence, street or alternative views, valuation, governance checks, catalysts, chart context, and follow-up research questions.
 ```
 
 ```text
@@ -237,11 +238,11 @@ Use $kr-sector-update to update analysis-example/kr-sector/국내 데이터센�
 ```
 
 ```text
-/kr-stock-data-pack gather a dated company fact pack for LG CNS with price context, filings, latest results, governance facts, valuation inputs, and chart inputs.
+/kr-stock-data-pack gather a dated company fact pack for LG CNS with price context, filings, latest results, governance facts, valuation inputs, chart inputs, and outside-view inputs from sell-side or specialist media.
 ```
 
 ```text
-/kr-stock-analysis analyze 005930.KS with DART-based evidence, valuation, governance checks, catalysts, and chart context.
+/kr-stock-analysis analyze 005930.KS with DART-based evidence, street or alternative views, valuation, governance checks, catalysts, chart context, and follow-up research questions.
 ```
 
 ```text

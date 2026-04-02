@@ -33,6 +33,10 @@ Use this default pack shape unless the user asked for something else.
 | Metric | Value | Date | Note |
 | --- | --- | --- | --- |
 
+## External Views
+| Source role | Date | Takeaway | Verification status | Source |
+| --- | --- | --- | --- | --- |
+
 ## Chart Inputs
 - OHLCV window:
 - Key technical fields available:
