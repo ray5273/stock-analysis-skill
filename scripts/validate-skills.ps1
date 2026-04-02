@@ -77,6 +77,47 @@ foreach ($skillDir in $skillDirs) {
         }
 
         node $fetchScript --help | Out-Null
+
+        $stockOutputFormat = Get-Content -Raw ".\skills\kr-stock-analysis\references\output-format.md"
+        if ($stockOutputFormat -notmatch '^5\. Street / Alternative Views$') {
+            Write-Error "Expected full memo output format to include Street / Alternative Views."
+        }
+        if ($stockOutputFormat -notmatch '^13\. Additional Research Questions$') {
+            Write-Error "Expected full memo output format to include Additional Research Questions."
+        }
+
+        if ($skillMd -notmatch '^## Source Roles$') {
+            Write-Error "Expected kr-stock-analysis skill rules to define source roles."
+        }
+        if ($skillMd -notmatch 'For a `full memo`, add `Street / Alternative Views` before valuation and end with `Additional Research Questions`') {
+            Write-Error "Expected kr-stock-analysis skill rules to scope Street / Alternative Views and Additional Research Questions to full memos."
+        }
+
+        @(
+            ".\analysis-example\kr\LG CNS.md",
+            ".\analysis-example\kr\엘앤에프.md",
+            ".\analysis-example\kr\대양전기공업.md"
+        ) | ForEach-Object {
+            $reportText = Get-Content -Raw -Encoding utf8 $_
+            if ($reportText -notmatch '^## Street / Alternative Views$') {
+                Write-Error "Expected stock memo example to include Street / Alternative Views: $_"
+            }
+            if ($reportText -notmatch '^## Additional Research Questions$') {
+                Write-Error "Expected stock memo example to include Additional Research Questions: $_"
+            }
+        }
+    }
+
+    if ($skillDir.Name -eq "kr-stock-data-pack") {
+        $dataPackWorkflow = Get-Content -Raw ".\skills\kr-stock-data-pack\references\workflow.md"
+        if ($dataPackWorkflow -notmatch '^## Source Roles$') {
+            Write-Error "Expected kr-stock-data-pack workflow to define source roles."
+        }
+
+        $dataPackOutputFormat = Get-Content -Raw ".\skills\kr-stock-data-pack\references\output-format.md"
+        if ($dataPackOutputFormat -notmatch '^## External Views$') {
+            Write-Error "Expected kr-stock-data-pack output format to include External Views."
+        }
     }
 
     if ($skillDir.Name -eq "kr-stock-update") {
@@ -89,15 +130,15 @@ foreach ($skillDir in $skillDirs) {
         $baselineOut = Join-Path $tempRoot "kr-stock-update-baseline.json"
 
         node $baselineScript --input $reportSample --output $baselineOut | Out-Null
-        if (-not ((Get-Content -Raw $baselineOut) -match '"memoDate": "2026-03-20"')) {
+        if (-not ((Get-Content -Raw $baselineOut) -match '"memoDate": "2026-04-02"')) {
             Write-Error "Baseline parser did not capture the memo date."
         }
 
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
-        @'
+@'
 {
-  "date": "2026-03-27",
+  "date": "2026-04-10",
   "whatHappened": [
     "No material company-specific update found after the memo date."
   ],
@@ -117,15 +158,15 @@ foreach ($skillDir in $skillDirs) {
     {
       "label": "Validation placeholder source",
       "url": "https://example.com/placeholder",
-      "date": "2026-03-27"
+      "date": "2026-04-10"
     }
   ]
 }
 '@ | ForEach-Object { [System.IO.File]::WriteAllText($updateJson, $_, $utf8NoBom) }
 
-        @'
+@'
 {
-  "date": "2026-03-27",
+  "date": "2026-04-10",
   "whatHappened": [
     "Replacement update for the same date."
   ],
@@ -145,7 +186,7 @@ foreach ($skillDir in $skillDirs) {
     {
       "label": "Validation replacement source",
       "url": "https://example.com/replacement",
-      "date": "2026-03-27"
+      "date": "2026-04-10"
     }
   ]
 }
@@ -159,8 +200,8 @@ foreach ($skillDir in $skillDirs) {
         $updatedText = Get-Content -Raw -Encoding utf8 $updatedReport
         $normalizedUpdatedText = $updatedText -replace "`r`n?", "`n"
         $recentUpdateLabel = [string]::Concat([char[]](0xCD5C, 0xADFC, 0x20, 0xC5C5, 0xB370, 0xC774, 0xD2B8, 0xC77C, 0x3A))
-        $headingCount = ([regex]::Matches($normalizedUpdatedText, '^### 2026-03-27 Update$', 'Multiline')).Count
-        $recentUpdatePattern = "^{0}\s*2026-03-27$" -f [regex]::Escape($recentUpdateLabel)
+        $headingCount = ([regex]::Matches($normalizedUpdatedText, '^### 2026-04-10 Update$', 'Multiline')).Count
+        $recentUpdatePattern = "^{0}\s*2026-04-10$" -f [regex]::Escape($recentUpdateLabel)
         $recentUpdateCount = ([regex]::Matches($normalizedUpdatedText, $recentUpdatePattern, 'Multiline')).Count
         if ($headingCount -ne 1) {
             Write-Error "Expected exactly one dated update block after replacement."
