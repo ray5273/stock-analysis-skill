@@ -30,7 +30,7 @@ function parseArgs(argv) {
 function usage() {
   return [
     "Usage:",
-    "  node normalize-update-log.js --input update.json [--report analysis-example/kr/<company>.md] [--output updated.md]",
+    "  node normalize-update-log.js --input update.json [--report analysis-example/kr/<company>/memo.md] [--output updated.md]",
     "",
     "Notes:",
     "  - Without --report, prints a normalized markdown update block.",

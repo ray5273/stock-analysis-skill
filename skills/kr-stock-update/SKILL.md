@@ -1,6 +1,6 @@
 ---
 name: kr-stock-update
-description: Update an existing Korean stock memo using only company-specific disclosures, IR materials, and news published after the memo date. Use when a prior `analysis-example/kr/<company>.md` already exists and the user wants a dated incremental stock update instead of a fresh memo.
+description: Update an existing Korean stock memo using only company-specific disclosures, IR materials, and news published after the memo date. Use when a prior `analysis-example/kr/<company>/memo.md` already exists and the user wants a dated incremental stock update instead of a fresh memo.
 ---
 
 # Korean Stock Update
@@ -9,7 +9,7 @@ Use this skill when the user already has a Korean stock memo and wants follow-up
 
 ## Quick Start
 
-- Start from an existing markdown memo file, usually `analysis-example/kr/<company>.md`.
+- Start from an existing markdown memo file, usually `analysis-example/kr/<company>/memo.md`.
 - Treat disclosures, earnings, capital allocation, governance moves, and company news as time-sensitive. Verify current sources before using them.
 - Use the memo's `기준일` as the minimum source date for the follow-up search.
 - Deduplicate against the memo's existing `Update Log` dates and source URLs when possible.

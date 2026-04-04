@@ -101,7 +101,7 @@ List only flagged positions (those not labeled `정상`). For each:
 ```
 
 권장 액션 mapping:
-- First time this stock appears in the workspace (no prior `analysis-example/kr/<company>.md`): recommend `/kr-stock-analysis [티커]`
+- First time this stock appears in the workspace (no prior `analysis-example/kr/<company>/memo.md`): recommend `/kr-stock-analysis [티커]`
 - Prior memo exists: recommend `/kr-stock-update [티커]`
 - RSI over-bought: suggest considering partial trim and thesis review.
 - RSI over-sold: suggest checking for fundamental change before averaging down.

@@ -11,16 +11,17 @@ Use this skill to assemble the inputs that a downstream Korean stock memo needs.
 
 - Treat prices, disclosures, IR materials, guidance, and company news as time-sensitive.
 - Prefer primary sources first: DART, KRX disclosures, company IR, official financial statements, and governance pages.
+- If the user mainly needs exact filing extraction for quarterly, half-year, segment, or customer-concentration detail, use `kr-dart-analysis` first and then pull the rest of the pack around it.
 - When the downstream memo needs more than official company framing, gather dated outside-view inputs from sell-side, specialist media, or detailed independent analysis.
 - Keep the output structured. The point is to gather clean inputs, not to write the final thesis.
-- If the workspace is writable, write the pack to `analysis-example/kr/<company>-data-pack.md` when the user asked for a reusable artifact.
+- If the workspace is writable, write the pack to `analysis-example/kr/<company>/data-pack.md` when the user asked for a reusable artifact.
 
 ## Workflow
 
 1. Define the pack scope.
    Start from the agreed security, mode, and time horizon.
 2. Gather dated facts.
-   Collect the latest price context, filings, earnings facts, governance facts, valuation inputs, and chart inputs.
+   Collect the latest price context, filings, earnings facts, governance facts, valuation inputs, and chart inputs. When filing precision is the bottleneck, anchor this step to a prior `kr-dart-analysis` output.
 3. Gather outside views when useful.
    Capture the few outside takes that materially change the debate, and label whether each is sell-side, specialist media, or independent analysis.
 4. Keep dates visible.
