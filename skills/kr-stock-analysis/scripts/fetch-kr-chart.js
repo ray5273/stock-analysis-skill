@@ -43,12 +43,13 @@ function parseArgs(argv) {
 function usage() {
   return [
     "Usage:",
-    "  node fetch-kr-chart.js --ticker 066970 [--market kosdaq|kospi] [--range 1y] [--interval 1d] [--name \"L&F\"] [--output chart.json]",
+    "  node fetch-kr-chart.js --ticker 066970 [--market kosdaq|kospi] [--range 1y] [--interval 1d] --name \"LG전자\" [--output chart.json]",
     "  node fetch-kr-chart.js --ticker 005930.KS [--range 1y] [--interval 1d] [--output chart.json]",
     "",
     "Notes:",
     "  - Numeric KRX tickers are resolved to .KS or .KQ symbols.",
     "  - For numeric tickers, the script retries an alternate Yahoo suffix if the first symbol fails.",
+    "  - Pass --name when the output will be used to render PNG charts so the company name is printed on the chart title.",
     "  - Output JSON matches the input shape expected by chart-basics.js.",
   ].join("\n");
 }
@@ -217,7 +218,7 @@ async function main() {
   const result = await resolveAndFetch(args.ticker, args.market, args.range, args.interval);
   const output = {
     ticker: result.symbol,
-    name: args.name || args.ticker,
+    name: args.name ? String(args.name).trim() : undefined,
     source: "yahoo-finance-chart",
     fetchedAt: new Date().toISOString(),
     range: args.range,

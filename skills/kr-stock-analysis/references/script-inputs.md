@@ -32,10 +32,11 @@ Expected JSON:
 Run:
 
 ```text
-node scripts/fetch-kr-chart.js --ticker 064400 --market KS --range 1y --interval 1d
+node scripts/fetch-kr-chart.js --ticker 064400 --market KS --range 1y --interval 1d --name "LG전자"
 ```
 
 Use this when you need roughly one year of KRX daily bars before a chart read.
+If the JSON will be used to render PNG charts, `--name` is effectively required because `chart-basics.js` now fails PNG rendering when the company name is missing from the input.
 
 ## `scripts/chart-basics.js`
 
@@ -46,12 +47,14 @@ node scripts/chart-basics.js --input <path-to-json> [--png-out <path-to-png>] [-
 ```
 
 When `--png-out` is set, the script writes the main trend chart to that exact path and writes a sibling overlay image to the same base name with `-overlay` before the extension. The markdown output references both images.
+When `--png-out` is set, the input JSON must include a non-empty `name` field so the company name is printed at the top of both PNG charts.
 
 Expected input:
 
 ```json
 {
   "symbol": "064400.KS",
+  "name": "LG전자",
   "bars": [
     {
       "date": "2026-03-20",

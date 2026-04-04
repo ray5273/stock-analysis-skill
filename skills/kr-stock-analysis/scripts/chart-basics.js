@@ -168,6 +168,19 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(path.resolve(filePath), "utf8"));
 }
 
+function requireNamedChartInput(data, options) {
+  if (!options.pngOut) {
+    return;
+  }
+
+  const name = typeof data.name === "string" ? data.name.trim() : "";
+  if (!name) {
+    throw new Error(
+      "PNG chart rendering requires a company name in the input JSON. Pass `--name \"회사명\"` to fetch-kr-chart.js so the PNG title shows the stock name.",
+    );
+  }
+}
+
 function toOptionalNumber(value) {
   if (value === null || value === undefined || value === "") {
     return null;
@@ -1782,6 +1795,7 @@ function main() {
   }
 
   const data = readJson(args.input);
+  requireNamedChartInput(data, args);
   const bars = normalizeBars(data.bars || []);
   requireValidBars(bars);
   const metrics = buildMetrics(bars);

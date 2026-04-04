@@ -20,6 +20,7 @@ Try to gather the smallest complete set that supports a precise answer:
    Needed for year-over-year comparison on the same basis.
 4. Attached audit or review report
    Useful for note detail, customer concentration, accounting policies, and restatement context.
+   When DART's inline viewer is awkward or incomplete for note-level work, use the company IR `감사보고서` or `reviewed financial statements` download page to reach the same official PDF faster.
 5. Official earnings-release or IR material
    Optional support for management explanations or presentation tables.
 6. KRX or DART contract disclosures
@@ -72,10 +73,63 @@ Extract only what is actually disclosed and relevant to the user's question:
 - capex and major asset additions
 - working-capital signals such as inventory or receivables build
 - related-party transactions
+- internal-group sales ratio when note detail allows a direct numerator/denominator calculation
 - treasury-share or shareholder-return items disclosed in filings or related KRX notices
 - single-sales or supply-contract disclosures, amendments, and termination notices
 
 When a useful split is missing, say `not separately disclosed` and move on.
+
+For `특수관계자`, `관련당사자`, `내부거래`, `계열 매출`, or `내부그룹 매출 비중` requests:
+
+1. Lock the period first.
+   Use the latest annual audited period unless the user explicitly wants another year.
+2. Reach the audited note directly.
+   Prefer the annual audit report PDF if the DART viewer path is slow, broken, or hard to deep-link.
+3. Extract the denominator from the audited income statement or revenue note.
+   Use the exact consolidated annual `매출액` line that matches the note period.
+4. Extract the strict related-party numerator.
+   Use the note table titled like `특수관계자와의 매출ㆍ매입 등 거래내역` or equivalent.
+5. Check whether the note separately discloses `대규모기업집단 계열회사` transactions outside the strict related-party table.
+   If yes, keep this as a second numerator rather than silently folding it into the first one.
+6. Check the major-customer note.
+   If the company discloses a customer like `삼성전자와 그 종속기업` as a 10%-plus external customer, keep that statement separate from the related-party ratio and explain the scope difference if needed.
+7. Calculate and label two ratios when possible:
+   - `내부그룹 매출 비중(엄격 기준)` = strict related-party sales / consolidated revenue
+   - `내부그룹 매출 비중(확장 기준)` = (strict related-party sales + separately disclosed large-group affiliate sales) / consolidated revenue
+8. Keep the note number visible.
+   Record the exact note number, table title, and filing date in the source map.
+
+For `매출 비중`, `구성 비중`, `계약 비중`, or `매출 비중과 계약 비중을 같이` requests:
+
+1. Split the request into two blocks before extracting numbers.
+   - `매출 비중 블록`
+   - `계약 비중 블록`
+2. Build the revenue denominator first.
+   Use the same-period consolidated annual revenue by default unless the filing clearly anchors another basis.
+3. Extract revenue numerators from disclosed mix tables.
+   Typical candidates are segment revenue, cloud within IT service, major-customer sales, related-party sales, and large-group affiliate sales.
+4. Calculate only like-for-like revenue ratios.
+   Examples:
+   - segment / consolidated revenue
+   - cloud / IT service revenue
+   - major customer / consolidated revenue
+   - related-party sales / consolidated revenue
+5. Build the contract block separately.
+   Check whether the filing discloses:
+   - official backlog or order balance
+   - contract asset or contract liability
+   - `보고기간 종료일 현재 수주잔고`
+   - individual `단일판매ㆍ공급계약체결` notices
+6. Decide whether a contract ratio is valid.
+   If the contract figure is only for a narrow contract subset, you may show `해당 계약군 / 연결 매출` as a limited derived ratio, but label it as `단순 비중` or `범위 제한적`.
+7. Never force a company-wide backlog read from a partial contract note.
+   If only a subset such as cost-to-cost contracts is disclosed, say that it is not equivalent to formal company-wide backlog coverage.
+8. Summarize the relationship.
+   End with a short interpretation that distinguishes:
+   - business mix
+   - customer or internal-group concentration
+   - contract visibility
+   - what is not separately disclosed
 
 For multi-segment companies:
 
@@ -206,6 +260,11 @@ When the user asks for `수주잔고 대비 매출`, `백로그 커버리지`, `
 - if the backlog is disclosed for a subgroup like the core operating company while revenue is only available for that same subgroup in the business report, prefer that subgroup basis over a broad consolidated mismatch
 - if the backlog table and revenue table are not directly comparable, still provide the calculation only if useful, but label the limitation clearly in `비고`
 - do not describe the result as booked profit, guaranteed sales, or formal management guidance
+- if the user asked for `계약 비중`, prefer one of these labels depending on scope:
+  - `공식 backlog / 연간 매출`
+  - `특정 계약군 수주잔고 / 연결 매출 단순 비중`
+  - `최근 공시 계약금액 / 최근매출액대비`
+  Never compress these different notions into one generic `계약 비중`.
 
 ## Integrated Backlog Mode
 
@@ -251,7 +310,10 @@ After the DART extraction is complete:
 - quoting cumulative nine-month or half-year numbers as if they were quarter-only results
 - mixing consolidated and separate figures without labeling the switch
 - copying IR tables without checking whether the filing says the same thing
+- forcing a DART viewer path when the same audited note is easier to verify from the official audit-report PDF
 - inventing a segment margin or customer split that the filing does not provide
+- collapsing `특수관계자` and `대규모기업집단 계열회사` into one unlabeled internal-sales figure
+- mixing `매출 비중` and `계약 비중` into one table without showing that the numerators come from different disclosure systems
 - collapsing contract amendments or corrections into one unlabeled contract row
 - flattening `not disclosed` into silence instead of making the gap explicit
 - attributing a result change to management commentary when the filing does not state that reason

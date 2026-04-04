@@ -99,12 +99,14 @@ Use peer comparisons only if the peer set is genuinely comparable.
 
 - Prefer fetching about 1 year of daily bars before writing the chart section so MA120 and Ichimoku have enough history.
 - Use `scripts/fetch-kr-chart.js` to pull current KRX bars when the user did not provide price history.
+- When the output will become PNG chart assets, always pass the explicit company name with `--name "<회사명>"`. Do not rely on ticker fallback if you want the PNG title to show `삼성SDS`, `LG전자`, or another human-readable stock name.
 - Use `scripts/chart-basics.js` to generate both the markdown technical read and split PNG chart assets that can be embedded in the memo.
 - Gather at least 120 daily bars when possible.
 - Report latest close and date, MA5, MA20, MA60, MA120, Bollinger Bands, Ichimoku state, RSI 14, volume versus 20-day average, and nearby breakout or breakdown levels.
 - The main chart should prefer OHLC candlesticks plus a close line and a visible current-price guide, while the overlay chart keeps heavier indicators separate.
 - The chart set should show readable axes, price labels, date labels, and a clearly separated overlay view instead of stacking every indicator on one price panel.
 - For Korean stock memos, prefer Korean legend and panel labels when a Hangul-capable local font is available.
+- Treat missing company-name titles as a chart-generation failure, not as an acceptable fallback. If a PNG would render without the company name, regenerate the input with `name` populated before producing the memo.
 - When you are writing a markdown memo file, embed the generated main trend PNG first and the overlay PNG immediately after it near the start of the chart section.
 - Keep chart analysis secondary to fundamentals. Use it to frame positioning, momentum, and key levels, not to override business reality.
 - End the chart section with a short chart-only conclusion that says whether the setup looks like bullish continuation, bearish continuation, a technical rebound, a pullback, or range-building.
