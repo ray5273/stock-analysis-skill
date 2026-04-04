@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const { execFileSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
@@ -54,6 +55,63 @@ const FONT_5X7 = {
   Y: ["10001", "10001", "01010", "00100", "00100", "00100", "00100"],
   Z: ["11111", "00001", "00010", "00100", "01000", "10000", "11111"],
 };
+
+const JAMO_5X5 = {
+  "ㄱ": ["11110", "10000", "10000", "10000", "00000"],
+  "ㄴ": ["10000", "10000", "10000", "11110", "00000"],
+  "ㄷ": ["11110", "10000", "10000", "11110", "00000"],
+  "ㄹ": ["11110", "10000", "11110", "00010", "11110"],
+  "ㅁ": ["11110", "10010", "10010", "11110", "00000"],
+  "ㅂ": ["11110", "10010", "11110", "10010", "11110"],
+  "ㅅ": ["00100", "01010", "10001", "00000", "00000"],
+  "ㅇ": ["01110", "10001", "10001", "01110", "00000"],
+  "ㅈ": ["11111", "00100", "01010", "10001", "00000"],
+  "ㅊ": ["00100", "11111", "01010", "10001", "00000"],
+  "ㅋ": ["11110", "10000", "11100", "10000", "00000"],
+  "ㅌ": ["11110", "10000", "11110", "10000", "11110"],
+  "ㅍ": ["10010", "10010", "11110", "10010", "10010"],
+  "ㅎ": ["11111", "00100", "01110", "10001", "01110"],
+  "ㅏ": ["00100", "00100", "11100", "00100", "00100"],
+  "ㅐ": ["01100", "01100", "11100", "01100", "01100"],
+  "ㅑ": ["00100", "11100", "00100", "11100", "00100"],
+  "ㅒ": ["01100", "11100", "01100", "11100", "01100"],
+  "ㅓ": ["00100", "00100", "00111", "00100", "00100"],
+  "ㅔ": ["00110", "00110", "00111", "00110", "00110"],
+  "ㅕ": ["00100", "00111", "00100", "00111", "00100"],
+  "ㅖ": ["00110", "00111", "00110", "00111", "00110"],
+  "ㅗ": ["11111", "00100", "00100", "00000", "00000"],
+  "ㅛ": ["11111", "01010", "01010", "00000", "00000"],
+  "ㅜ": ["00000", "00000", "00100", "00100", "11111"],
+  "ㅠ": ["00000", "00000", "01010", "01010", "11111"],
+  "ㅡ": ["00000", "00000", "11111", "00000", "00000"],
+  "ㅣ": ["00100", "00100", "00100", "00100", "00100"],
+};
+
+const HANGUL_BASE = 0xac00;
+const HANGUL_END = 0xd7a3;
+const HANGUL_INITIALS = ["ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+const HANGUL_MEDIALS = [
+  ["ㅏ"], ["ㅐ"], ["ㅑ"], ["ㅒ"], ["ㅓ"], ["ㅔ"], ["ㅕ"], ["ㅖ"], ["ㅗ"], ["ㅗ", "ㅏ"], ["ㅗ", "ㅐ"], ["ㅗ", "ㅣ"],
+  ["ㅛ"], ["ㅜ"], ["ㅜ", "ㅓ"], ["ㅜ", "ㅔ"], ["ㅜ", "ㅣ"], ["ㅠ"], ["ㅡ"], ["ㅡ", "ㅣ"], ["ㅣ"],
+];
+const HANGUL_FINALS = [
+  [], ["ㄱ"], ["ㄲ"], ["ㄱ", "ㅅ"], ["ㄴ"], ["ㄴ", "ㅈ"], ["ㄴ", "ㅎ"], ["ㄷ"], ["ㄹ"], ["ㄹ", "ㄱ"], ["ㄹ", "ㅁ"], ["ㄹ", "ㅂ"],
+  ["ㄹ", "ㅅ"], ["ㄹ", "ㅌ"], ["ㄹ", "ㅍ"], ["ㄹ", "ㅎ"], ["ㅁ"], ["ㅂ"], ["ㅂ", "ㅅ"], ["ㅅ"], ["ㅆ"], ["ㅇ"], ["ㅈ"], ["ㅊ"], ["ㅋ"], ["ㅌ"], ["ㅍ"], ["ㅎ"],
+];
+const EXTERNAL_TEXT_HELPER = path.resolve(__dirname, "render-text-mask.py");
+const EXTERNAL_FONT_CANDIDATES = [
+  process.env.KR_STOCK_CHART_FONT,
+  "/mnt/c/Windows/Fonts/malgun.ttf",
+  "/mnt/c/Windows/Fonts/NotoSansKR-VF.ttf",
+  "/mnt/c/Windows/Fonts/NanumGothic.ttf",
+  "/mnt/c/Windows/Fonts/NotoSerifKR-VF.ttf",
+].filter(Boolean);
+const EXTERNAL_TEXT_STATE = {
+  checked: false,
+  available: false,
+  fontPath: null,
+};
+const EXTERNAL_TEXT_CACHE = new Map();
 
 function parseArgs(argv) {
   const result = {
@@ -734,40 +792,261 @@ function glyphWidth() {
   return 5;
 }
 
+function clamp(value, minValue, maxValue) {
+  return Math.min(Math.max(value, minValue), maxValue);
+}
+
+function containsHangul(text) {
+  return /[\uac00-\ud7a3]/.test(String(text || ""));
+}
+
+function resolveExternalTextRenderer() {
+  if (EXTERNAL_TEXT_STATE.checked) {
+    return EXTERNAL_TEXT_STATE;
+  }
+
+  EXTERNAL_TEXT_STATE.checked = true;
+  if (!fs.existsSync(EXTERNAL_TEXT_HELPER)) {
+    return EXTERNAL_TEXT_STATE;
+  }
+
+  const fontPath = EXTERNAL_FONT_CANDIDATES.find((candidate) => fs.existsSync(candidate));
+  if (!fontPath) {
+    return EXTERNAL_TEXT_STATE;
+  }
+
+  EXTERNAL_TEXT_STATE.available = true;
+  EXTERNAL_TEXT_STATE.fontPath = fontPath;
+  return EXTERNAL_TEXT_STATE;
+}
+
+function externalFontSize(scale) {
+  return Math.max(12, Math.round(scale * 9));
+}
+
+function normalizeExternalTextPayload(payloadText) {
+  const payload = JSON.parse(String(payloadText || "").trim());
+  return {
+    width: payload.width,
+    height: payload.height,
+    alpha: Buffer.from(payload.alpha || "", "base64"),
+  };
+}
+
+function loadExternalTextMask(text, scale = 1) {
+  if (!containsHangul(text)) {
+    return null;
+  }
+
+  const renderer = resolveExternalTextRenderer();
+  if (!renderer.available || !renderer.fontPath) {
+    return null;
+  }
+
+  const normalized = String(text);
+  const cacheKey = `${renderer.fontPath}|${externalFontSize(scale)}|${normalized}`;
+  if (EXTERNAL_TEXT_CACHE.has(cacheKey)) {
+    return EXTERNAL_TEXT_CACHE.get(cacheKey);
+  }
+
+  try {
+    const stdout = execFileSync(
+      "python3",
+      [
+        EXTERNAL_TEXT_HELPER,
+        "--font-path",
+        renderer.fontPath,
+        "--font-size",
+        String(externalFontSize(scale)),
+        "--text",
+        normalized,
+      ],
+      {
+        encoding: "utf8",
+        maxBuffer: 16 * 1024 * 1024,
+      },
+    );
+    const mask = normalizeExternalTextPayload(stdout);
+    EXTERNAL_TEXT_CACHE.set(cacheKey, mask);
+    return mask;
+  } catch (error) {
+    if (error && error.stdout) {
+      try {
+        const mask = normalizeExternalTextPayload(error.stdout);
+        EXTERNAL_TEXT_CACHE.set(cacheKey, mask);
+        return mask;
+      } catch (_parseError) {
+        // Fall through to the bitmap fallback if stdout is unusable.
+      }
+    }
+    EXTERNAL_TEXT_STATE.available = false;
+    EXTERNAL_TEXT_STATE.fontPath = null;
+    return null;
+  }
+}
+
+function drawAlphaMask(buffer, width, height, x, y, mask, color) {
+  if (!mask || mask.width <= 0 || mask.height <= 0) {
+    return;
+  }
+
+  const alphaScale = color[3] === undefined ? 255 : color[3];
+  for (let row = 0; row < mask.height; row += 1) {
+    for (let col = 0; col < mask.width; col += 1) {
+      const alpha = mask.alpha[row * mask.width + col];
+      if (alpha > 0) {
+        blendPixel(buffer, width, height, x + col, y + row, [
+          color[0],
+          color[1],
+          color[2],
+          Math.round((alpha * alphaScale) / 255),
+        ]);
+      }
+    }
+  }
+}
+
+function isHangulSyllable(character) {
+  if (!character) {
+    return false;
+  }
+  const code = character.codePointAt(0);
+  return code >= HANGUL_BASE && code <= HANGUL_END;
+}
+
+function normalizeConsonantParts(jamo) {
+  const doubled = {
+    "ㄲ": ["ㄱ", "ㄱ"],
+    "ㄸ": ["ㄷ", "ㄷ"],
+    "ㅃ": ["ㅂ", "ㅂ"],
+    "ㅆ": ["ㅅ", "ㅅ"],
+    "ㅉ": ["ㅈ", "ㅈ"],
+  };
+  return doubled[jamo] || [jamo];
+}
+
+function decomposeHangulSyllable(character) {
+  if (!isHangulSyllable(character)) {
+    return null;
+  }
+
+  const syllableIndex = character.codePointAt(0) - HANGUL_BASE;
+  const initialIndex = Math.floor(syllableIndex / 588);
+  const medialIndex = Math.floor((syllableIndex % 588) / 28);
+  const finalIndex = syllableIndex % 28;
+
+  const initials = normalizeConsonantParts(HANGUL_INITIALS[initialIndex]).slice(0, 2);
+  const medials = HANGUL_MEDIALS[medialIndex].slice(0, 2);
+  const finals = HANGUL_FINALS[finalIndex]
+    .flatMap((jamo) => normalizeConsonantParts(jamo))
+    .slice(0, 2);
+
+  return { initials, medials, finals };
+}
+
+function hangulGlyphWidth() {
+  return 17;
+}
+
+function drawBitmap(buffer, width, height, x, y, bitmap, color, scale = 1) {
+  bitmap.forEach((row, rowIndex) => {
+    for (let columnIndex = 0; columnIndex < row.length; columnIndex += 1) {
+      if (row[columnIndex] === "1") {
+        fillRect(
+          buffer,
+          width,
+          height,
+          x + columnIndex * scale,
+          y + rowIndex * scale,
+          scale,
+          scale,
+          color,
+        );
+      }
+    }
+  });
+}
+
+function drawHangulGlyph(buffer, width, height, x, y, character, color, scale = 1) {
+  const parts = decomposeHangulSyllable(character);
+  if (!parts) {
+    drawBitmap(buffer, width, height, x, y, FONT_5X7["?"], color, scale);
+    return hangulGlyphWidth();
+  }
+
+  const initialXs = parts.initials.length > 1 ? [0, 3] : [0];
+  const medialXs = parts.medials.length > 1 ? [6, 12] : [6];
+  const finalXs = parts.finals.length > 1 ? [3, 9] : [6];
+
+  parts.initials.forEach((jamo, index) => {
+    const bitmap = JAMO_5X5[jamo];
+    if (bitmap) {
+      drawBitmap(buffer, width, height, x + initialXs[index] * scale, y, bitmap, color, scale);
+    }
+  });
+
+  parts.medials.forEach((jamo, index) => {
+    const bitmap = JAMO_5X5[jamo];
+    if (bitmap) {
+      drawBitmap(buffer, width, height, x + medialXs[index] * scale, y, bitmap, color, scale);
+    }
+  });
+
+  parts.finals.forEach((jamo, index) => {
+    const bitmap = JAMO_5X5[jamo];
+    if (bitmap) {
+      drawBitmap(buffer, width, height, x + finalXs[index] * scale, y + 6 * scale, bitmap, color, scale);
+    }
+  });
+
+  return hangulGlyphWidth();
+}
+
+function measureCharacterWidth(character) {
+  return isHangulSyllable(character) ? hangulGlyphWidth() : glyphWidth();
+}
+
 function measureText(text, scale = 1) {
+  const externalMask = loadExternalTextMask(text, scale);
+  if (externalMask) {
+    return externalMask.width;
+  }
+
   if (!text) {
     return 0;
   }
-  return text.length * (glyphWidth() + 1) * scale - scale;
+  const characters = Array.from(String(text));
+  return characters.reduce((sum, character, index) => {
+    const width = measureCharacterWidth(character);
+    return sum + width * scale + (index === characters.length - 1 ? 0 : scale);
+  }, 0);
 }
 
 function drawText(buffer, width, height, x, y, text, color, scale = 1, align = "left") {
-  const upper = String(text).toUpperCase();
+  const externalMask = loadExternalTextMask(text, scale);
+  const characters = Array.from(String(text));
   let cursorX = x;
+  const totalWidth = externalMask ? externalMask.width : measureText(text, scale);
   if (align === "center") {
-    cursorX -= Math.round(measureText(upper, scale) / 2);
+    cursorX -= Math.round(totalWidth / 2);
   } else if (align === "right") {
-    cursorX -= measureText(upper, scale);
+    cursorX -= totalWidth;
   }
 
-  for (const character of upper) {
-    const glyph = FONT_5X7[character] || FONT_5X7["?"];
-    glyph.forEach((row, rowIndex) => {
-      for (let columnIndex = 0; columnIndex < row.length; columnIndex += 1) {
-        if (row[columnIndex] === "1") {
-          fillRect(
-            buffer,
-            width,
-            height,
-            cursorX + columnIndex * scale,
-            y + rowIndex * scale,
-            scale,
-            scale,
-            color,
-          );
-        }
-      }
-    });
+  if (externalMask) {
+    drawAlphaMask(buffer, width, height, Math.round(cursorX), Math.round(y), externalMask, color);
+    return;
+  }
+
+  for (const character of characters) {
+    if (isHangulSyllable(character)) {
+      cursorX += drawHangulGlyph(buffer, width, height, cursorX, y, character, color, scale) * scale + scale;
+      continue;
+    }
+
+    const glyphKey = /[a-z]/.test(character) ? character.toUpperCase() : character;
+    const glyph = FONT_5X7[glyphKey] || FONT_5X7["?"];
+    drawBitmap(buffer, width, height, cursorX, y, glyph, color, scale);
     cursorX += (glyphWidth() + 1) * scale;
   }
 }
@@ -776,6 +1055,77 @@ function drawLegendItem(buffer, width, height, x, y, color, label) {
   fillRect(buffer, width, height, x, y + 4, 16, 6, color);
   drawText(buffer, width, height, x + 24, y, label, [51, 65, 85, 255], 2);
   return x + 24 + measureText(label, 2) + 22;
+}
+
+function drawValueCallout(buffer, width, height, rightEdge, y, label, theme, panelTop, panelHeight) {
+  const paddingX = 8;
+  const boxHeight = 24;
+  const boxWidth = measureText(label, 2) + paddingX * 2;
+  const boxLeft = rightEdge - boxWidth;
+  const boxTop = clamp(Math.round(y - boxHeight / 2), panelTop + 4, panelTop + panelHeight - boxHeight - 4);
+  const fillColor = [255, 255, 255, 230];
+
+  fillRect(buffer, width, height, boxLeft, boxTop, boxWidth, boxHeight, fillColor);
+  drawLine(buffer, width, height, boxLeft, boxTop, boxLeft + boxWidth, boxTop, theme.border, 1);
+  drawLine(buffer, width, height, boxLeft, boxTop + boxHeight, boxLeft + boxWidth, boxTop + boxHeight, theme.border, 1);
+  drawLine(buffer, width, height, boxLeft, boxTop, boxLeft, boxTop + boxHeight, theme.border, 1);
+  drawLine(buffer, width, height, boxLeft + boxWidth, boxTop, boxLeft + boxWidth, boxTop + boxHeight, theme.border, 1);
+  drawText(buffer, width, height, boxLeft + paddingX, boxTop + 4, label, theme.close, 2);
+}
+
+function drawCandlesticks(buffer, width, height, bars, xForSlot, minValue, maxValue, top, panelHeight, theme) {
+  const candleWidth = Math.max(4, Math.floor((width * 0.00042)));
+  bars.forEach((bar, index) => {
+    if (!Number.isFinite(bar.open) || !Number.isFinite(bar.high) || !Number.isFinite(bar.low) || !Number.isFinite(bar.close)) {
+      return;
+    }
+
+    const x = xForSlot(index);
+    const highY = valueToY(bar.high, minValue, maxValue, top, panelHeight);
+    const lowY = valueToY(bar.low, minValue, maxValue, top, panelHeight);
+    const openY = valueToY(bar.open, minValue, maxValue, top, panelHeight);
+    const closeY = valueToY(bar.close, minValue, maxValue, top, panelHeight);
+    const isUp = bar.close >= bar.open;
+    const wickColor = isUp ? theme.candleUp : theme.candleDown;
+    const bodyColor = isUp ? theme.candleUpFill : theme.candleDownFill;
+    const bodyTop = Math.min(openY, closeY);
+    const bodyBottom = Math.max(openY, closeY);
+    const bodyHeight = Math.max(2, Math.round(bodyBottom - bodyTop));
+
+    drawLine(buffer, width, height, x, highY, x, lowY, wickColor, 1);
+    fillRect(
+      buffer,
+      width,
+      height,
+      x - Math.floor(candleWidth / 2),
+      Math.round(bodyTop),
+      candleWidth,
+      bodyHeight,
+      bodyColor,
+    );
+    drawLine(
+      buffer,
+      width,
+      height,
+      x - Math.floor(candleWidth / 2),
+      Math.round(bodyTop),
+      x + Math.floor(candleWidth / 2),
+      Math.round(bodyTop),
+      wickColor,
+      1,
+    );
+    drawLine(
+      buffer,
+      width,
+      height,
+      x - Math.floor(candleWidth / 2),
+      Math.round(bodyTop + bodyHeight),
+      x + Math.floor(candleWidth / 2),
+      Math.round(bodyTop + bodyHeight),
+      wickColor,
+      1,
+    );
+  });
 }
 
 function buildCrcTable() {
@@ -908,10 +1258,15 @@ function buildChartPngs(data, bars, metrics, options) {
     text: [30, 41, 59, 255],
     muted: [100, 116, 139, 255],
     close: [30, 64, 175, 255],
-    ma5: [234, 88, 12, 255],
-    ma20: [14, 165, 233, 255],
-    ma60: [126, 34, 206, 255],
-    ma120: [71, 85, 105, 255],
+    lastPriceGuide: [30, 64, 175, 110],
+    candleUp: [220, 38, 38, 255],
+    candleUpFill: [248, 113, 113, 180],
+    candleDown: [37, 99, 235, 255],
+    candleDownFill: [96, 165, 250, 180],
+    ma5: [34, 197, 94, 255],
+    ma20: [239, 68, 68, 255],
+    ma60: [249, 115, 22, 255],
+    ma120: [147, 51, 234, 255],
     bollinger: [16, 185, 129, 255],
     bollingerFill: [16, 185, 129, 32],
     tenkan: [220, 38, 38, 255],
@@ -1036,6 +1391,7 @@ function buildChartPngs(data, bars, metrics, options) {
   const buildMainTrendChart = () => {
     const buffer = createRgbaBuffer(width, height, theme.background);
     const totalSlotsForMain = barsWindow.length;
+    const chartTitle = String(data.name || data.ticker || "UNKNOWN");
     const xForSlot = (slot) => {
       if (totalSlotsForMain <= 1) {
         return margin.left + plotWidth / 2;
@@ -1063,25 +1419,26 @@ function buildChartPngs(data, bars, metrics, options) {
     drawLine(buffer, width, height, margin.left, priceTop, margin.left, volumeTop + mainVolumeHeight, theme.border, 1);
     drawLine(buffer, width, height, margin.left + plotWidth, priceTop, margin.left + plotWidth, volumeTop + mainVolumeHeight, theme.border, 1);
 
-    drawText(buffer, width, height, margin.left, margin.top + 4, `CHART ${data.ticker || "UNKNOWN"}`, theme.text, 3);
-    drawText(buffer, width, height, margin.left, margin.top + 34, `AS OF ${metrics.latest.date}`, theme.muted, 2);
-    drawText(buffer, width, height, margin.left + plotWidth, margin.top + 10, "PRICE / MA / VOLUME", theme.muted, 2, "right");
+    drawText(buffer, width, height, margin.left, margin.top + 4, chartTitle, theme.text, 3);
+    drawText(buffer, width, height, margin.left, margin.top + 34, `${data.ticker || "UNKNOWN"} 주가 추세`, theme.muted, 2);
+    drawText(buffer, width, height, margin.left + plotWidth, margin.top + 10, `기준일 ${metrics.latest.date}`, theme.muted, 2, "right");
 
     const legendY = margin.top + 56;
     let legendX = margin.left;
-    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.close, "CLOSE");
-    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.ma5, "MA5");
-    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.ma20, "MA20");
-    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.ma60, "MA60");
-    drawLegendItem(buffer, width, height, legendX, legendY, theme.ma120, "MA120");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.candleUpFill, "캔들");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.close, "종가선");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.ma5, "5일선");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.ma20, "20일선");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.ma60, "60일선");
+    drawLegendItem(buffer, width, height, legendX, legendY, theme.ma120, "120일선");
 
-    drawText(buffer, width, height, margin.left - 72, priceTop + 6, "PRICE", theme.muted, 2);
-    drawText(buffer, width, height, margin.left - 78, volumeTop + 6, "VOLUME", theme.muted, 2);
+    drawText(buffer, width, height, margin.left - 54, priceTop + 6, "주가", theme.muted, 2);
+    drawText(buffer, width, height, margin.left - 72, volumeTop + 6, "거래량", theme.muted, 2);
 
     drawPriceAxis(buffer, priceTop, mainPriceHeight, priceRange.min, priceRange.max);
     drawVolumeAxis(buffer, volumeTop, mainVolumeHeight);
     drawDateTicks(buffer, xForSlot, volumeTop + mainVolumeHeight, volumeTop + mainVolumeHeight + 14, totalSlotsForMain);
-    drawText(buffer, width, height, margin.left + plotWidth / 2, volumeTop + mainVolumeHeight + 42, "DATE", theme.muted, 2, "center");
+    drawText(buffer, width, height, margin.left + plotWidth / 2, volumeTop + mainVolumeHeight + 42, "날짜", theme.muted, 2, "center");
 
     const closePoints = mapSeriesToPoints(priceSeries.close, xForSlot, 0, priceRange.min, priceRange.max, priceTop, mainPriceHeight, totalSlotsForMain);
     const ma5Points = mapSeriesToPoints(priceSeries.ma5, xForSlot, 0, priceRange.min, priceRange.max, priceTop, mainPriceHeight, totalSlotsForMain);
@@ -1089,24 +1446,37 @@ function buildChartPngs(data, bars, metrics, options) {
     const ma60Points = mapSeriesToPoints(priceSeries.ma60, xForSlot, 0, priceRange.min, priceRange.max, priceTop, mainPriceHeight, totalSlotsForMain);
     const ma120Points = mapSeriesToPoints(priceSeries.ma120, xForSlot, 0, priceRange.min, priceRange.max, priceTop, mainPriceHeight, totalSlotsForMain);
 
+    drawCandlesticks(buffer, width, height, barsWindow, xForSlot, priceRange.min, priceRange.max, priceTop, mainPriceHeight, theme);
+    drawSeries(buffer, width, height, closePoints, theme.close, 1);
     drawSeries(buffer, width, height, ma120Points, theme.ma120, 2);
     drawSeries(buffer, width, height, ma60Points, theme.ma60, 2);
     drawSeries(buffer, width, height, ma20Points, theme.ma20, 2);
     drawSeries(buffer, width, height, ma5Points, theme.ma5, 2);
-    drawSeries(buffer, width, height, closePoints, theme.close, 3);
 
     const latestClosePoint = closePoints[barsWindow.length - 1];
     if (latestClosePoint) {
-      fillRect(buffer, width, height, latestClosePoint.x - 4, latestClosePoint.y - 4, 8, 8, theme.close);
-      drawText(
+      drawLine(
         buffer,
         width,
         height,
-        margin.left + plotWidth + 10,
-        latestClosePoint.y - 7,
-        formatAxisNumber(metrics.latestClose),
-        theme.close,
-        2,
+        margin.left,
+        latestClosePoint.y,
+        margin.left + plotWidth,
+        latestClosePoint.y,
+        theme.lastPriceGuide,
+        1,
+      );
+      fillRect(buffer, width, height, latestClosePoint.x - 4, latestClosePoint.y - 4, 8, 8, theme.close);
+      drawValueCallout(
+        buffer,
+        width,
+        height,
+        margin.left + plotWidth - 8,
+        latestClosePoint.y,
+        `현재가 ${formatAxisNumber(metrics.latestClose)}`,
+        theme,
+        priceTop,
+        mainPriceHeight,
       );
     }
 
@@ -1127,6 +1497,7 @@ function buildChartPngs(data, bars, metrics, options) {
 
   const buildOverlayChart = () => {
     const buffer = createRgbaBuffer(width, height, theme.background);
+    const chartTitle = String(data.name || data.ticker || "UNKNOWN");
     const xForSlot = (slot) => {
       if (totalSlots <= 1) {
         return margin.left + plotWidth / 2;
@@ -1156,29 +1527,29 @@ function buildChartPngs(data, bars, metrics, options) {
     drawLine(buffer, width, height, margin.left, priceTop, margin.left, rsiTop + overlayRsiHeight, theme.border, 1);
     drawLine(buffer, width, height, margin.left + plotWidth, priceTop, margin.left + plotWidth, rsiTop + overlayRsiHeight, theme.border, 1);
 
-    drawText(buffer, width, height, margin.left, margin.top + 4, `OVERLAY ${data.ticker || "UNKNOWN"}`, theme.text, 3);
-    drawText(buffer, width, height, margin.left, margin.top + 34, `AS OF ${metrics.latest.date}`, theme.muted, 2);
-    drawText(buffer, width, height, margin.left + plotWidth, margin.top + 10, "BB / ICHIMOKU / RSI", theme.muted, 2, "right");
+    drawText(buffer, width, height, margin.left, margin.top + 4, chartTitle, theme.text, 3);
+    drawText(buffer, width, height, margin.left, margin.top + 34, `${data.ticker || "UNKNOWN"} 보조지표`, theme.muted, 2);
+    drawText(buffer, width, height, margin.left + plotWidth, margin.top + 10, `기준일 ${metrics.latest.date}`, theme.muted, 2, "right");
 
     const legendRow1Y = margin.top + 52;
     const legendRow2Y = margin.top + 72;
     let legendX = margin.left;
-    legendX = drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.close, "CLOSE");
-    legendX = drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.bollinger, "BB");
-    legendX = drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.tenkan, "TENKAN");
-    drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.kijun, "KIJUN");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.close, "종가선");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.bollinger, "볼린저밴드");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.tenkan, "전환선");
+    drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.kijun, "기준선");
 
     legendX = margin.left;
-    legendX = drawLegendItem(buffer, width, height, legendX, legendRow2Y, theme.senkouA, "SENKOU A");
-    drawLegendItem(buffer, width, height, legendX, legendRow2Y, theme.senkouB, "SENKOU B");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendRow2Y, theme.senkouA, "선행스팬1");
+    drawLegendItem(buffer, width, height, legendX, legendRow2Y, theme.senkouB, "선행스팬2");
 
-    drawText(buffer, width, height, margin.left - 72, priceTop + 6, "PRICE", theme.muted, 2);
-    drawText(buffer, width, height, margin.left - 54, rsiTop + 6, "RSI14", theme.muted, 2);
+    drawText(buffer, width, height, margin.left - 54, priceTop + 6, "주가", theme.muted, 2);
+    drawText(buffer, width, height, margin.left - 86, rsiTop + 6, "상대강도", theme.muted, 2);
 
     drawPriceAxis(buffer, priceTop, overlayPriceHeight, priceRange.min, priceRange.max);
     drawRsiAxis(buffer, rsiTop, overlayRsiHeight);
     drawDateTicks(buffer, xForSlot, rsiTop + overlayRsiHeight, rsiTop + overlayRsiHeight + 14, totalSlots);
-    drawText(buffer, width, height, margin.left + plotWidth / 2, rsiTop + overlayRsiHeight + 42, "DATE", theme.muted, 2, "center");
+    drawText(buffer, width, height, margin.left + plotWidth / 2, rsiTop + overlayRsiHeight + 42, "날짜", theme.muted, 2, "center");
 
     const closePoints = mapSeriesToPoints(priceSeries.close, xForSlot, 0, priceRange.min, priceRange.max, priceTop, overlayPriceHeight, totalSlots);
     const bbUpperPoints = mapSeriesToPoints(priceSeries.bbUpper, xForSlot, 0, priceRange.min, priceRange.max, priceTop, overlayPriceHeight, totalSlots);
@@ -1234,16 +1605,28 @@ function buildChartPngs(data, bars, metrics, options) {
 
     const latestClosePoint = closePoints[barsWindow.length - 1];
     if (latestClosePoint) {
-      fillRect(buffer, width, height, latestClosePoint.x - 4, latestClosePoint.y - 4, 8, 8, theme.close);
-      drawText(
+      drawLine(
         buffer,
         width,
         height,
-        margin.left + plotWidth + 10,
-        latestClosePoint.y - 7,
-        formatAxisNumber(metrics.latestClose),
-        theme.close,
-        2,
+        margin.left,
+        latestClosePoint.y,
+        margin.left + plotWidth,
+        latestClosePoint.y,
+        theme.lastPriceGuide,
+        1,
+      );
+      fillRect(buffer, width, height, latestClosePoint.x - 4, latestClosePoint.y - 4, 8, 8, theme.close);
+      drawValueCallout(
+        buffer,
+        width,
+        height,
+        margin.left + plotWidth - 8,
+        latestClosePoint.y,
+        `현재가 ${formatAxisNumber(metrics.latestClose)}`,
+        theme,
+        priceTop,
+        overlayPriceHeight,
       );
     }
 
@@ -1427,7 +1810,7 @@ function main() {
     console.log(`![${data.name || data.ticker || "Chart"} overlay chart](${pngInfo.imagePaths.overlay})`);
     console.log("");
     console.log(
-      `The main chart keeps price, MA5, MA20, MA60, MA120, and volume together. The overlay chart separates Bollinger Bands, Ichimoku cloud lines, and RSI14, and reserves ${pngInfo.leadBarsUsed} forward slots for the projected cloud.`,
+      `The main chart uses OHLC candlesticks with upper and lower wicks, plus MA5, MA20, MA60, MA120, and volume. The overlay chart separates Bollinger Bands, Ichimoku cloud lines, and RSI14, and reserves ${pngInfo.leadBarsUsed} forward slots for the projected cloud.`,
     );
     console.log("");
   }
