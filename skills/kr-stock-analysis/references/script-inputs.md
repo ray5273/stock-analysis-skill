@@ -45,6 +45,8 @@ Run:
 node scripts/chart-basics.js --input <path-to-json> [--png-out <path-to-png>] [--image-path <markdown-image-path>]
 ```
 
+When `--png-out` is set, the script writes the main trend chart to that exact path and writes a sibling overlay image to the same base name with `-overlay` before the extension. The markdown output references both images.
+
 Expected input:
 
 ```json

@@ -72,11 +72,13 @@ Current behavior:
 2. `kr-stock-data-pack` collects dated price context, filings, results, governance facts, valuation inputs, chart inputs, and optional outside-view inputs before drafting.
 3. `kr-stock-analysis` writes the final output as a `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, or `pair compare` for KRX-listed companies, and full memos now add a `Street / Alternative Views` section before valuation and end with company-specific follow-up research questions tied to current evidence gaps.
 4. `kr-stock-update` preserves the original memo date, refreshes `최근 업데이트일`, and appends or replaces dated follow-up blocks under `## Update Log`.
+5. `kr-stock-analysis` chart output now defaults to a split view so price action is easier to read: one main PNG for `close + MA5/20/60/120 + volume`, plus one overlay PNG for `Bollinger + Ichimoku + RSI14`.
 
 Bundled helpers:
 
 - `scripts/fetch-kr-chart.js` for current KRX daily bars
-- `scripts/chart-basics.js` for technical reads plus labeled PNG chart output
+- `scripts/chart-basics.js` for technical reads plus split PNG chart output that separates the main trend view from heavier overlays
+- `scripts/chart-basics.js` writes the requested `--png-out` path as the main trend chart and writes a sibling `*-overlay.png` file for the heavier indicator view
 - `scripts/valuation-bands.js` for 3-5 year valuation band summaries
 - `scripts/peer-valuation.js` for comparable-company valuation tables
 - `skills/kr-stock-update/scripts/extract-report-baseline.js` for parsing memo metadata, update dates, and existing source URLs
@@ -124,6 +126,18 @@ Current behavior:
 4. `kr-sector-compare` keeps cross-sector comparisons on a same-date basis and ranks the setup only when the evidence supports it.
 5. `kr-sector-audit` reviews an existing memo with findings first, prioritizing source, date, and logic integrity over style comments.
 6. `kr-sector-update` preserves the original memo date, refreshes `최근 업데이트일`, and appends or replaces a dated block under `## Update Log`.
+
+Example research brief:
+
+- [analysis-example/kr-sector/국내 대기업집단 IT서비스사 지배구조-리서치브리프.md](analysis-example/kr-sector/국내%20대기업집단%20IT서비스사%20지배구조-리서치브리프.md)
+
+Example data pack:
+
+- [analysis-example/kr-sector/국내 대기업집단 IT서비스사 지배구조-data-pack.md](analysis-example/kr-sector/국내%20대기업집단%20IT서비스사%20지배구조-data-pack.md)
+
+Example full report:
+
+- [analysis-example/kr-sector/국내 대기업집단 IT서비스사 지배구조.md](analysis-example/kr-sector/국내%20대기업집단%20IT서비스사%20지배구조.md)
 
 ## Install
 

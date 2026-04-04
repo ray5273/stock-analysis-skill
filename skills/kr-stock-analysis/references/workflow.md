@@ -99,11 +99,11 @@ Use peer comparisons only if the peer set is genuinely comparable.
 
 - Prefer fetching about 1 year of daily bars before writing the chart section so MA120 and Ichimoku have enough history.
 - Use `scripts/fetch-kr-chart.js` to pull current KRX bars when the user did not provide price history.
-- Use `scripts/chart-basics.js` to generate both the markdown technical read and a PNG chart asset that can be embedded in the memo.
+- Use `scripts/chart-basics.js` to generate both the markdown technical read and split PNG chart assets that can be embedded in the memo.
 - Gather at least 120 daily bars when possible.
 - Report latest close and date, MA5, MA20, MA60, MA120, Bollinger Bands, Ichimoku state, RSI 14, volume versus 20-day average, and nearby breakout or breakdown levels.
-- The PNG should show readable axes, price labels, date labels, and a separate RSI panel rather than an unlabeled price sketch.
-- When you are writing a markdown memo file, embed the generated PNG near the start of the chart section with a normal markdown image link.
+- The chart set should show readable axes, price labels, date labels, and a clearly separated overlay view instead of stacking every indicator on one price panel.
+- When you are writing a markdown memo file, embed the generated main trend PNG first and the overlay PNG immediately after it near the start of the chart section.
 - Keep chart analysis secondary to fundamentals. Use it to frame positioning, momentum, and key levels, not to override business reality.
 - End the chart section with a short chart-only conclusion that says whether the setup looks like bullish continuation, bearish continuation, a technical rebound, a pullback, or range-building.
 - If you do not have enough bars, say the chart read is limited and fall back to simple price-action context such as 1-week, 1-month, 3-month, and 52-week range behavior.
