@@ -1,7 +1,0 @@
-interface:
-  display_name: "Korean DART Analysis"
-  short_description: "한국 DART 공시에서 실적, 사업부문, 수주계약 등 핵심 내용을 근거 중심으로 추출합니다."
-  default_prompt: "Use $kr-dart-analysis to extract a precise, source-mapped filing analysis for a KRX-listed company. Default to Korean for all user-facing output unless the user explicitly asks for English. Start from the exact DART filing scope, determine consolidated versus separate and cumulative versus standalone-quarter basis before quoting numbers, derive standalone quarter figures only when needed and label them as derived, and summarize only what the filing actually discloses about revenue, operating profit, segments, geography, customers, backlog, capex, related-party items, single-sales or supply-contract disclosures, and filing-stated reasons for change. If the user asks for contract disclosures only, use the fixed Korean contract-list format with the exact section order and keep original notices and amended status visible. Keep a clear source map and hand off cleanly to $kr-stock-data-pack or $kr-stock-analysis when broader interpretation is needed."
-
-policy:
-  allow_implicit_invocation: true

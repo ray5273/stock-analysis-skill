@@ -129,44 +129,44 @@ if (!pattern.test(text)) {
         fi
     fi
 
-    if [ "$SKILL_NAME" = "kr-dart-analysis" ]; then
+    if [ "$SKILL_NAME" = "kr-stock-dart-analysis" ]; then
         if ! grep -q 'derived from cumulative filing' "$SKILL_DIR/references/workflow.md"; then
-            echo "Expected kr-dart-analysis workflow to define cumulative-derivation labeling." >&2
+            echo "Expected kr-stock-dart-analysis workflow to define cumulative-derivation labeling." >&2
             exit 1
         fi
 
         if ! grep -q 'KR_DART_STANDALONE_QUARTER_SECTION' "$SKILL_DIR/references/output-format.md"; then
-            echo "Expected kr-dart-analysis output format to define the standalone-quarter section marker." >&2
+            echo "Expected kr-stock-dart-analysis output format to define the standalone-quarter section marker." >&2
             exit 1
         fi
 
         if ! grep -q '^## Source Map$' "$SKILL_DIR/references/output-format.md"; then
-            echo "Expected kr-dart-analysis output format to include Source Map." >&2
+            echo "Expected kr-stock-dart-analysis output format to include Source Map." >&2
             exit 1
         fi
 
         if ! grep -q 'KR_DART_CONTRACT_EOKWON_COLUMNS' "$SKILL_DIR/references/output-format.md"; then
-            echo "Expected kr-dart-analysis contract output format to define 억원-based amount markers." >&2
+            echo "Expected kr-stock-dart-analysis contract output format to define 억원-based amount markers." >&2
             exit 1
         fi
 
         if ! grep -q 'KR_DART_COVERAGE_SUMMARY_SECTION' "$SKILL_DIR/references/output-format.md"; then
-            echo "Expected kr-dart-analysis output format to define the coverage-summary section marker." >&2
+            echo "Expected kr-stock-dart-analysis output format to define the coverage-summary section marker." >&2
             exit 1
         fi
 
         if ! grep -q 'Never present a derived standalone quarter as if the filing disclosed it directly\.' "$SKILL_DIR/SKILL.md"; then
-            echo "Expected kr-dart-analysis skill rules to prohibit unlabeled derived-quarter claims." >&2
+            echo "Expected kr-stock-dart-analysis skill rules to prohibit unlabeled derived-quarter claims." >&2
             exit 1
         fi
 
         if ! grep -q 'Default to Korean for all user-facing output' "$SKILL_DIR/SKILL.md"; then
-            echo "Expected kr-dart-analysis skill rules to default user-facing output to Korean." >&2
+            echo "Expected kr-stock-dart-analysis skill rules to default user-facing output to Korean." >&2
             exit 1
         fi
 
         if ! grep -q 'KR_DART_COVERAGE_SUMMARY_RULE' "$SKILL_DIR/SKILL.md"; then
-            echo "Expected kr-dart-analysis skill rules to include the coverage-summary marker." >&2
+            echo "Expected kr-stock-dart-analysis skill rules to include the coverage-summary marker." >&2
             exit 1
         fi
 

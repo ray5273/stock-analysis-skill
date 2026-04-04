@@ -39,9 +39,26 @@ The brief should usually state:
 - horizon
 - comparison set when relevant
 - mode
+- recommended workflow steps
 - required sections
 - optional sections
 - explicit exclusions
+
+## Workflow Routing
+
+Route the downstream work explicitly instead of leaving the sequence implicit.
+
+- Default stock workflow: `kr-stock-plan -> kr-stock-data-pack -> kr-stock-analysis`
+- Filing-heavy workflow: `kr-stock-plan -> kr-stock-dart-analysis -> kr-stock-data-pack -> kr-stock-analysis`
+- Direct filing-to-memo workflow is acceptable only when the user wants filing-grounded interpretation immediately and the extra fact-pack layers are not necessary.
+
+Prefer the filing-heavy workflow when the request depends on:
+
+- latest quarter or half-year numbers
+- standalone-quarter derivation from cumulative filing data
+- segment, geography, or customer-concentration precision
+- backlog, contract-disclosure, or related-party detail
+- exact disclosure wording that will materially affect the conclusion
 
 ## Failure Modes To Avoid
 

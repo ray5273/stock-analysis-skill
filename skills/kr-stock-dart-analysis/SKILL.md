@@ -1,6 +1,6 @@
 ---
-name: kr-dart-analysis
-description: Extract structured, source-mapped evidence from Korean DART filings for a KRX-listed company. Use when the user needs precise filing-grounded summaries of quarterly or semiannual results, revenue and operating profit detail, segment differences, customer concentration, geography mix, capex, related-party disclosures, single-sales or supply-contract disclosure lists, or management-stated reasons before writing a broader stock memo. Do not use for ETF analysis, portfolio monitoring, broad sector reports, or a final investment memo unless the user explicitly wants filing-only analysis.
+name: kr-stock-dart-analysis
+description: Extract structured, source-mapped evidence from Korean DART filings for a KRX-listed company. Use when the user needs precise filing-grounded summaries of quarterly or semiannual results, revenue and operating profit detail, segment differences, customer concentration, geography mix, capex, related-party disclosures, single-sales or supply-contract disclosure lists, or management-stated reasons before writing a broader stock memo. This is the filing-precision stage inside the broader `kr-stock-plan` -> `kr-stock-dart-analysis` -> `kr-stock-data-pack` -> `kr-stock-analysis` workflow. Do not use for ETF analysis, portfolio monitoring, broad sector reports, or a final investment memo unless the user explicitly wants filing-only analysis.
 ---
 
 # Korean DART Analysis
@@ -46,7 +46,7 @@ Use this skill to turn Korean DART filings into a precise, reusable evidence pac
 7. Separate disclosure from inference.
    Keep management wording, filing facts, and your derived comparisons distinct.
 8. Hand off cleanly.
-   Deliver a filing-grounded pack that `kr-stock-data-pack` or `kr-stock-analysis` can consume without re-reading the full filing.
+    Deliver a filing-grounded pack that `kr-stock-data-pack` or `kr-stock-analysis` can consume without re-reading the full filing, and keep it aligned with the scoped brief from `kr-stock-plan` when one exists.
 
 Read [references/workflow.md](references/workflow.md) for the filing-extraction checklist.
 Read [references/output-format.md](references/output-format.md) for the default evidence-pack shape.
@@ -97,4 +97,5 @@ If a number matters to the conclusion, keep the filing citation visible. If you 
 
 - Use `kr-stock-data-pack` after this when the downstream work still needs valuation, chart, governance, or outside-view inputs.
 - Use `kr-stock-analysis` after this when the user wants a final thesis, valuation view, catalysts, risks, and conclusion.
+- When a `kr-stock-plan` brief already exists, keep the filing extraction scoped to that brief's security, time horizon, and must-answer questions instead of re-scoping from scratch.
 - If the user's request is mainly `what does the latest filing actually say`, keep the answer in filing-analysis mode and stop short of a full investment memo.

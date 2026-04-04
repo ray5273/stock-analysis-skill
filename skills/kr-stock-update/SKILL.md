@@ -15,7 +15,7 @@ Use this skill when the user already has a Korean stock memo and wants follow-up
 - Deduplicate against the memo's existing `Update Log` dates and source URLs when possible.
 - Update the existing memo file instead of creating a separate report by default.
 - Preserve the original `기준일` and maintain a separate `최근 업데이트일`.
-- If the memo does not exist yet, use `kr-stock-analysis` first to create the initial report.
+- If the memo does not exist yet, use `kr-stock-plan`, `kr-stock-dart-analysis`, and `kr-stock-analysis` as needed to create the initial report.
 
 ## Workflow
 

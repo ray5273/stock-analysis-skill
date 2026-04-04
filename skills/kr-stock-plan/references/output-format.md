@@ -23,6 +23,11 @@ Use this default planning shape unless the user asked for something else.
 - Mode:
 - Deliverable path:
 
+## Recommended Workflow
+- Required upstream steps:
+- Optional upstream steps:
+- Why DART-first:
+
 ## Must Answer
 - ...
 

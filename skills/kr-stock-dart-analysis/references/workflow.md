@@ -5,6 +5,7 @@
 - Identify the exact company, ticker, market, and share class.
 - Identify the target filing type: `business report`, `quarterly report`, `half-year report`, `audit report`, `review report`, or `material disclosure`.
 - Identify the target period and whether the user wants a broad filing digest or a narrower question such as results, segments, customer concentration, capex, related-party disclosures, or a contract-disclosure list.
+- If a `kr-stock-plan` brief already exists, inherit its exact security definition, output mode, and must-answer questions before expanding scope.
 - Set the reusable output path early when the workspace is writable. Default to `analysis-example/kr/<company>/dart-analysis.md`.
 
 ## Filing Set
@@ -75,6 +76,17 @@ Extract only what is actually disclosed and relevant to the user's question:
 - single-sales or supply-contract disclosures, amendments, and termination notices
 
 When a useful split is missing, say `not separately disclosed` and move on.
+
+For multi-segment companies:
+
+- introduce the segment abbreviations once with full names and short Korean explanations before showing numbers
+- prefer a matrix table with segments on rows and periods on columns when the user needs to compare multiple quarters or annual values at once
+- keep `4Q 환산` visibly labeled if it is derived from cumulative filings or annual-minus-9M math
+- separate the quantitative matrix from qualitative notes such as backlog, customer mix, or one-off-cost commentary
+
+For single-segment or legally segmented-but-operationally-single companies:
+
+- you may keep the simpler `공시 블록 | 값 또는 핵심 내용` structure if a matrix would add noise rather than clarity
 
 ## Contract List Mode
 
@@ -230,6 +242,7 @@ When the user wants `수주잔고 + 계약 만기 분포 + 커버리지` togethe
 
 After the DART extraction is complete:
 
+- hand off from `kr-stock-plan` into this skill when latest filing precision is central to the stock work
 - hand off to `kr-stock-data-pack` for valuation, governance, chart, and outside-view blocks
 - hand off to `kr-stock-analysis` for thesis, risks, catalysts, and conclusion
 

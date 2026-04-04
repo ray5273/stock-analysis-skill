@@ -125,34 +125,34 @@ foreach ($skillDir in $skillDirs) {
         }
     }
 
-    if ($skillDir.Name -eq "kr-dart-analysis") {
-        $dartWorkflow = [System.IO.File]::ReadAllText((Join-Path $repoRoot "skills\kr-dart-analysis\references\workflow.md"))
+    if ($skillDir.Name -eq "kr-stock-dart-analysis") {
+        $dartWorkflow = [System.IO.File]::ReadAllText((Join-Path $repoRoot "skills\kr-stock-dart-analysis\references\workflow.md"))
         if (-not $dartWorkflow.Contains("derived from cumulative filing")) {
-            Write-Error "Expected kr-dart-analysis workflow to define cumulative-derivation labeling."
+            Write-Error "Expected kr-stock-dart-analysis workflow to define cumulative-derivation labeling."
         }
 
-        $dartOutputFormat = [System.IO.File]::ReadAllText((Join-Path $repoRoot "skills\kr-dart-analysis\references\output-format.md"))
+        $dartOutputFormat = [System.IO.File]::ReadAllText((Join-Path $repoRoot "skills\kr-stock-dart-analysis\references\output-format.md"))
         if (-not $dartOutputFormat.Contains("KR_DART_STANDALONE_QUARTER_SECTION")) {
-            Write-Error "Expected kr-dart-analysis output format to define the standalone-quarter section marker."
+            Write-Error "Expected kr-stock-dart-analysis output format to define the standalone-quarter section marker."
         }
         if (-not $dartOutputFormat.Contains("## Source Map")) {
-            Write-Error "Expected kr-dart-analysis output format to include Source Map."
+            Write-Error "Expected kr-stock-dart-analysis output format to include Source Map."
         }
         if (-not $dartOutputFormat.Contains("KR_DART_CONTRACT_EOKWON_COLUMNS")) {
-            Write-Error "Expected kr-dart-analysis contract output format to define 억원-based amount markers."
+            Write-Error "Expected kr-stock-dart-analysis contract output format to define 억원-based amount markers."
         }
         if (-not $dartOutputFormat.Contains("KR_DART_COVERAGE_SUMMARY_SECTION")) {
-            Write-Error "Expected kr-dart-analysis output format to define the coverage-summary section marker."
+            Write-Error "Expected kr-stock-dart-analysis output format to define the coverage-summary section marker."
         }
 
         if (-not $skillMd.Contains("Never present a derived standalone quarter as if the filing disclosed it directly.")) {
-            Write-Error "Expected kr-dart-analysis skill rules to prohibit unlabeled derived-quarter claims."
+            Write-Error "Expected kr-stock-dart-analysis skill rules to prohibit unlabeled derived-quarter claims."
         }
         if (-not $skillMd.Contains("Default to Korean for all user-facing output")) {
-            Write-Error "Expected kr-dart-analysis skill rules to default user-facing output to Korean."
+            Write-Error "Expected kr-stock-dart-analysis skill rules to default user-facing output to Korean."
         }
         if (-not $skillMd.Contains("KR_DART_COVERAGE_SUMMARY_RULE")) {
-            Write-Error "Expected kr-dart-analysis skill rules to include the coverage-summary marker."
+            Write-Error "Expected kr-stock-dart-analysis skill rules to include the coverage-summary marker."
         }
 
         $coverageExampleFiles = Get-ChildItem -Path (Join-Path $repoRoot "analysis-example\kr\LG CNS") -Filter "*.md"

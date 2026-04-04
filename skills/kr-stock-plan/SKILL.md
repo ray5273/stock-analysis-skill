@@ -25,7 +25,7 @@ Use this skill to turn a vague Korean stock request into an execution-ready brie
 4. State the key questions.
    List what the downstream analysis must answer and what can stay out of scope.
 5. Hand off cleanly.
-   Produce a short research brief that `kr-stock-data-pack` or `kr-stock-analysis` can consume directly.
+   Produce a short research brief that routes the work across `kr-stock-dart-analysis`, `kr-stock-data-pack`, and `kr-stock-analysis` as needed.
 
 Read [references/workflow.md](references/workflow.md) for planning rules.
 Read [references/output-format.md](references/output-format.md) for the required brief shape.
@@ -36,3 +36,4 @@ Read [references/output-format.md](references/output-format.md) for the required
 - Separate user intent from your assumptions.
 - Flag where ordinary shares, preferred shares, holding companies, or operating subsidiaries could change the interpretation.
 - Avoid numeric estimates at this stage unless the user explicitly asked for a scoping estimate and provided a source.
+- When latest filing precision is likely to be thesis-critical, explicitly route the downstream workflow through `kr-stock-dart-analysis` before `kr-stock-data-pack` or `kr-stock-analysis`.

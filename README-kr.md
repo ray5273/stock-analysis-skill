@@ -9,9 +9,23 @@
 
 포함된 스킬:
 
+한국 주식 워크플로 요약: `kr-stock-plan -> kr-stock-dart-analysis -> kr-stock-data-pack -> kr-stock-analysis`
+
+추천 핸드오프 프롬프트:
+
+```text
+Use $kr-stock-plan to scope a Korean stock request first, route through $kr-stock-dart-analysis when filing precision matters, then build the dated fact base with $kr-stock-data-pack, and finish with $kr-stock-analysis.
+```
+
+한국어 예시:
+
+```text
+먼저 $kr-stock-plan으로 한국 주식 요청의 종목, 기간, 출력 모드를 정리하고, 공시 정밀도가 중요하면 $kr-stock-dart-analysis를 거친 뒤, $kr-stock-data-pack으로 날짜가 보이는 팩트 베이스를 만들고, 마지막으로 $kr-stock-analysis로 최종 메모를 작성해줘.
+```
+
 - `us-stock-analysis`: 미국 상장 주식과 미국 상장 ETF 분석
 - `kr-stock-plan`: 한국 주식 리서치 범위를 실행용 브리프로 정리
-- `kr-dart-analysis`: 한국 DART 공시에서 분기, 반기, 사업부문, 고객집중 등 핵심 내용을 정밀 추출
+- `kr-stock-dart-analysis`: 한국 DART 공시에서 분기, 반기, 사업부문, 고객집중 등 핵심 내용을 정밀 추출
 - `kr-stock-data-pack`: 종목 메모 작성 전에 구조화된 팩트팩과 외부 관점 입력값 수집
 - `kr-stock-analysis`: 한국 주식 quick view, full memo, 이벤트 노트, pair compare 작성과 외부 관점 요약, 후속 리서치 질문 생성
 - `kr-stock-update`: 기존 한국 주식 메모에 기준일 이후 업데이트를 누적 반영
@@ -53,7 +67,7 @@
 주요 문서:
 
 - [skills/kr-stock-plan/SKILL.md](skills/kr-stock-plan/SKILL.md)
-- [skills/kr-dart-analysis/SKILL.md](skills/kr-dart-analysis/SKILL.md)
+- [skills/kr-stock-dart-analysis/SKILL.md](skills/kr-stock-dart-analysis/SKILL.md)
 - [skills/kr-stock-data-pack/SKILL.md](skills/kr-stock-data-pack/SKILL.md)
 - [skills/kr-stock-analysis/SKILL.md](skills/kr-stock-analysis/SKILL.md)
 - [skills/kr-stock-analysis/references/blended-source-notes.md](skills/kr-stock-analysis/references/blended-source-notes.md)
@@ -61,12 +75,29 @@
 
 현재 동작:
 
-1. `kr-stock-plan`은 모호한 종목 요청을 정확한 종목, 주식 종류, 기간, 출력 모드가 담긴 브리프로 정리합니다.
-2. `kr-dart-analysis`는 최신 DART 공시에서 매출, 영업이익, 사업부문, 고객집중, 증감 사유를 정확한 표와 섹션 단위로 정리하고, 누적 공시만 있을 때는 분기 단독 수치를 차감 계산으로 분리합니다.
+1. `kr-stock-plan`은 모호한 종목 요청을 정확한 종목, 주식 종류, 기간, 출력 모드, 핵심 질문, 추천 워크플로가 담긴 브리프로 정리합니다.
+2. `kr-stock-dart-analysis`는 최신 DART 공시에서 매출, 영업이익, 사업부문, 고객집중, 수주, 계약공시, 증감 사유를 정확한 표와 섹션 단위로 정리하고, 누적 공시만 있을 때는 분기 단독 수치를 차감 계산으로 분리하는 공시 정밀 단계입니다.
 3. `kr-stock-data-pack`은 가격 기준일, 공시, 실적, 거버넌스, 밸류 입력값, 차트 입력값, 필요할 때는 증권사·전문매체·독립 분석의 외부 관점도 구조화해서 모읍니다.
 4. `kr-stock-analysis`는 KRX 상장 주식 기준으로 `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, `pair compare`를 작성하고, full memo에는 `Street / Alternative Views` 섹션과 현재 근거 공백에 연결된 후속 리서치 질문을 붙입니다.
 5. `kr-stock-update`는 기존 `기준일`을 보존하고 `최근 업데이트일`과 `## Update Log`만 증분 갱신합니다.
 6. `kr-stock-analysis`의 차트 출력은 이제 기본적으로 분리형이며, `OHLC 캔들스틱 + 종가선 + MA5/20/60/120 + 거래량` 메인 PNG 1장과 `볼린저밴드 + 일목균형표 + RSI14` 오버레이 PNG 1장을 함께 생성합니다.
+
+권장 파이프라인:
+
+```text
+kr-stock-plan
+  -> 종목, 출력 모드, 핵심 질문 확정
+  -> 공시 정밀도가 중요하면: kr-stock-dart-analysis
+  -> kr-stock-data-pack
+  -> kr-stock-analysis
+```
+
+라우팅 가이드:
+
+- 티커, 주식 종류, 기간, 비교 범위, 산출물 형식이 아직 모호하면 `kr-stock-plan`부터 시작합니다.
+- 결론이 DART 원문 문구, 누적공시의 분기 환산, 사업부문, 고객집중, 수주잔고, 계약공시에 크게 의존하면 `kr-stock-dart-analysis`를 중간에 넣습니다.
+- `kr-stock-data-pack`은 가격, 거버넌스, 밸류, 차트, 외부 관점까지 날짜가 보이는 입력값을 모으는 단계입니다.
+- 최종 quick view, memo, 이벤트 노트, pair compare 작성은 `kr-stock-analysis`가 맡습니다.
 
 번들 도구:
 
@@ -167,19 +198,19 @@ Use $kr-stock-plan to scope 064400.KS into a clear Korean stock research brief w
 ```
 
 ```text
-Use $kr-dart-analysis to extract a filing-grounded summary for LG CNS covering the latest quarterly or half-year revenue, operating profit, segment differences, customer concentration, and any standalone-quarter derivations needed from cumulative DART figures.
+Use $kr-stock-dart-analysis to extract a filing-grounded summary for LG CNS covering the latest quarterly or half-year revenue, operating profit, segment differences, customer concentration, and any standalone-quarter derivations needed from cumulative DART figures.
 ```
 
 ```text
-Use $kr-dart-analysis to check a Korean company's disclosed order backlog, compare it with same-basis annual revenue, and report backlog coverage in Korean with clear source mapping and a note that the ratio is derived rather than a formally disclosed KPI.
+Use $kr-stock-dart-analysis to check a Korean company's disclosed order backlog, compare it with same-basis annual revenue, and report backlog coverage in Korean with clear source mapping and a note that the ratio is derived rather than a formally disclosed KPI.
 ```
 
 ```text
-Use $kr-dart-analysis to list all disclosed single-sales or supply contracts for a Korean company over the last 12 months, keeping original notices, amendments, counterparties, amounts, sales ratios, contract periods, and latest status visible row by row.
+Use $kr-stock-dart-analysis to list all disclosed single-sales or supply contracts for a Korean company over the last 12 months, keeping original notices, amendments, counterparties, amounts, sales ratios, contract periods, and latest status visible row by row.
 ```
 
 ```text
-Use $kr-dart-analysis to list all disclosed single-sales or supply contracts for a Korean company and add a maturity table showing how much current effective contract amount ends by 2027, by 2028, and by each later year, clearly labeled as contract-period coverage rather than formal backlog unless the filing discloses backlog.
+Use $kr-stock-dart-analysis to list all disclosed single-sales or supply contracts for a Korean company and add a maturity table showing how much current effective contract amount ends by 2027, by 2028, and by each later year, clearly labeled as contract-period coverage rather than formal backlog unless the filing discloses backlog.
 ```
 
 ```text
@@ -213,15 +244,15 @@ Use $kr-sector-analysis to write a Korea security-operations market report with 
 ```
 
 ```text
-/kr-dart-analysis extract a filing-grounded summary for LG CNS covering the latest quarterly or half-year revenue, operating profit, segment differences, customer concentration, and any standalone-quarter derivations needed from cumulative DART figures.
+/kr-stock-dart-analysis extract a filing-grounded summary for LG CNS covering the latest quarterly or half-year revenue, operating profit, segment differences, customer concentration, and any standalone-quarter derivations needed from cumulative DART figures.
 ```
 
 ```text
-/kr-dart-analysis list all disclosed single-sales or supply contracts for a Korean company over the last 12 months, keeping original notices, amendments, counterparties, amounts, sales ratios, contract periods, and latest status visible row by row.
+/kr-stock-dart-analysis list all disclosed single-sales or supply contracts for a Korean company over the last 12 months, keeping original notices, amendments, counterparties, amounts, sales ratios, contract periods, and latest status visible row by row.
 ```
 
 ```text
-/kr-dart-analysis list all disclosed single-sales or supply contracts for a Korean company and add a maturity table showing how much current effective contract amount ends by 2027, by 2028, and by each later year, clearly labeled as contract-period coverage rather than formal backlog unless the filing discloses backlog.
+/kr-stock-dart-analysis list all disclosed single-sales or supply contracts for a Korean company and add a maturity table showing how much current effective contract amount ends by 2027, by 2028, and by each later year, clearly labeled as contract-period coverage rather than formal backlog unless the filing discloses backlog.
 ```
 
 ```text
@@ -252,6 +283,7 @@ Use $kr-sector-analysis to write a Korea security-operations market report with 
 - [KR - LG CNS DART 분석](<analysis-example/kr/LG CNS/dart-analysis.md>)
 - [KR - LG CNS 수주 통합 분석](<analysis-example/kr/LG CNS/수주통합분석.md>)
 - [KR - LG CNS](<analysis-example/kr/LG CNS/memo.md>)
+- [KR - LG전자 DART 분석](<analysis-example/kr/LG전자/dart-analysis.md>)
 - [KR - 두산에너빌리티 DART 분석](<analysis-example/kr/두산에너빌리티/dart-analysis.md>)
 - [KR - 두산에너빌리티 수주 통합 분석](<analysis-example/kr/두산에너빌리티/수주통합분석.md>)
 - [KR - 한전KPS 수주계약 리스트](<analysis-example/kr/한전KPS/수주계약리스트.md>)
