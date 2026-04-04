@@ -70,10 +70,14 @@ foreach ($skillDir in $skillDirs) {
         $chartScript = ".\skills\kr-stock-analysis\scripts\chart-basics.js"
         $fetchScript = ".\skills\kr-stock-analysis\scripts\fetch-kr-chart.js"
         $chartOut = ".\.tmp\$(Split-Path -Leaf $tempRoot)\kr-chart.png"
+        $chartOverlayOut = ".\.tmp\$(Split-Path -Leaf $tempRoot)\kr-chart-overlay.png"
 
         node $chartScript --input $chartSample --png-out $chartOut --image-path "chart.png" | Out-Null
         if (-not (Test-Path $chartOut) -or (Get-Item $chartOut).Length -le 0) {
             Write-Error "Expected chart PNG was not created: $chartOut"
+        }
+        if (-not (Test-Path $chartOverlayOut) -or (Get-Item $chartOverlayOut).Length -le 0) {
+            Write-Error "Expected overlay chart PNG was not created: $chartOverlayOut"
         }
 
         node $fetchScript --help | Out-Null

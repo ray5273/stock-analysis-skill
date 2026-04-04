@@ -49,7 +49,7 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 
 - Use `scripts/peer-valuation.js` when the user provides peer metrics and you need a consistent markdown comparison table.
 - Use `scripts/fetch-kr-chart.js` when you need current KRX daily bars and the user did not already provide OHLCV history.
-- Use `scripts/chart-basics.js` when you need a technical read plus a labeled PNG chart that can be embedded into a markdown memo.
+- Use `scripts/chart-basics.js` when you need a technical read plus split PNG charts that separate the main price trend from heavier overlay indicators inside a markdown memo.
 - Use `scripts/valuation-bands.js` when the user provides 3-5 years of historical valuation multiples and you need markdown tables plus ASCII band charts for P/E, EV/EBITDA, and P/B.
 - Run all bundled scripts with `node`.
 

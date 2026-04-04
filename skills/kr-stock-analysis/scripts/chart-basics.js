@@ -101,7 +101,8 @@ function usage() {
     "  - The input JSON must include bars with date and close.",
     "  - high and low are required for Bollinger and Ichimoku overlays to be fully useful.",
     "  - volume is optional but recommended for volume panel and participation read.",
-    "  - When --png-out is set, the script writes a labeled PNG and prints a markdown image snippet.",
+    "  - When --png-out is set, the script writes the main trend chart to that path and a sibling overlay chart to *-overlay.png.",
+    "  - The markdown output prints both image snippets when PNG output is enabled.",
   ].join("\n");
 }
 
@@ -882,7 +883,15 @@ function mapSeriesToPoints(series, xForSlot, slotOffset, minValue, maxValue, top
   return points;
 }
 
-function buildChartPng(data, bars, metrics, options) {
+function appendSuffixToPath(targetPath, suffix) {
+  const extension = path.extname(targetPath);
+  if (extension) {
+    return `${targetPath.slice(0, -extension.length)}-${suffix}${extension}`;
+  }
+  return `${targetPath}-${suffix}.png`;
+}
+
+function buildChartPngs(data, bars, metrics, options) {
   const width = options.width;
   const height = options.height;
   const chartBars = Math.max(30, options.chartBars);
@@ -911,46 +920,23 @@ function buildChartPng(data, bars, metrics, options) {
     senkouB: [239, 68, 68, 220],
     cloudBull: [34, 197, 94, 42],
     cloudBear: [239, 68, 68, 42],
-    chikou: [99, 102, 241, 150],
     volumeUp: [34, 197, 94, 255],
     volumeDown: [239, 68, 68, 255],
     rsi: [124, 58, 237, 255],
     rsiGuide: [148, 163, 184, 255],
   };
 
-  const buffer = createRgbaBuffer(width, height, theme.background);
   const margin = { left: 100, right: 120, top: 84, bottom: 78 };
   const plotWidth = width - margin.left - margin.right;
   const headerHeight = 92;
   const gap = 26;
-  const priceHeight = 520;
-  const volumeHeight = 150;
-  const rsiHeight = 150;
-  const priceTop = margin.top + headerHeight;
-  const volumeTop = priceTop + priceHeight + gap;
-  const rsiTop = volumeTop + volumeHeight + gap;
+  const basePlotHeight = height - margin.top - margin.bottom - headerHeight;
+  const dualPanelHeight = basePlotHeight - gap;
+  const mainVolumeHeight = Math.max(90, Math.min(150, Math.round(dualPanelHeight * 0.22)));
+  const mainPriceHeight = dualPanelHeight - mainVolumeHeight;
+  const overlayRsiHeight = Math.max(90, Math.min(150, Math.round(dualPanelHeight * 0.22)));
+  const overlayPriceHeight = dualPanelHeight - overlayRsiHeight;
 
-  fillRect(buffer, width, height, margin.left, priceTop, plotWidth, priceHeight, theme.panel);
-  fillRect(buffer, width, height, margin.left, volumeTop, plotWidth, volumeHeight, theme.panel);
-  fillRect(buffer, width, height, margin.left, rsiTop, plotWidth, rsiHeight, theme.panel);
-
-  drawLine(buffer, width, height, margin.left, priceTop, margin.left + plotWidth, priceTop, theme.border, 1);
-  drawLine(buffer, width, height, margin.left, priceTop + priceHeight, margin.left + plotWidth, priceTop + priceHeight, theme.border, 1);
-  drawLine(buffer, width, height, margin.left, volumeTop, margin.left + plotWidth, volumeTop, theme.border, 1);
-  drawLine(buffer, width, height, margin.left, volumeTop + volumeHeight, margin.left + plotWidth, volumeTop + volumeHeight, theme.border, 1);
-  drawLine(buffer, width, height, margin.left, rsiTop, margin.left + plotWidth, rsiTop, theme.border, 1);
-  drawLine(buffer, width, height, margin.left, rsiTop + rsiHeight, margin.left + plotWidth, rsiTop + rsiHeight, theme.border, 1);
-  drawLine(buffer, width, height, margin.left, priceTop, margin.left, rsiTop + rsiHeight, theme.border, 1);
-  drawLine(buffer, width, height, margin.left + plotWidth, priceTop, margin.left + plotWidth, rsiTop + rsiHeight, theme.border, 1);
-
-  const xForSlot = (slot) => {
-    if (totalSlots <= 1) {
-      return margin.left + plotWidth / 2;
-    }
-    return margin.left + (plotWidth * slot) / (totalSlots - 1);
-  };
-
-  const priceCandidateValues = [];
   const priceSeries = {
     close: barsWindow.map((bar) => bar.close),
     ma5: metrics.ma5Series.slice(startIndex),
@@ -961,200 +947,322 @@ function buildChartPng(data, bars, metrics, options) {
     bbLower: metrics.bollingerSeriesData.lower.slice(startIndex),
     tenkan: metrics.ichimokuSeriesData.tenkan.slice(startIndex),
     kijun: metrics.ichimokuSeriesData.kijun.slice(startIndex),
-    chikou: metrics.ichimokuSeriesData.chikou.slice(startIndex),
   };
 
-  barsWindow.forEach((bar) => {
-    ["high", "low", "close"].forEach((key) => {
-      if (Number.isFinite(bar[key])) {
-        priceCandidateValues.push(bar[key]);
-      }
-    });
-  });
-
-  Object.values(priceSeries).forEach((series) => {
-    series.forEach((value) => {
-      if (Number.isFinite(value)) {
-        priceCandidateValues.push(value);
-      }
-    });
-  });
-
-  metrics.ichimokuSeriesData.senkouA.slice(startIndex).forEach((value) => {
-    if (Number.isFinite(value)) {
-      priceCandidateValues.push(value);
-    }
-  });
-  metrics.ichimokuSeriesData.senkouB.slice(startIndex).forEach((value) => {
-    if (Number.isFinite(value)) {
-      priceCandidateValues.push(value);
-    }
-  });
-
-  let priceMin = Math.min(...priceCandidateValues);
-  let priceMax = Math.max(...priceCandidateValues);
-  if (priceMin === priceMax) {
-    priceMin -= 1;
-    priceMax += 1;
-  }
-  const pricePadding = (priceMax - priceMin) * 0.08;
-  priceMin -= pricePadding;
-  priceMax += pricePadding;
-
   const volumeMax = Math.max(...barsWindow.map((bar) => (Number.isFinite(bar.volume) ? bar.volume : 0)), 1);
-
-  drawText(buffer, width, height, margin.left, margin.top + 4, `CHART ${data.ticker || "UNKNOWN"}`, theme.text, 3);
-  drawText(buffer, width, height, margin.left, margin.top + 34, `AS OF ${metrics.latest.date}`, theme.muted, 2);
-  drawText(buffer, width, height, margin.left + plotWidth, margin.top + 10, "PRICE / VOLUME / RSI", theme.muted, 2, "right");
-
-  const legendRow1Y = margin.top + 52;
-  const legendRow2Y = margin.top + 72;
-  let legendX = margin.left;
-  legendX = drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.close, "CLOSE");
-  legendX = drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.ma5, "MA5");
-  legendX = drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.ma20, "MA20");
-  legendX = drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.ma60, "MA60");
-  legendX = drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.ma120, "MA120");
-
-  legendX = margin.left;
-  legendX = drawLegendItem(buffer, width, height, legendX, legendRow2Y, theme.bollinger, "BB");
-  legendX = drawLegendItem(buffer, width, height, legendX, legendRow2Y, theme.tenkan, "TENKAN");
-  legendX = drawLegendItem(buffer, width, height, legendX, legendRow2Y, theme.kijun, "KIJUN");
-  legendX = drawLegendItem(buffer, width, height, legendX, legendRow2Y, theme.senkouA, "SENKOU A");
-  legendX = drawLegendItem(buffer, width, height, legendX, legendRow2Y, theme.senkouB, "SENKOU B");
-
-  drawText(buffer, width, height, margin.left - 72, priceTop + 6, "PRICE", theme.muted, 2);
-  drawText(buffer, width, height, margin.left - 78, volumeTop + 6, "VOLUME", theme.muted, 2);
-  drawText(buffer, width, height, margin.left - 54, rsiTop + 6, "RSI14", theme.muted, 2);
-
-  for (let tick = 0; tick <= 4; tick += 1) {
-    const y = priceTop + (priceHeight * tick) / 4;
-    drawLine(buffer, width, height, margin.left, y, margin.left + plotWidth, y, theme.grid, 1);
-    const value = priceMax - ((priceMax - priceMin) * tick) / 4;
-    drawText(buffer, width, height, margin.left + plotWidth + 10, y - 7, formatAxisNumber(value), theme.muted, 2);
-  }
-
-  for (let tick = 0; tick <= 2; tick += 1) {
-    const y = volumeTop + (volumeHeight * tick) / 2;
-    drawLine(buffer, width, height, margin.left, y, margin.left + plotWidth, y, theme.grid, 1);
-    const value = Math.round(volumeMax - (volumeMax * tick) / 2);
-    drawText(buffer, width, height, margin.left + plotWidth + 10, y - 7, formatAxisNumber(value), theme.muted, 2);
-  }
-
-  [30, 50, 70].forEach((level) => {
-    const y = valueToY(level, 0, 100, rsiTop, rsiHeight);
-    drawLine(buffer, width, height, margin.left, y, margin.left + plotWidth, y, theme.rsiGuide, 1);
-    drawText(buffer, width, height, margin.left + plotWidth + 10, y - 7, String(level), theme.muted, 2);
-  });
-
-  const dateTickIndices = pickTickIndices(barsWindow.length, 6);
-  dateTickIndices.forEach((index) => {
-    const slot = index;
-    const x = xForSlot(slot);
-    drawLine(buffer, width, height, x, priceTop, x, rsiTop + rsiHeight, theme.grid, 1);
-    drawText(buffer, width, height, x, rsiTop + rsiHeight + 14, dateLabel(barsWindow[index].date), theme.muted, 2, "center");
-  });
-  drawText(buffer, width, height, margin.left + plotWidth / 2, rsiTop + rsiHeight + 42, "DATE", theme.muted, 2, "center");
-
-  const totalPoints = totalSlots;
-  const closePoints = mapSeriesToPoints(priceSeries.close, xForSlot, 0, priceMin, priceMax, priceTop, priceHeight, totalPoints);
-  const ma5Points = mapSeriesToPoints(priceSeries.ma5, xForSlot, 0, priceMin, priceMax, priceTop, priceHeight, totalPoints);
-  const ma20Points = mapSeriesToPoints(priceSeries.ma20, xForSlot, 0, priceMin, priceMax, priceTop, priceHeight, totalPoints);
-  const ma60Points = mapSeriesToPoints(priceSeries.ma60, xForSlot, 0, priceMin, priceMax, priceTop, priceHeight, totalPoints);
-  const ma120Points = mapSeriesToPoints(priceSeries.ma120, xForSlot, 0, priceMin, priceMax, priceTop, priceHeight, totalPoints);
-  const bbUpperPoints = mapSeriesToPoints(priceSeries.bbUpper, xForSlot, 0, priceMin, priceMax, priceTop, priceHeight, totalPoints);
-  const bbLowerPoints = mapSeriesToPoints(priceSeries.bbLower, xForSlot, 0, priceMin, priceMax, priceTop, priceHeight, totalPoints);
-  const tenkanPoints = mapSeriesToPoints(priceSeries.tenkan, xForSlot, 0, priceMin, priceMax, priceTop, priceHeight, totalPoints);
-  const kijunPoints = mapSeriesToPoints(priceSeries.kijun, xForSlot, 0, priceMin, priceMax, priceTop, priceHeight, totalPoints);
-  const chikouPoints = mapSeriesToPoints(priceSeries.chikou, xForSlot, -26, priceMin, priceMax, priceTop, priceHeight, totalPoints);
-  const senkouAPoints = mapSeriesToPoints(metrics.ichimokuSeriesData.senkouA.slice(startIndex), xForSlot, 26, priceMin, priceMax, priceTop, priceHeight, totalPoints);
-  const senkouBPoints = mapSeriesToPoints(metrics.ichimokuSeriesData.senkouB.slice(startIndex), xForSlot, 26, priceMin, priceMax, priceTop, priceHeight, totalPoints);
-
-  drawFilledBand(buffer, width, height, bbUpperPoints, bbLowerPoints, theme.bollingerFill);
-  const cloudUpperPoints = [];
-  const cloudLowerPoints = [];
-  const cloudColors = [];
-  for (let index = 0; index < totalPoints; index += 1) {
-    const aPoint = senkouAPoints[index];
-    const bPoint = senkouBPoints[index];
-    if (aPoint && bPoint) {
-      cloudUpperPoints[index] = aPoint.y <= bPoint.y ? aPoint : bPoint;
-      cloudLowerPoints[index] = aPoint.y > bPoint.y ? aPoint : bPoint;
-      cloudColors[index] = aPoint.y <= bPoint.y ? theme.cloudBull : theme.cloudBear;
-    } else {
-      cloudUpperPoints[index] = null;
-      cloudLowerPoints[index] = null;
-      cloudColors[index] = null;
+  const buildPriceRange = (seriesCollection) => {
+    const values = [];
+    barsWindow.forEach((bar) => {
+      ["high", "low", "close"].forEach((key) => {
+        if (Number.isFinite(bar[key])) {
+          values.push(bar[key]);
+        }
+      });
+    });
+    seriesCollection.forEach((series) => {
+      series.forEach((value) => {
+        if (Number.isFinite(value)) {
+          values.push(value);
+        }
+      });
+    });
+    let priceMin = Math.min(...values);
+    let priceMax = Math.max(...values);
+    if (priceMin === priceMax) {
+      priceMin -= 1;
+      priceMax += 1;
     }
-  }
-  for (let index = 0; index < totalPoints; index += 1) {
-    if (cloudUpperPoints[index] && cloudLowerPoints[index]) {
-      drawVerticalBand(
+    const pricePadding = (priceMax - priceMin) * 0.08;
+    return {
+      min: priceMin - pricePadding,
+      max: priceMax + pricePadding,
+    };
+  };
+
+  const drawPriceAxis = (buffer, panelTop, panelHeight, priceMin, priceMax) => {
+    for (let tick = 0; tick <= 4; tick += 1) {
+      const y = panelTop + (panelHeight * tick) / 4;
+      drawLine(buffer, width, height, margin.left, y, margin.left + plotWidth, y, theme.grid, 1);
+      const value = priceMax - ((priceMax - priceMin) * tick) / 4;
+      drawText(buffer, width, height, margin.left + plotWidth + 10, y - 7, formatAxisNumber(value), theme.muted, 2);
+    }
+  };
+
+  const drawVolumeAxis = (buffer, panelTop, panelHeight) => {
+    for (let tick = 0; tick <= 2; tick += 1) {
+      const y = panelTop + (panelHeight * tick) / 2;
+      drawLine(buffer, width, height, margin.left, y, margin.left + plotWidth, y, theme.grid, 1);
+      const value = Math.round(volumeMax - (volumeMax * tick) / 2);
+      drawText(buffer, width, height, margin.left + plotWidth + 10, y - 7, formatAxisNumber(value), theme.muted, 2);
+    }
+  };
+
+  const drawRsiAxis = (buffer, panelTop, panelHeight) => {
+    [30, 50, 70].forEach((level) => {
+      const y = valueToY(level, 0, 100, panelTop, panelHeight);
+      drawLine(buffer, width, height, margin.left, y, margin.left + plotWidth, y, theme.rsiGuide, 1);
+      drawText(buffer, width, height, margin.left + plotWidth + 10, y - 7, String(level), theme.muted, 2);
+    });
+  };
+
+  const drawDateTicks = (buffer, xForSlot, chartBottom, labelBottom, totalSlotsForGrid) => {
+    const dateTickIndices = pickTickIndices(barsWindow.length, 6);
+    dateTickIndices.forEach((index) => {
+      const x = xForSlot(index);
+      drawLine(buffer, width, height, x, margin.top + headerHeight, x, chartBottom, theme.grid, 1);
+      drawText(buffer, width, height, x, labelBottom, dateLabel(barsWindow[index].date), theme.muted, 2, "center");
+    });
+    if (totalSlotsForGrid > barsWindow.length) {
+      const latestX = xForSlot(barsWindow.length - 1);
+      drawLine(buffer, width, height, latestX, margin.top + headerHeight, latestX, chartBottom, theme.border, 1);
+    }
+  };
+
+  const writePng = (outputPath, rgbaBuffer) => {
+    const png = encodePng(width, height, rgbaBuffer);
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    fs.writeFileSync(outputPath, png);
+  };
+
+  const chartPaths = {
+    mainOutput: path.resolve(options.pngOut),
+    overlayOutput: path.resolve(appendSuffixToPath(options.pngOut, "overlay")),
+    mainImagePath: options.imagePath || path.basename(options.pngOut),
+    overlayImagePath: options.imagePath
+      ? appendSuffixToPath(options.imagePath, "overlay")
+      : appendSuffixToPath(path.basename(options.pngOut), "overlay"),
+  };
+
+  const buildMainTrendChart = () => {
+    const buffer = createRgbaBuffer(width, height, theme.background);
+    const totalSlotsForMain = barsWindow.length;
+    const xForSlot = (slot) => {
+      if (totalSlotsForMain <= 1) {
+        return margin.left + plotWidth / 2;
+      }
+      return margin.left + (plotWidth * slot) / (totalSlotsForMain - 1);
+    };
+
+    const priceTop = margin.top + headerHeight;
+    const volumeTop = priceTop + mainPriceHeight + gap;
+    const priceRange = buildPriceRange([
+      priceSeries.close,
+      priceSeries.ma5,
+      priceSeries.ma20,
+      priceSeries.ma60,
+      priceSeries.ma120,
+    ]);
+
+    fillRect(buffer, width, height, margin.left, priceTop, plotWidth, mainPriceHeight, theme.panel);
+    fillRect(buffer, width, height, margin.left, volumeTop, plotWidth, mainVolumeHeight, theme.panel);
+
+    drawLine(buffer, width, height, margin.left, priceTop, margin.left + plotWidth, priceTop, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, priceTop + mainPriceHeight, margin.left + plotWidth, priceTop + mainPriceHeight, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, volumeTop, margin.left + plotWidth, volumeTop, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, volumeTop + mainVolumeHeight, margin.left + plotWidth, volumeTop + mainVolumeHeight, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, priceTop, margin.left, volumeTop + mainVolumeHeight, theme.border, 1);
+    drawLine(buffer, width, height, margin.left + plotWidth, priceTop, margin.left + plotWidth, volumeTop + mainVolumeHeight, theme.border, 1);
+
+    drawText(buffer, width, height, margin.left, margin.top + 4, `CHART ${data.ticker || "UNKNOWN"}`, theme.text, 3);
+    drawText(buffer, width, height, margin.left, margin.top + 34, `AS OF ${metrics.latest.date}`, theme.muted, 2);
+    drawText(buffer, width, height, margin.left + plotWidth, margin.top + 10, "PRICE / MA / VOLUME", theme.muted, 2, "right");
+
+    const legendY = margin.top + 56;
+    let legendX = margin.left;
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.close, "CLOSE");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.ma5, "MA5");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.ma20, "MA20");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.ma60, "MA60");
+    drawLegendItem(buffer, width, height, legendX, legendY, theme.ma120, "MA120");
+
+    drawText(buffer, width, height, margin.left - 72, priceTop + 6, "PRICE", theme.muted, 2);
+    drawText(buffer, width, height, margin.left - 78, volumeTop + 6, "VOLUME", theme.muted, 2);
+
+    drawPriceAxis(buffer, priceTop, mainPriceHeight, priceRange.min, priceRange.max);
+    drawVolumeAxis(buffer, volumeTop, mainVolumeHeight);
+    drawDateTicks(buffer, xForSlot, volumeTop + mainVolumeHeight, volumeTop + mainVolumeHeight + 14, totalSlotsForMain);
+    drawText(buffer, width, height, margin.left + plotWidth / 2, volumeTop + mainVolumeHeight + 42, "DATE", theme.muted, 2, "center");
+
+    const closePoints = mapSeriesToPoints(priceSeries.close, xForSlot, 0, priceRange.min, priceRange.max, priceTop, mainPriceHeight, totalSlotsForMain);
+    const ma5Points = mapSeriesToPoints(priceSeries.ma5, xForSlot, 0, priceRange.min, priceRange.max, priceTop, mainPriceHeight, totalSlotsForMain);
+    const ma20Points = mapSeriesToPoints(priceSeries.ma20, xForSlot, 0, priceRange.min, priceRange.max, priceTop, mainPriceHeight, totalSlotsForMain);
+    const ma60Points = mapSeriesToPoints(priceSeries.ma60, xForSlot, 0, priceRange.min, priceRange.max, priceTop, mainPriceHeight, totalSlotsForMain);
+    const ma120Points = mapSeriesToPoints(priceSeries.ma120, xForSlot, 0, priceRange.min, priceRange.max, priceTop, mainPriceHeight, totalSlotsForMain);
+
+    drawSeries(buffer, width, height, ma120Points, theme.ma120, 2);
+    drawSeries(buffer, width, height, ma60Points, theme.ma60, 2);
+    drawSeries(buffer, width, height, ma20Points, theme.ma20, 2);
+    drawSeries(buffer, width, height, ma5Points, theme.ma5, 2);
+    drawSeries(buffer, width, height, closePoints, theme.close, 3);
+
+    const latestClosePoint = closePoints[barsWindow.length - 1];
+    if (latestClosePoint) {
+      fillRect(buffer, width, height, latestClosePoint.x - 4, latestClosePoint.y - 4, 8, 8, theme.close);
+      drawText(
         buffer,
         width,
         height,
-        Math.round(cloudUpperPoints[index].x),
-        cloudUpperPoints[index].y,
-        cloudLowerPoints[index].y,
-        cloudColors[index],
-        3,
+        margin.left + plotWidth + 10,
+        latestClosePoint.y - 7,
+        formatAxisNumber(metrics.latestClose),
+        theme.close,
+        2,
       );
     }
-  }
 
-  drawSeries(buffer, width, height, bbUpperPoints, theme.bollinger, 2);
-  drawSeries(buffer, width, height, bbLowerPoints, theme.bollinger, 2);
-  drawSeries(buffer, width, height, senkouAPoints, theme.senkouA, 2);
-  drawSeries(buffer, width, height, senkouBPoints, theme.senkouB, 2);
-  drawSeries(buffer, width, height, chikouPoints, theme.chikou, 2);
-  drawSeries(buffer, width, height, ma120Points, theme.ma120, 2);
-  drawSeries(buffer, width, height, ma60Points, theme.ma60, 2);
-  drawSeries(buffer, width, height, ma20Points, theme.ma20, 2);
-  drawSeries(buffer, width, height, ma5Points, theme.ma5, 2);
-  drawSeries(buffer, width, height, tenkanPoints, theme.tenkan, 2);
-  drawSeries(buffer, width, height, kijunPoints, theme.kijun, 2);
-  drawSeries(buffer, width, height, closePoints, theme.close, 3);
+    const volumeBarWidth = Math.max(3, Math.floor(plotWidth / Math.max(barsWindow.length * 1.8, 1)));
+    barsWindow.forEach((bar, index) => {
+      if (!Number.isFinite(bar.volume)) {
+        return;
+      }
+      const x = xForSlot(index);
+      const previousClose = index === 0 ? bar.close : barsWindow[index - 1].close;
+      const color = bar.close >= previousClose ? theme.volumeUp : theme.volumeDown;
+      const barHeight = Math.max(2, Math.round((bar.volume / volumeMax) * (mainVolumeHeight - 4)));
+      fillRect(buffer, width, height, x - volumeBarWidth / 2, volumeTop + mainVolumeHeight - barHeight, volumeBarWidth, barHeight, color);
+    });
 
-  const latestClosePoint = closePoints[barsWindow.length - 1];
-  if (latestClosePoint) {
-    fillRect(buffer, width, height, latestClosePoint.x - 4, latestClosePoint.y - 4, 8, 8, theme.close);
-    drawText(
-      buffer,
-      width,
-      height,
-      margin.left + plotWidth + 10,
-      latestClosePoint.y - 7,
-      formatAxisNumber(metrics.latestClose),
-      theme.close,
-      2,
-    );
-  }
+    writePng(chartPaths.mainOutput, buffer);
+  };
 
-  const volumeBarWidth = Math.max(3, Math.floor(plotWidth / Math.max(barsWindow.length * 1.8, 1)));
-  barsWindow.forEach((bar, index) => {
-    if (!Number.isFinite(bar.volume)) {
-      return;
+  const buildOverlayChart = () => {
+    const buffer = createRgbaBuffer(width, height, theme.background);
+    const xForSlot = (slot) => {
+      if (totalSlots <= 1) {
+        return margin.left + plotWidth / 2;
+      }
+      return margin.left + (plotWidth * slot) / (totalSlots - 1);
+    };
+
+    const priceTop = margin.top + headerHeight;
+    const rsiTop = priceTop + overlayPriceHeight + gap;
+    const priceRange = buildPriceRange([
+      priceSeries.close,
+      priceSeries.bbUpper,
+      priceSeries.bbLower,
+      priceSeries.tenkan,
+      priceSeries.kijun,
+      metrics.ichimokuSeriesData.senkouA.slice(startIndex),
+      metrics.ichimokuSeriesData.senkouB.slice(startIndex),
+    ]);
+
+    fillRect(buffer, width, height, margin.left, priceTop, plotWidth, overlayPriceHeight, theme.panel);
+    fillRect(buffer, width, height, margin.left, rsiTop, plotWidth, overlayRsiHeight, theme.panel);
+
+    drawLine(buffer, width, height, margin.left, priceTop, margin.left + plotWidth, priceTop, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, priceTop + overlayPriceHeight, margin.left + plotWidth, priceTop + overlayPriceHeight, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, rsiTop, margin.left + plotWidth, rsiTop, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, rsiTop + overlayRsiHeight, margin.left + plotWidth, rsiTop + overlayRsiHeight, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, priceTop, margin.left, rsiTop + overlayRsiHeight, theme.border, 1);
+    drawLine(buffer, width, height, margin.left + plotWidth, priceTop, margin.left + plotWidth, rsiTop + overlayRsiHeight, theme.border, 1);
+
+    drawText(buffer, width, height, margin.left, margin.top + 4, `OVERLAY ${data.ticker || "UNKNOWN"}`, theme.text, 3);
+    drawText(buffer, width, height, margin.left, margin.top + 34, `AS OF ${metrics.latest.date}`, theme.muted, 2);
+    drawText(buffer, width, height, margin.left + plotWidth, margin.top + 10, "BB / ICHIMOKU / RSI", theme.muted, 2, "right");
+
+    const legendRow1Y = margin.top + 52;
+    const legendRow2Y = margin.top + 72;
+    let legendX = margin.left;
+    legendX = drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.close, "CLOSE");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.bollinger, "BB");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.tenkan, "TENKAN");
+    drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.kijun, "KIJUN");
+
+    legendX = margin.left;
+    legendX = drawLegendItem(buffer, width, height, legendX, legendRow2Y, theme.senkouA, "SENKOU A");
+    drawLegendItem(buffer, width, height, legendX, legendRow2Y, theme.senkouB, "SENKOU B");
+
+    drawText(buffer, width, height, margin.left - 72, priceTop + 6, "PRICE", theme.muted, 2);
+    drawText(buffer, width, height, margin.left - 54, rsiTop + 6, "RSI14", theme.muted, 2);
+
+    drawPriceAxis(buffer, priceTop, overlayPriceHeight, priceRange.min, priceRange.max);
+    drawRsiAxis(buffer, rsiTop, overlayRsiHeight);
+    drawDateTicks(buffer, xForSlot, rsiTop + overlayRsiHeight, rsiTop + overlayRsiHeight + 14, totalSlots);
+    drawText(buffer, width, height, margin.left + plotWidth / 2, rsiTop + overlayRsiHeight + 42, "DATE", theme.muted, 2, "center");
+
+    const closePoints = mapSeriesToPoints(priceSeries.close, xForSlot, 0, priceRange.min, priceRange.max, priceTop, overlayPriceHeight, totalSlots);
+    const bbUpperPoints = mapSeriesToPoints(priceSeries.bbUpper, xForSlot, 0, priceRange.min, priceRange.max, priceTop, overlayPriceHeight, totalSlots);
+    const bbLowerPoints = mapSeriesToPoints(priceSeries.bbLower, xForSlot, 0, priceRange.min, priceRange.max, priceTop, overlayPriceHeight, totalSlots);
+    const tenkanPoints = mapSeriesToPoints(priceSeries.tenkan, xForSlot, 0, priceRange.min, priceRange.max, priceTop, overlayPriceHeight, totalSlots);
+    const kijunPoints = mapSeriesToPoints(priceSeries.kijun, xForSlot, 0, priceRange.min, priceRange.max, priceTop, overlayPriceHeight, totalSlots);
+    const senkouAPoints = mapSeriesToPoints(metrics.ichimokuSeriesData.senkouA.slice(startIndex), xForSlot, 26, priceRange.min, priceRange.max, priceTop, overlayPriceHeight, totalSlots);
+    const senkouBPoints = mapSeriesToPoints(metrics.ichimokuSeriesData.senkouB.slice(startIndex), xForSlot, 26, priceRange.min, priceRange.max, priceTop, overlayPriceHeight, totalSlots);
+    const rsiPoints = mapSeriesToPoints(metrics.rsi14Series.slice(startIndex), xForSlot, 0, 0, 100, rsiTop, overlayRsiHeight, totalSlots);
+
+    drawFilledBand(buffer, width, height, bbUpperPoints, bbLowerPoints, theme.bollingerFill);
+
+    const cloudUpperPoints = [];
+    const cloudLowerPoints = [];
+    const cloudColors = [];
+    for (let index = 0; index < totalSlots; index += 1) {
+      const aPoint = senkouAPoints[index];
+      const bPoint = senkouBPoints[index];
+      if (aPoint && bPoint) {
+        cloudUpperPoints[index] = aPoint.y <= bPoint.y ? aPoint : bPoint;
+        cloudLowerPoints[index] = aPoint.y > bPoint.y ? aPoint : bPoint;
+        cloudColors[index] = aPoint.y <= bPoint.y ? theme.cloudBull : theme.cloudBear;
+      } else {
+        cloudUpperPoints[index] = null;
+        cloudLowerPoints[index] = null;
+        cloudColors[index] = null;
+      }
     }
-    const x = xForSlot(index);
-    const previousClose = index === 0 ? bar.close : barsWindow[index - 1].close;
-    const color = bar.close >= previousClose ? theme.volumeUp : theme.volumeDown;
-    const barHeight = Math.max(2, Math.round((bar.volume / volumeMax) * (volumeHeight - 4)));
-    fillRect(buffer, width, height, x - volumeBarWidth / 2, volumeTop + volumeHeight - barHeight, volumeBarWidth, barHeight, color);
-  });
 
-  const rsiPoints = mapSeriesToPoints(metrics.rsi14Series.slice(startIndex), xForSlot, 0, 0, 100, rsiTop, rsiHeight, totalPoints);
-  drawSeries(buffer, width, height, rsiPoints, theme.rsi, 3);
-  const latestRsiPoint = rsiPoints[barsWindow.length - 1];
-  if (latestRsiPoint) {
-    fillRect(buffer, width, height, latestRsiPoint.x - 4, latestRsiPoint.y - 4, 8, 8, theme.rsi);
-  }
+    for (let index = 0; index < totalSlots; index += 1) {
+      if (cloudUpperPoints[index] && cloudLowerPoints[index]) {
+        drawVerticalBand(
+          buffer,
+          width,
+          height,
+          Math.round(cloudUpperPoints[index].x),
+          cloudUpperPoints[index].y,
+          cloudLowerPoints[index].y,
+          cloudColors[index],
+          3,
+        );
+      }
+    }
 
-  const png = encodePng(width, height, buffer);
-  fs.mkdirSync(path.dirname(options.pngOut), { recursive: true });
-  fs.writeFileSync(options.pngOut, png);
+    drawSeries(buffer, width, height, bbUpperPoints, theme.bollinger, 2);
+    drawSeries(buffer, width, height, bbLowerPoints, theme.bollinger, 2);
+    drawSeries(buffer, width, height, senkouAPoints, theme.senkouA, 2);
+    drawSeries(buffer, width, height, senkouBPoints, theme.senkouB, 2);
+    drawSeries(buffer, width, height, tenkanPoints, theme.tenkan, 2);
+    drawSeries(buffer, width, height, kijunPoints, theme.kijun, 2);
+    drawSeries(buffer, width, height, closePoints, theme.close, 3);
+    drawSeries(buffer, width, height, rsiPoints, theme.rsi, 3);
+
+    const latestClosePoint = closePoints[barsWindow.length - 1];
+    if (latestClosePoint) {
+      fillRect(buffer, width, height, latestClosePoint.x - 4, latestClosePoint.y - 4, 8, 8, theme.close);
+      drawText(
+        buffer,
+        width,
+        height,
+        margin.left + plotWidth + 10,
+        latestClosePoint.y - 7,
+        formatAxisNumber(metrics.latestClose),
+        theme.close,
+        2,
+      );
+    }
+
+    const latestRsiPoint = rsiPoints[barsWindow.length - 1];
+    if (latestRsiPoint) {
+      fillRect(buffer, width, height, latestRsiPoint.x - 4, latestRsiPoint.y - 4, 8, 8, theme.rsi);
+    }
+
+    writePng(chartPaths.overlayOutput, buffer);
+  };
+
+  buildMainTrendChart();
+  buildOverlayChart();
 
   return {
-    imagePath: options.imagePath || path.basename(options.pngOut),
+    imagePaths: {
+      main: chartPaths.mainImagePath,
+      overlay: chartPaths.overlayImagePath,
+    },
     chartBarsUsed: barsWindow.length,
     leadBarsUsed: leadSlots,
   };
@@ -1294,7 +1402,7 @@ function main() {
   const bars = normalizeBars(data.bars || []);
   requireValidBars(bars);
   const metrics = buildMetrics(bars);
-  const pngInfo = args.pngOut ? buildChartPng(data, bars, metrics, args) : null;
+  const pngInfo = args.pngOut ? buildChartPngs(data, bars, metrics, args) : null;
 
   console.log(`# Advanced Chart Analysis: ${data.ticker || "Unknown"}`);
   console.log("");
@@ -1312,12 +1420,14 @@ function main() {
   console.log("");
 
   if (pngInfo) {
-    console.log("## Chart Image");
+    console.log("## Chart Images");
     console.log("");
-    console.log(`![${data.name || data.ticker || "Chart"} price chart](${pngInfo.imagePath})`);
+    console.log(`![${data.name || data.ticker || "Chart"} main trend chart](${pngInfo.imagePaths.main})`);
+    console.log("");
+    console.log(`![${data.name || data.ticker || "Chart"} overlay chart](${pngInfo.imagePaths.overlay})`);
     console.log("");
     console.log(
-      `The PNG includes labeled price, volume, and RSI panels, plus MA5, MA20, MA60, MA120, Bollinger Bands, and Ichimoku overlays. The price panel also reserves ${pngInfo.leadBarsUsed} forward slots for the projected Ichimoku cloud.`,
+      `The main chart keeps price, MA5, MA20, MA60, MA120, and volume together. The overlay chart separates Bollinger Bands, Ichimoku cloud lines, and RSI14, and reserves ${pngInfo.leadBarsUsed} forward slots for the projected cloud.`,
     );
     console.log("");
   }

@@ -67,10 +67,15 @@ if (!pattern.test(text)) {
         CHART_SCRIPT="$SKILL_DIR/scripts/chart-basics.js"
         FETCH_SCRIPT="$SKILL_DIR/scripts/fetch-kr-chart.js"
         CHART_OUT="$TMP_ROOT/$SKILL_NAME-chart.png"
+        CHART_OUT_OVERLAY="$TMP_ROOT/$SKILL_NAME-chart-overlay.png"
 
         node "$CHART_SCRIPT" --input "$CHART_SAMPLE" --png-out "$CHART_OUT" --image-path "chart.png" >/dev/null
         if [ ! -s "$CHART_OUT" ]; then
             echo "Expected chart PNG was not created: $CHART_OUT" >&2
+            exit 1
+        fi
+        if [ ! -s "$CHART_OUT_OVERLAY" ]; then
+            echo "Expected overlay chart PNG was not created: $CHART_OUT_OVERLAY" >&2
             exit 1
         fi
 

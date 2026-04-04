@@ -63,11 +63,13 @@
 2. `kr-stock-data-pack`은 가격 기준일, 공시, 실적, 거버넌스, 밸류 입력값, 차트 입력값, 필요할 때는 증권사·전문매체·독립 분석의 외부 관점도 구조화해서 모읍니다.
 3. `kr-stock-analysis`는 KRX 상장 주식 기준으로 `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, `pair compare`를 작성하고, full memo에는 `Street / Alternative Views` 섹션과 현재 근거 공백에 연결된 후속 리서치 질문을 붙입니다.
 4. `kr-stock-update`는 기존 `기준일`을 보존하고 `최근 업데이트일`과 `## Update Log`만 증분 갱신합니다.
+5. `kr-stock-analysis`의 차트 출력은 이제 기본적으로 분리형이며, `종가 + MA5/20/60/120 + 거래량` 메인 PNG 1장과 `볼린저밴드 + 일목균형표 + RSI14` 오버레이 PNG 1장을 함께 생성합니다.
 
 번들 도구:
 
 - `scripts/fetch-kr-chart.js`: KRX 일봉 데이터 조회
-- `scripts/chart-basics.js`: 기술적 해석과 PNG 차트 생성
+- `scripts/chart-basics.js`: 주가/이평/거래량과 오버레이 지표를 분리한 PNG 차트 생성
+- `scripts/chart-basics.js`: `--png-out`으로 지정한 파일은 메인 추세 차트로 저장하고, 같은 이름의 `-overlay.png` 파일을 보조지표 차트로 추가 생성
 - `scripts/valuation-bands.js`: 3~5년 밸류에이션 밴드 요약
 - `scripts/peer-valuation.js`: 피어 밸류에이션 표 생성
 - [skills/kr-stock-update/scripts/extract-report-baseline.js](skills/kr-stock-update/scripts/extract-report-baseline.js): 메모 기준일, 업데이트 날짜, source URL 추출
