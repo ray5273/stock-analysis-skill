@@ -28,7 +28,7 @@ Use this skill to turn Korean DART filings into a precise, reusable evidence pac
 - For `수주계약건만`, `단일판매ㆍ공급계약만`, or similar requests, use the fixed Korean contract-list format from `references/output-format.md` unless the user explicitly asks for a different shape.
 - If the user asks for `수주잔고 대비 매출`, `백로그 커버리지`, or similar backlog-coverage metrics, calculate them only on a like-for-like basis and label them as a derived coverage read rather than a formally disclosed KPI unless the company discloses the metric directly.
 - If the user asks for both `수주잔고` and `계약 만기 분포`, use an integrated backlog mode that combines the official backlog table, contract-disclosure list, maturity buckets, and coverage metrics in one Korean artifact.
-- If the user asks about `특수관계자`, `관련당사자`, `내부거래`, `계열 매출`, or `내부그룹 매출 비중`, treat it as a note-driven task: locate the latest annual audit report or business-report notes first, then extract the revenue denominator, the related-party transaction note total, and any separately disclosed `대규모기업집단 계열회사` block before calculating any ratio.
+- If the user asks about `특수관계자`, `관련당사자`, `내부거래`, `계열 매출`, or `내부그룹 매출 비중`, treat it as a note-driven task: locate the latest annual audit report or business-report notes first, check both the consolidated note and the separate-financial-statement note when available, then extract the revenue denominator, the related-party transaction note total, and any separately disclosed `대규모기업집단 계열회사` block before calculating any ratio.
 - If the user asks for `매출 비중`, `구성 비중`, `계약 비중`, or asks to analyze both together, switch into a `비중 통합 모드`: build one dated section for revenue mix ratios and one dated section for contract or backlog-related ratios, and keep scope mismatches explicit instead of forcing a single blended percentage.
 
 ## Workflow
@@ -65,8 +65,10 @@ Read [references/output-format.md](references/output-format.md) for the default 
 - Keep restatements, accounting basis changes, and scope changes visible when they affect comparability.
 - Use the latest annual audit report for customer concentration or segment-note detail when the current quarterly or half-year filing does not repeat it, but label the date mismatch.
 - When the user asks for related-party or internal-group revenue share, prefer the latest annual audit report note even if the DART viewer is inconvenient, and accept the company IR `감사보고서` download page as a primary-source fallback path to the same audited note.
+- When the user asks for related-party or internal-group revenue share, check whether the filing provides both `연결` and `별도` notes. If both exist, show the connected but different meanings instead of stopping after the consolidated note.
 - When a result is only meaningful after subtracting prior cumulative figures, show the calculation path briefly.
 - Separate `회계상 특수관계자 비중` from `대규모기업집단 계열회사 포함 내부그룹 비중` when the note discloses both. Do not collapse them into one unlabeled percentage.
+- Separate `연결 기준 내부그룹 매출 비중` from `별도 기준 특수관계자 거래 구조`. The former is usually used for external revenue concentration, while the latter often includes transactions with subsidiaries.
 - Separate `매출 비중` from `계약 비중`.
   Revenue mix can be based on annual segment or customer sales, while contract mix may be based on backlog, contract balance, or individual contract notices. Never imply these are the same denominator unless the filing explicitly supports that comparison.
 - When listing contract disclosures, keep original notices, amendment notices, and termination or correction notices distinguishable instead of collapsing them into one unlabeled row.
