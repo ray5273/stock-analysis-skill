@@ -55,7 +55,7 @@ foreach ($skillDir in $skillDirs) {
         }
     }
 
-    $skillMd = Get-Content -Raw (Join-Path $skillDir.FullName "SKILL.md")
+    $skillMd = [System.IO.File]::ReadAllText((Join-Path $skillDir.FullName "SKILL.md"))
     if ($skillMd -notmatch "(?s)^---\r?\nname:\s.+?\r?\ndescription:\s.+?\r?\n---") {
         Write-Error "Invalid or missing frontmatter in $($skillDir.FullName)\SKILL.md"
     }
@@ -82,7 +82,7 @@ foreach ($skillDir in $skillDirs) {
 
         node $fetchScript --help | Out-Null
 
-        $stockOutputFormat = Get-Content -Raw ".\skills\kr-stock-analysis\references\output-format.md"
+        $stockOutputFormat = [System.IO.File]::ReadAllText((Join-Path $repoRoot "skills\kr-stock-analysis\references\output-format.md"))
         if (-not $stockOutputFormat.Contains("5. Street / Alternative Views")) {
             Write-Error "Expected full memo output format to include Street / Alternative Views."
         }
@@ -97,50 +97,98 @@ foreach ($skillDir in $skillDirs) {
             Write-Error "Expected kr-stock-analysis skill rules to scope Street / Alternative Views and Additional Research Questions to full memos."
         }
 
-        @(
-            ".\analysis-example\kr\LG CNS.md",
-            ".\analysis-example\kr\엘앤에프.md",
-            ".\analysis-example\kr\대양전기공업.md"
-        ) | ForEach-Object {
-            $reportText = Get-Content -Raw -Encoding utf8 $_
+        $reportSamples = Get-ChildItem -Path (Join-Path $repoRoot "analysis-example\kr") -Recurse -Filter "memo.md" |
+            Select-Object -First 3 -ExpandProperty FullName
+        if ($reportSamples.Count -lt 3) {
+            Write-Error "Expected at least three stock memo examples under analysis-example\\kr."
+        }
+        foreach ($reportSample in $reportSamples) {
+            $reportText = [System.IO.File]::ReadAllText($reportSample, [System.Text.Encoding]::UTF8)
             if (-not $reportText.Contains("## Street / Alternative Views")) {
-                Write-Error "Expected stock memo example to include Street / Alternative Views: $_"
+                Write-Error "Expected stock memo example to include Street / Alternative Views: $reportSample"
             }
             if (-not $reportText.Contains("## Additional Research Questions")) {
-                Write-Error "Expected stock memo example to include Additional Research Questions: $_"
+                Write-Error "Expected stock memo example to include Additional Research Questions: $reportSample"
             }
         }
     }
 
     if ($skillDir.Name -eq "kr-stock-data-pack") {
-        $dataPackWorkflow = Get-Content -Raw ".\skills\kr-stock-data-pack\references\workflow.md"
+        $dataPackWorkflow = [System.IO.File]::ReadAllText((Join-Path $repoRoot "skills\kr-stock-data-pack\references\workflow.md"))
         if (-not $dataPackWorkflow.Contains("## Source Roles")) {
             Write-Error "Expected kr-stock-data-pack workflow to define source roles."
         }
 
-        $dataPackOutputFormat = Get-Content -Raw ".\skills\kr-stock-data-pack\references\output-format.md"
+        $dataPackOutputFormat = [System.IO.File]::ReadAllText((Join-Path $repoRoot "skills\kr-stock-data-pack\references\output-format.md"))
         if (-not $dataPackOutputFormat.Contains("## External Views")) {
             Write-Error "Expected kr-stock-data-pack output format to include External Views."
+        }
+    }
+
+    if ($skillDir.Name -eq "kr-dart-analysis") {
+        $dartWorkflow = [System.IO.File]::ReadAllText((Join-Path $repoRoot "skills\kr-dart-analysis\references\workflow.md"))
+        if (-not $dartWorkflow.Contains("derived from cumulative filing")) {
+            Write-Error "Expected kr-dart-analysis workflow to define cumulative-derivation labeling."
+        }
+
+        $dartOutputFormat = [System.IO.File]::ReadAllText((Join-Path $repoRoot "skills\kr-dart-analysis\references\output-format.md"))
+        if (-not $dartOutputFormat.Contains("KR_DART_STANDALONE_QUARTER_SECTION")) {
+            Write-Error "Expected kr-dart-analysis output format to define the standalone-quarter section marker."
+        }
+        if (-not $dartOutputFormat.Contains("## Source Map")) {
+            Write-Error "Expected kr-dart-analysis output format to include Source Map."
+        }
+        if (-not $dartOutputFormat.Contains("KR_DART_CONTRACT_EOKWON_COLUMNS")) {
+            Write-Error "Expected kr-dart-analysis contract output format to define 억원-based amount markers."
+        }
+        if (-not $dartOutputFormat.Contains("KR_DART_COVERAGE_SUMMARY_SECTION")) {
+            Write-Error "Expected kr-dart-analysis output format to define the coverage-summary section marker."
+        }
+
+        if (-not $skillMd.Contains("Never present a derived standalone quarter as if the filing disclosed it directly.")) {
+            Write-Error "Expected kr-dart-analysis skill rules to prohibit unlabeled derived-quarter claims."
+        }
+        if (-not $skillMd.Contains("Default to Korean for all user-facing output")) {
+            Write-Error "Expected kr-dart-analysis skill rules to default user-facing output to Korean."
+        }
+        if (-not $skillMd.Contains("KR_DART_COVERAGE_SUMMARY_RULE")) {
+            Write-Error "Expected kr-dart-analysis skill rules to include the coverage-summary marker."
+        }
+
+        $coverageExampleFiles = Get-ChildItem -Path (Join-Path $repoRoot "analysis-example\kr\LG CNS") -Filter "*.md"
+        if (-not $coverageExampleFiles -or $coverageExampleFiles.Count -eq 0) {
+            Write-Error "Expected an LG CNS integrated example under analysis-example\\kr."
+        }
+        $hasCoverageSummaryExample = $false
+        foreach ($coverageExampleFile in $coverageExampleFiles) {
+            $coverageExample = [System.IO.File]::ReadAllText($coverageExampleFile.FullName, [System.Text.Encoding]::UTF8)
+            if ($coverageExample.Contains("KR_DART_COVERAGE_SUMMARY_EXAMPLE")) {
+                $hasCoverageSummaryExample = $true
+                break
+            }
+        }
+        if (-not $hasCoverageSummaryExample) {
+            Write-Error "Expected an LG CNS integrated example to include the coverage-summary marker."
         }
     }
 
     if ($skillDir.Name -eq "kr-stock-update") {
         $baselineScript = ".\skills\kr-stock-update\scripts\extract-report-baseline.js"
         $normalizeScript = ".\skills\kr-stock-update\scripts\normalize-update-log.js"
-        $reportSample = ".\analysis-example\kr\LG CNS.md"
+        $reportSample = ".\analysis-example\kr\LG CNS\memo.md"
         $updateJson = Join-Path $tempRoot "kr-stock-update.json"
         $updateJsonReplace = Join-Path $tempRoot "kr-stock-update-replace.json"
         $updatedReport = Join-Path $tempRoot "kr-stock-update.md"
         $baselineOut = Join-Path $tempRoot "kr-stock-update-baseline.json"
 
         node $baselineScript --input $reportSample --output $baselineOut | Out-Null
-        if (-not ((Get-Content -Raw $baselineOut) -match '"memoDate": "2026-04-02"')) {
+        if (-not (([System.IO.File]::ReadAllText($baselineOut)) -match '"memoDate": "2026-04-02"')) {
             Write-Error "Baseline parser did not capture the memo date."
         }
 
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
-@'
+        $updateJsonContent = @'
 {
   "date": "2026-04-10",
   "whatHappened": [
@@ -166,9 +214,10 @@ foreach ($skillDir in $skillDirs) {
     }
   ]
 }
-'@ | ForEach-Object { [System.IO.File]::WriteAllText($updateJson, $_, $utf8NoBom) }
+'@
+        [System.IO.File]::WriteAllText($updateJson, $updateJsonContent, $utf8NoBom)
 
-@'
+        $updateJsonReplaceContent = @'
 {
   "date": "2026-04-10",
   "whatHappened": [
@@ -194,14 +243,15 @@ foreach ($skillDir in $skillDirs) {
     }
   ]
 }
-'@ | ForEach-Object { [System.IO.File]::WriteAllText($updateJsonReplace, $_, $utf8NoBom) }
+'@
+        [System.IO.File]::WriteAllText($updateJsonReplace, $updateJsonReplaceContent, $utf8NoBom)
 
         node $normalizeScript --input $updateJson | Out-Null
         Copy-Item $reportSample $updatedReport
         node $normalizeScript --input $updateJson --report $updatedReport | Out-Null
         node $normalizeScript --input $updateJsonReplace --report $updatedReport | Out-Null
 
-        $updatedText = Get-Content -Raw -Encoding utf8 $updatedReport
+        $updatedText = [System.IO.File]::ReadAllText($updatedReport, [System.Text.Encoding]::UTF8)
         $normalizedUpdatedText = $updatedText -replace "`r`n?", "`n"
         $recentUpdateLabel = [string]::Concat([char[]](0xCD5C, 0xADFC, 0x20, 0xC5C5, 0xB370, 0xC774, 0xD2B8, 0xC77C, 0x3A))
         $headingCount = ([regex]::Matches($normalizedUpdatedText, '^### 2026-04-10 Update$', 'Multiline')).Count
@@ -227,9 +277,17 @@ if (-not (Test-Path $sectorExampleRoot)) {
     Write-Error "Missing sector analysis example directory: $sectorExampleRoot"
 }
 
-$stockPlanExample = Get-ChildItem -Path (Join-Path $repoRoot "analysis-example\kr") -Filter "LG CNS-*.md" | Select-Object -First 1
-if (-not $stockPlanExample) {
-    Write-Error "Missing stock planning example file under analysis-example\kr matching LG CNS-*.md"
+$stockPlanExampleFiles = Get-ChildItem -Path (Join-Path $repoRoot "analysis-example\kr\LG CNS") -Filter "*.md"
+$hasStockPlanExample = $false
+foreach ($stockPlanExampleFile in $stockPlanExampleFiles) {
+    $stockPlanText = [System.IO.File]::ReadAllText($stockPlanExampleFile.FullName, [System.Text.Encoding]::UTF8)
+    if ($stockPlanText.Contains("Deliverable path:")) {
+        $hasStockPlanExample = $true
+        break
+    }
+}
+if (-not $hasStockPlanExample) {
+    Write-Error "Missing stock planning example file under analysis-example\kr\LG CNS."
 }
 
 $sectorExampleCount = (Get-ChildItem -Path $sectorExampleRoot -Filter "*.md" | Measure-Object).Count

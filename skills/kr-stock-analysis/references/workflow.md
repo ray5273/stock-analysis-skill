@@ -25,7 +25,7 @@ If a number matters to the conclusion, trace it back to a primary source when po
 - Identify whether the listing is an operating company, holding company, preferred shares line, or restructuring case.
 - Identify the analysis horizon: trading, next earnings, 12-24 months, or multi-year compounder view.
 - Identify the user's goal: idea generation, validation, comparison, or risk review.
-- If the workspace is writable, set the output file path early. Default to `analysis-example/kr/<company>.md` for a full report and `analysis-example/kr/assets/<company>-chart.png` for any linked chart image.
+- If the workspace is writable, set the output file path early. Default to `analysis-example/kr/<company>/memo.md` for a full report and `analysis-example/kr/assets/<company>-chart.png` for any linked chart image.
 
 ### Business Quality
 

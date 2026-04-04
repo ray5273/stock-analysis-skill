@@ -5,7 +5,7 @@
 Run:
 
 ```text
-node scripts/extract-report-baseline.js --input analysis-example/kr/LG CNS.md
+node scripts/extract-report-baseline.js --input "analysis-example/kr/LG CNS/memo.md"
 ```
 
 This script reads an existing markdown memo and emits a JSON baseline with:
@@ -25,7 +25,7 @@ Run:
 
 ```text
 node scripts/normalize-update-log.js --input update.json
-node scripts/normalize-update-log.js --input update.json --report analysis-example/kr/LG CNS.md
+node scripts/normalize-update-log.js --input update.json --report "analysis-example/kr/LG CNS/memo.md"
 ```
 
 Expected JSON:

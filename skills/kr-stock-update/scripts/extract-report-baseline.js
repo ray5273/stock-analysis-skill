@@ -27,7 +27,7 @@ function parseArgs(argv) {
 function usage() {
   return [
     "Usage:",
-    "  node extract-report-baseline.js --input analysis-example/kr/<company>.md [--output baseline.json]",
+    "  node extract-report-baseline.js --input analysis-example/kr/<company>/memo.md [--output baseline.json]",
     "",
     "Notes:",
     "  - Parses memo metadata from an existing markdown report.",

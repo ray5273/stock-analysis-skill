@@ -1,0 +1,245 @@
+# Workflow Reference
+
+## Scope Lock
+
+- Identify the exact company, ticker, market, and share class.
+- Identify the target filing type: `business report`, `quarterly report`, `half-year report`, `audit report`, `review report`, or `material disclosure`.
+- Identify the target period and whether the user wants a broad filing digest or a narrower question such as results, segments, customer concentration, capex, related-party disclosures, or a contract-disclosure list.
+- Set the reusable output path early when the workspace is writable. Default to `analysis-example/kr/<company>/dart-analysis.md`.
+
+## Filing Set
+
+Try to gather the smallest complete set that supports a precise answer:
+
+1. Target filing
+   The current quarter, half-year, or annual filing on DART.
+2. Prior cumulative filing
+   Needed when the current report gives only cumulative figures and the user wants the standalone quarter.
+3. Prior-year comparable filing
+   Needed for year-over-year comparison on the same basis.
+4. Attached audit or review report
+   Useful for note detail, customer concentration, accounting policies, and restatement context.
+5. Official earnings-release or IR material
+   Optional support for management explanations or presentation tables.
+6. KRX or DART contract disclosures
+   Needed when the user asks for `단일판매ㆍ공급계약체결`, large order wins, amendments, or contract termination notices.
+
+## Measurement Basis
+
+Before extracting any number, classify the block:
+
+- `consolidated disclosed`
+- `separate disclosed`
+- `derived from cumulative filing`
+- `restated`
+- `outside filing scope`
+
+Do not mix bases in one comparison table without a visible note.
+
+## Results Extraction Checklist
+
+For the latest results block, try to capture:
+
+- revenue
+- operating profit
+- net profit
+- operating margin
+- year-over-year change
+- quarter-over-quarter change when the basis is comparable
+- whether the figures are cumulative or standalone
+- whether the block is consolidated or separate
+- the table or section name where the number came from
+
+If the filing gives only cumulative values:
+
+1. Pull the current cumulative figure.
+2. Pull the immediately prior cumulative figure for the same fiscal year.
+3. Subtract to derive the standalone quarter.
+4. Mark the result as `derived from cumulative filing`.
+5. Show the brief calculation path in the note column.
+
+## Mix And Detail Checklist
+
+Extract only what is actually disclosed and relevant to the user's question:
+
+- segment or business-unit revenue
+- segment or business-unit profit
+- product or service mix
+- geography mix
+- major customer concentration
+- order backlog or contract balance
+- capex and major asset additions
+- working-capital signals such as inventory or receivables build
+- related-party transactions
+- treasury-share or shareholder-return items disclosed in filings or related KRX notices
+- single-sales or supply-contract disclosures, amendments, and termination notices
+
+When a useful split is missing, say `not separately disclosed` and move on.
+
+## Contract List Mode
+
+When the user asks for `수주계약건만`, `단일판매ㆍ공급계약만`, or a similar contract-only screen:
+
+- gather every relevant contract disclosure in the requested period, not just the latest one
+- keep `original`, `correction`, `amendment`, and `termination` status visible per row
+- sort the full disclosure list by `공시일 내림차순`
+- write the user-facing artifact in Korean unless the user asked for English
+- capture at least these fields when disclosed:
+  - 공시일
+  - 원공시일
+  - 상태
+  - 정정사유
+  - 계약명
+  - 계약구분
+  - 상대방
+  - 계약금액
+  - 최근매출액대비
+  - 시작일
+  - 종료일
+  - 지역
+  - source URL
+- if multiple notices refer to the same contract, keep both the original notice and the latest effective notice visible
+- also produce a second deduplicated table named `최신 유효 계약 상태` so the user can see the live state per contract chain
+- when the user asks how much contract amount remains by period, also produce:
+  - `계약 종료시점 분포`: bucket the latest effective contracts by end year or `종료일 미정`
+  - `커버리지 요약`: a short cumulative table that shows at least `2026년까지`, `2027년까지`, `2028년까지`
+  - `누적 계약 커버리지`: cumulative amount by end year such as `2027년까지`, `2028년까지`
+- define the contract chain conservatively using filing evidence such as `계약명 + 상대방 + 프로젝트 설명` and keep different projects separate even if the counterparty is the same
+- if the disclosure omits a field such as counterparty or exact period, write `not separately disclosed`
+- do not confuse annual backlog tables with individually disclosed contract wins; keep them in separate blocks
+- present the user-facing contract amount in `억원` by default; if exact 원단위 is material, keep it in a note or source-linked explanation instead of the main amount column
+- if the user asks for `남은 수주`, explicitly state whether the company disclosed formal backlog. If not, label the period table as `현재 유효 계약 금액 기준` or `만기 분포 기준` rather than `잔여 수주잔고`.
+
+## Fixed Contract Output Discipline
+
+When contract-list mode is used, keep this section order unless the user explicitly overrides it:
+
+1. `## 범위`
+2. `## 검색 기준`
+3. `## 공시행 전체 리스트`
+4. `## 최신 유효 계약 상태`
+5. `## 계약 종료시점 분포`
+6. `## 커버리지 요약`
+7. `## 누적 계약 커버리지`
+8. `## 해석 메모`
+9. `## 원문 링크`
+
+In `공시행 전체 리스트`, keep this exact column order:
+
+1. 공시일
+2. 원공시일
+3. 상태
+4. 정정사유
+5. 계약명
+6. 상대방
+7. 계약금액
+8. 최근매출액대비
+9. 계약기간
+10. Source
+
+In `최신 유효 계약 상태`, keep this exact column order:
+
+1. 계약 체인
+2. 최신 공시일
+3. 상태
+4. 상대방
+5. 최신 계약금액
+6. 최근매출액대비
+7. 최신 계약기간
+8. 비고
+9. Source
+
+In `계약 종료시점 분포`, keep this exact column order:
+
+1. 종료 기준
+2. 최신 유효 계약금액(억원)
+3. 계약 체인 수
+4. 비고
+
+In `커버리지 요약`, keep this exact column order:
+
+1. 기준 시점
+2. 누적 계약금액(억원)
+3. 비고
+
+`커버리지 요약` should include at least:
+
+- `2026년까지`
+- `2027년까지`
+- `2028년까지`
+
+If later checkpoints matter, add them after the required three rows.
+
+In `누적 계약 커버리지`, keep this exact column order:
+
+1. 기준 시점
+2. 누적 계약금액(억원)
+3. 누적 계약 체인 수
+4. 비고
+
+If there are no matching disclosures, do not improvise. Use the same section order and write `검색 결과 없음` in the two tables.
+
+## Backlog Coverage Mode
+
+When the user asks for `수주잔고 대비 매출`, `백로그 커버리지`, `몇 년치 일감인지`, or similar questions:
+
+- first confirm that the filing actually discloses backlog or order balance
+- use the same basis for numerator and denominator
+  - same company or segment scope
+  - same consolidated or separate basis when possible
+  - annual revenue by default unless the filing explicitly anchors a different period
+- show both:
+  - `수주잔고 / 연간 매출` as `x배`
+  - `연 환산 커버리지` as `약 n년` or `약 n개월`
+- if the backlog is disclosed for a subgroup like the core operating company while revenue is only available for that same subgroup in the business report, prefer that subgroup basis over a broad consolidated mismatch
+- if the backlog table and revenue table are not directly comparable, still provide the calculation only if useful, but label the limitation clearly in `비고`
+- do not describe the result as booked profit, guaranteed sales, or formal management guidance
+
+## Integrated Backlog Mode
+
+When the user wants `수주잔고 + 계약 만기 분포 + 커버리지` together:
+
+- start from the official backlog table in the latest filing
+- separately collect the last 12 months of `단일판매ㆍ공급계약체결` notices
+- keep these concepts separate:
+  - `공식 수주잔고`
+  - `최근 12개월 개별 계약공시`
+  - `현재 유효 계약의 종료연도 분포`
+  - `수주잔고 / 연간 매출 커버리지`
+- if the company has undisclosed-amount contracts, keep them in the list and latest-state table, but exclude them from amount sums and say so explicitly
+- if the latest effective contract list does not reconcile to official backlog, do not force a tie-out; explain that contract notices are only a partial observable subset of backlog
+- in integrated backlog mode, place `커버리지 요약` before the longer cumulative table so the user can answer `2027년까지 얼마` immediately
+
+## Reasons For Change
+
+- Quote management-stated reasons only when the filing, attached earnings material, or official presentation says them.
+- Keep these categories separate:
+  - `filing-stated reason`
+  - `official IR commentary`
+  - `analyst inference`
+- Do not upgrade a likely explanation into a stated fact.
+
+## Comparison Discipline
+
+- Compare only like-for-like bases.
+- Keep restated periods visible.
+- Call out scope changes such as acquisitions, disposals, discontinued operations, or reporting-segment changes.
+- If a prior period uses separate data and the current period uses consolidated data, do not present the comparison as cleanly comparable.
+
+## Suggested Downstream Handoff
+
+After the DART extraction is complete:
+
+- hand off to `kr-stock-data-pack` for valuation, governance, chart, and outside-view blocks
+- hand off to `kr-stock-analysis` for thesis, risks, catalysts, and conclusion
+
+## Failure Modes To Avoid
+
+- quoting cumulative nine-month or half-year numbers as if they were quarter-only results
+- mixing consolidated and separate figures without labeling the switch
+- copying IR tables without checking whether the filing says the same thing
+- inventing a segment margin or customer split that the filing does not provide
+- collapsing contract amendments or corrections into one unlabeled contract row
+- flattening `not disclosed` into silence instead of making the gap explicit
+- attributing a result change to management commentary when the filing does not state that reason
+- ignoring restatements, note revisions, or reporting-segment changes

@@ -11,12 +11,13 @@ Use this skill to write the final Korean stock memo or event note.
 
 - Treat prices, market caps, earnings, guidance, shareholder return policy, regulations, and company news as time-sensitive.
 - Prefer using a scoped brief from `kr-stock-plan` and a fact pack from `kr-stock-data-pack` before drafting.
+- When the latest filing details are central to the conclusion, prefer a `kr-dart-analysis` pass before drafting so segment, margin, and disclosure wording stay exact.
 - Route the output mode early.
   - `quick view` for compact decision support
   - `full memo` for deeper initiation-style analysis
   - `pre-earnings note` or `post-earnings note` for event reads
   - `pair compare` for same-date stock comparisons
-- If the workspace is writable, create or update `analysis-example/kr/<company>.md`.
+- If the workspace is writable, create or update `analysis-example/kr/<company>/memo.md`.
 - State an explicit `기준일` in the memo and keep each metric block honest about its source date.
 - For a `full memo`, add `Street / Alternative Views` before valuation and end with `Additional Research Questions` that turn the biggest evidence gaps into next-step diligence.
 
@@ -25,7 +26,7 @@ Use this skill to write the final Korean stock memo or event note.
 1. Lock the mode.
    Confirm whether the user wants a quick view, full memo, event note, or pair compare.
 2. Load prior work.
-   Reuse the planning brief and data pack when available instead of re-scoping from scratch.
+   Reuse the planning brief, DART analysis, and data pack when available instead of re-scoping from scratch.
 3. Refresh material facts.
    Verify the latest company facts needed to support the conclusion and anchor material numbers to primary sources.
 4. Scan outside views.

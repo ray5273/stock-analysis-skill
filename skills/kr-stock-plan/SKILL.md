@@ -12,7 +12,7 @@ Use this skill to turn a vague Korean stock request into an execution-ready brie
 - Define the exact security first: ticker, market, ordinary versus preferred line, and whether the listing is an operating company or holding company.
 - Lock the output mode early: `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, or `pair compare`.
 - Keep the deliverable to planning. Do not drift into unsupported numbers or a full thesis write-up.
-- If the workspace is writable and the user wants a reusable planning artifact, write the brief to `analysis-example/kr/<company>-리서치브리프.md`.
+- If the workspace is writable and the user wants a reusable planning artifact, write the brief to `analysis-example/kr/<company>/리서치브리프.md`.
 
 ## Workflow
 
