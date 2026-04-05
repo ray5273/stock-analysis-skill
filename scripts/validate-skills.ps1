@@ -21,6 +21,7 @@ $tempBase = Join-Path $repoRoot ".tmp"
 New-Item -ItemType Directory -Force -Path $tempBase | Out-Null
 $tempRoot = Join-Path $tempBase ("stock-skill-validate-" + [System.Guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $tempRoot | Out-Null
+$extensionDir = Join-Path $repoRoot "integrations\claude-dart-extension"
 
 try {
 Push-Location $repoRoot
@@ -65,12 +66,19 @@ foreach ($skillDir in $skillDirs) {
         node --check $relativeJsPath | Out-Null
     }
 
+    if (Test-Path $extensionDir) {
+        Get-ChildItem -Path $extensionDir -Filter "*.js" | ForEach-Object {
+            node --check $_.FullName | Out-Null
+        }
+    }
+
     if ($skillDir.Name -eq "kr-stock-analysis") {
         $chartSample = ".\examples\kr-stock-analysis\chart-sample.json"
         $chartScript = ".\skills\kr-stock-analysis\scripts\chart-basics.js"
         $fetchScript = ".\skills\kr-stock-analysis\scripts\fetch-kr-chart.js"
         $chartOut = ".\.tmp\$(Split-Path -Leaf $tempRoot)\kr-chart.png"
         $chartOverlayOut = ".\.tmp\$(Split-Path -Leaf $tempRoot)\kr-chart-overlay.png"
+        $chartMomentumOut = ".\.tmp\$(Split-Path -Leaf $tempRoot)\kr-chart-momentum.png"
 
         node $chartScript --input $chartSample --png-out $chartOut --image-path "chart.png" | Out-Null
         if (-not (Test-Path $chartOut) -or (Get-Item $chartOut).Length -le 0) {
@@ -79,14 +87,20 @@ foreach ($skillDir in $skillDirs) {
         if (-not (Test-Path $chartOverlayOut) -or (Get-Item $chartOverlayOut).Length -le 0) {
             Write-Error "Expected overlay chart PNG was not created: $chartOverlayOut"
         }
+        if (-not (Test-Path $chartMomentumOut) -or (Get-Item $chartMomentumOut).Length -le 0) {
+            Write-Error "Expected momentum chart PNG was not created: $chartMomentumOut"
+        }
 
         node $fetchScript --help | Out-Null
 
         $stockOutputFormat = [System.IO.File]::ReadAllText((Join-Path $repoRoot "skills\kr-stock-analysis\references\output-format.md"))
-        if (-not $stockOutputFormat.Contains("5. Street / Alternative Views")) {
+        if (-not $stockOutputFormat.Contains("DART Recheck")) {
+            Write-Error "Expected full memo output format to include DART Recheck."
+        }
+        if (-not $stockOutputFormat.Contains("Street / Alternative Views")) {
             Write-Error "Expected full memo output format to include Street / Alternative Views."
         }
-        if (-not $stockOutputFormat.Contains("13. Additional Research Questions")) {
+        if (-not $stockOutputFormat.Contains("Additional Research Questions")) {
             Write-Error "Expected full memo output format to include Additional Research Questions."
         }
 
@@ -160,6 +174,9 @@ foreach ($skillDir in $skillDirs) {
         if (-not $skillMd.Contains("KR_DART_COVERAGE_VERIFICATION_RULE")) {
             Write-Error "Expected kr-stock-dart-analysis skill rules to include the coverage-verification marker."
         }
+        if (-not $skillMd.Contains("KR_DART_CLAIM_RECHECK_RULE")) {
+            Write-Error "Expected kr-stock-dart-analysis skill rules to include the claim-recheck marker."
+        }
         $coverageExampleFiles = Get-ChildItem -Path (Join-Path $repoRoot "analysis-example\kr\LG CNS") -Filter "*.md"
         if (-not $coverageExampleFiles -or $coverageExampleFiles.Count -eq 0) {
             Write-Error "Expected an LG CNS integrated example under analysis-example\\kr."
@@ -183,6 +200,25 @@ foreach ($skillDir in $skillDirs) {
         $referenceExample = [System.IO.File]::ReadAllText($referenceExamplePath, [System.Text.Encoding]::UTF8)
         if (-not $referenceExample.Contains("KR_DART_REFERENCE_DIGEST_EXAMPLE")) {
             Write-Error "Expected the LG CNS DART reference example to include the reference-digest marker."
+        }
+
+        $browserExportScript = ".\skills\kr-stock-dart-analysis\scripts\normalize-browser-dart-export.js"
+        $browserExportSample = ".\examples\kr-stock-dart-analysis\dart-browser-export-sample.json"
+        $browserExportOut = Join-Path $tempRoot "browser-dart.txt"
+        $browserSectionsOut = Join-Path $tempRoot "browser-sections.json"
+        $browserCoverageOut = Join-Path $tempRoot "browser-coverage.json"
+
+        node $browserExportScript --input $browserExportSample --output $browserExportOut | Out-Null
+        if (-not (Test-Path $browserExportOut) -or (Get-Item $browserExportOut).Length -le 0) {
+            Write-Error "Expected normalized browser DART text output was not created: $browserExportOut"
+        }
+
+        node .\skills\kr-stock-dart-analysis\scripts\extract-dart-sections.js --input $browserExportOut --output $browserSectionsOut | Out-Null
+        node .\skills\kr-stock-dart-analysis\scripts\verify-dart-coverage.js --input $browserSectionsOut --output $browserCoverageOut | Out-Null
+
+        $browserCoverageText = [System.IO.File]::ReadAllText($browserCoverageOut)
+        if (-not $browserCoverageText.Contains('"tocCount": 4')) {
+            Write-Error "Expected browser export fixture coverage to include four TOC sections."
         }
     }
 

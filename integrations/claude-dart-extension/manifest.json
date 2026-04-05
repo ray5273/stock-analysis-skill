@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Claude DART Extractor",
+  "description": "Auto-extract DART viewer pages for Claude.ai filing analysis.",
+  "version": "0.1.0",
+  "permissions": [
+    "downloads",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://dart.fss.or.kr/dsaf001/main.do*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Claude DART Extractor",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://dart.fss.or.kr/dsaf001/main.do*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ]
+}

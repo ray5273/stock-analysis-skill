@@ -8,6 +8,13 @@ TMP_BASE="$REPO_ROOT/.tmp"
 mkdir -p "$TMP_BASE"
 TMP_ROOT=$(mktemp -d "$TMP_BASE/stock-skill-validate.XXXXXX")
 SECTOR_SKILLS="kr-sector-plan kr-sector-data-pack kr-sector-analysis kr-sector-compare kr-sector-audit kr-sector-update"
+EXTENSION_DIR="$REPO_ROOT/integrations/claude-dart-extension"
+
+if [ -d "$EXTENSION_DIR" ]; then
+    find "$EXTENSION_DIR" -type f -name "*.js" | sort | while IFS= read -r JS_FILE; do
+        node --check "$JS_FILE" >/dev/null
+    done
+fi
 
 cleanup() {
     rm -rf "$TMP_ROOT"
@@ -68,6 +75,7 @@ if (!pattern.test(text)) {
         FETCH_SCRIPT="$SKILL_DIR/scripts/fetch-kr-chart.js"
         CHART_OUT="$TMP_ROOT/$SKILL_NAME-chart.png"
         CHART_OUT_OVERLAY="$TMP_ROOT/$SKILL_NAME-chart-overlay.png"
+        CHART_OUT_MOMENTUM="$TMP_ROOT/$SKILL_NAME-chart-momentum.png"
 
         node "$CHART_SCRIPT" --input "$CHART_SAMPLE" --png-out "$CHART_OUT" --image-path "chart.png" >/dev/null
         if [ ! -s "$CHART_OUT" ]; then
@@ -76,6 +84,10 @@ if (!pattern.test(text)) {
         fi
         if [ ! -s "$CHART_OUT_OVERLAY" ]; then
             echo "Expected overlay chart PNG was not created: $CHART_OUT_OVERLAY" >&2
+            exit 1
+        fi
+        if [ ! -s "$CHART_OUT_MOMENTUM" ]; then
+            echo "Expected momentum chart PNG was not created: $CHART_OUT_MOMENTUM" >&2
             exit 1
         fi
 
@@ -98,6 +110,11 @@ if (!pattern.test(text)) {
 
         if ! grep -q 'For a `full memo`, add `Street / Alternative Views` before valuation and end with `Additional Research Questions`' "$SKILL_DIR/SKILL.md"; then
             echo "Expected kr-stock-analysis skill rules to scope Street / Alternative Views and Additional Research Questions to full memos." >&2
+            exit 1
+        fi
+
+        if ! grep -q 'DART Recheck' "$SKILL_DIR/references/output-format.md"; then
+            echo "Expected full memo output format to include DART Recheck." >&2
             exit 1
         fi
 
@@ -180,6 +197,11 @@ if (!pattern.test(text)) {
             exit 1
         fi
 
+        if ! grep -q 'KR_DART_CLAIM_RECHECK_RULE' "$SKILL_DIR/SKILL.md"; then
+            echo "Expected kr-stock-dart-analysis skill rules to include the claim-recheck marker." >&2
+            exit 1
+        fi
+
         if ! grep -q '^## 파싱 커버리지 요약$' "$SKILL_DIR/references/output-format.md"; then
             echo "Expected kr-stock-dart-analysis output format to include parsing coverage summary." >&2
             exit 1
@@ -187,6 +209,11 @@ if (!pattern.test(text)) {
 
         if ! grep -q '^## 미공시 확인 로그$' "$SKILL_DIR/references/output-format.md"; then
             echo "Expected kr-stock-dart-analysis output format to include nondisclosure verification log." >&2
+            exit 1
+        fi
+
+        if ! grep -q '^## DART Recheck$' "$SKILL_DIR/references/output-format.md"; then
+            echo "Expected kr-stock-dart-analysis output format to include DART Recheck section." >&2
             exit 1
         fi
 
@@ -208,6 +235,26 @@ if (!pattern.test(text)) {
 
         if ! grep -q 'KR_DART_REFERENCE_DIGEST_EXAMPLE' "$LG_COVERAGE_DIR/dart-reference.md"; then
             echo "Expected the LG CNS DART reference example to include the reference-digest marker." >&2
+            exit 1
+        fi
+
+        BROWSER_EXPORT_SCRIPT="$SKILL_DIR/scripts/normalize-browser-dart-export.js"
+        BROWSER_EXPORT_SAMPLE="$REPO_ROOT/examples/kr-stock-dart-analysis/dart-browser-export-sample.json"
+        BROWSER_EXPORT_OUT="$TMP_ROOT/browser-dart.txt"
+        BROWSER_SECTIONS_OUT="$TMP_ROOT/browser-sections.json"
+        BROWSER_COVERAGE_OUT="$TMP_ROOT/browser-coverage.json"
+
+        node "$BROWSER_EXPORT_SCRIPT" --input "$BROWSER_EXPORT_SAMPLE" --output "$BROWSER_EXPORT_OUT" >/dev/null
+        if [ ! -s "$BROWSER_EXPORT_OUT" ]; then
+            echo "Expected normalized browser DART text output was not created: $BROWSER_EXPORT_OUT" >&2
+            exit 1
+        fi
+
+        node "$SKILL_DIR/scripts/extract-dart-sections.js" --input "$BROWSER_EXPORT_OUT" --output "$BROWSER_SECTIONS_OUT" >/dev/null
+        node "$SKILL_DIR/scripts/verify-dart-coverage.js" --input "$BROWSER_SECTIONS_OUT" --output "$BROWSER_COVERAGE_OUT" >/dev/null
+
+        if ! grep -q '"tocCount": 4' "$BROWSER_COVERAGE_OUT"; then
+            echo "Expected browser export fixture coverage to include four TOC sections." >&2
             exit 1
         fi
     fi

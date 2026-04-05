@@ -90,10 +90,11 @@ Current behavior:
 1. `kr-stock-plan` now starts with a short user-needs check, converts a vague Korean stock request into a clear security definition, output mode, key questions, and a recommended workflow, and should continue into the downstream skills automatically unless the user asked for planning only.
 2. `kr-stock-dart-analysis` acts as the filing-precision stage when the work depends on exact DART-backed result, segment, customer, backlog, contract, or disclosure wording detail, and should first ask a short filing-needs check when the target slice is still unclear.
    For long annual filings, it should also keep a `dart-reference.md` digest and `dart-cache.json` coverage cache so later updates can reuse section-level verification instead of re-reading the entire filing blindly.
+   When the filing supports a broader stock memo, it should also run a DART recheck loop for thesis-critical claims instead of treating deep verification as optional.
 3. `kr-stock-data-pack` collects dated price context, filings, results, governance facts, valuation inputs, chart inputs, and optional outside-view inputs before drafting, and should first confirm which pack blocks the user actually wants when that is not already defined.
 4. `kr-stock-analysis` writes the final output as a `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, or `pair compare` for KRX-listed companies, and should first confirm the final decision frame or section priorities when they are still ambiguous.
 5. `kr-stock-update` preserves the original memo date, refreshes `최근 업데이트일`, and appends or replaces dated follow-up blocks under `## Update Log`.
-6. `kr-stock-analysis` chart output now defaults to a split view so price action is easier to read: one main PNG for `OHLC candlesticks + close line + MA5/20/60/120 + volume`, plus one overlay PNG for `Bollinger + Ichimoku + RSI14`.
+6. `kr-stock-analysis` chart output now defaults to a three-chart view so price action is easier to read: one main PNG for `OHLC candlesticks + close line + MA5/20/60/120 + volume`, one overlay PNG for `Bollinger + Ichimoku + RSI14`, and one momentum PNG for `MACD + signal + histogram`.
 
 Recommended pipeline:
 
@@ -115,14 +116,16 @@ Routing guide:
 Bundled helpers:
 
 - `scripts/fetch-kr-chart.js` for current KRX daily bars
-- `scripts/chart-basics.js` for technical reads plus split PNG chart output that separates the main trend view from heavier overlays
+- `scripts/chart-basics.js` for technical reads plus three-part PNG chart output that separates the main trend view, the heavier overlays, and MACD momentum
 - `scripts/chart-basics.js` now draws KR main charts with candlesticks, a close line, and a current-price guide, and uses Korean chart labels when a Hangul-capable local font is available
-- `scripts/chart-basics.js` writes the requested `--png-out` path as the main trend chart and writes a sibling `*-overlay.png` file for the heavier indicator view
+- `scripts/chart-basics.js` writes the requested `--png-out` path as the main trend chart and writes sibling `*-overlay.png` and `*-momentum.png` files for the heavier indicator and MACD momentum views
 - `scripts/valuation-bands.js` for 3-5 year valuation band summaries
 - `scripts/peer-valuation.js` for comparable-company valuation tables
 - `skills/kr-stock-dart-analysis/scripts/extract-dart-sections.js` for building a section index from a text export of a DART filing
+- `skills/kr-stock-dart-analysis/scripts/normalize-browser-dart-export.js` for converting a Chrome extension browser export into the text format used by DART section extraction
 - `skills/kr-stock-dart-analysis/scripts/verify-dart-coverage.js` for checking whether the filing TOC was fully parsed
 - `skills/kr-stock-dart-analysis/scripts/build-dart-reference.js` for generating `dart-reference.md` and `dart-cache.json`
+- `dart-cache.json` now reserves a `verifiedClaims` block for memo-critical claim verification results
 - `skills/kr-stock-update/scripts/extract-report-baseline.js` for parsing memo metadata, update dates, and existing source URLs
 - `skills/kr-stock-update/scripts/normalize-update-log.js` for rendering a normalized dated update block and writing it back into the memo
 
@@ -313,6 +316,28 @@ Use $kr-sector-update to update analysis-example/kr-sector/국내 데이터센�
 /kr-stock-dart-analysis extract a filing-grounded summary for LG CNS covering the latest quarterly or half-year revenue, operating profit, segment differences, customer concentration, and any standalone-quarter derivations needed from cumulative DART figures.
 ```
 
+### Claude.ai DART Browser Workflow
+
+When Codex or Claude Code cannot directly drive the DART viewer, use the Chrome extension under [`integrations/claude-dart-extension/`](integrations/claude-dart-extension/README.md).
+
+1. Open a supported DART viewer page: `https://dart.fss.or.kr/dsaf001/main.do*`
+2. Let the extension auto-extract the page
+3. Click `Save Export` when the popup shows `Export ready`
+4. Normalize the saved file:
+
+```text
+node skills/kr-stock-dart-analysis/scripts/normalize-browser-dart-export.js --input dart-browser-export.json --output dart-text.txt
+node skills/kr-stock-dart-analysis/scripts/extract-dart-sections.js --input dart-text.txt --output sections.json
+node skills/kr-stock-dart-analysis/scripts/verify-dart-coverage.js --input sections.json --output coverage.json
+```
+
+5. Attach the JSON export in Claude.ai or continue the downstream DART scripts locally
+
+Reference files:
+
+- [Claude DART Extractor README](integrations/claude-dart-extension/README.md)
+- [Sample browser export JSON](examples/kr-stock-dart-analysis/dart-browser-export-sample.json)
+
 ```text
 /kr-stock-dart-analysis list all disclosed single-sales or supply contracts for a Korean company over the last 12 months, keeping original notices, amendments, counterparties, amounts, sales ratios, contract periods, and latest status visible row by row.
 ```
@@ -375,6 +400,11 @@ Use $kr-sector-update to update analysis-example/kr-sector/국내 데이터센�
 - [KR - 삼성SDS DART 분석](<analysis-example/kr/삼성SDS/dart-analysis.md>)
 - [KR - 삼성SDS Data Pack](<analysis-example/kr/삼성SDS/data-pack.md>)
 - [KR - 삼성SDS](<analysis-example/kr/삼성SDS/memo.md>)
+- [KR - 현대오토에버 리서치 브리프](<analysis-example/kr/현대오토에버/리서치브리프.md>)
+- [KR - 현대오토에버 DART 분석](<analysis-example/kr/현대오토에버/dart-analysis.md>)
+- [KR - 현대오토에버 DART reference](<analysis-example/kr/현대오토에버/dart-reference.md>)
+- [KR - 현대오토에버 Data Pack](<analysis-example/kr/현대오토에버/data-pack.md>)
+- [KR - 현대오토에버](<analysis-example/kr/현대오토에버/memo.md>)
 - [KR - LG전자 DART 분석](<analysis-example/kr/LG전자/dart-analysis.md>)
 - [KR - 두산에너빌리티 DART 분석](<analysis-example/kr/두산에너빌리티/dart-analysis.md>)
 - [KR - 두산에너빌리티 DART reference](<analysis-example/kr/두산에너빌리티/dart-reference.md>)

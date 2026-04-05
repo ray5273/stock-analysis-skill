@@ -21,11 +21,28 @@ Try to gather the smallest complete set that supports a precise answer:
    Needed for year-over-year comparison on the same basis.
 4. Attached audit or review report
    Useful for note detail, customer concentration, accounting policies, and restatement context.
-   When DART's inline viewer is awkward or incomplete for note-level work, use the company IR `감사보고서` or `reviewed financial statements` download page to reach the same official PDF faster.
+   When DART's inline viewer is awkward or incomplete for note-level work, use the company IR `감사보고서` or `reviewed financial statements` download page to reach the same official PDF directly.
 5. Official earnings-release or IR material
    Optional support for management explanations or presentation tables.
 6. KRX or DART contract disclosures
    Needed when the user asks for `단일판매ㆍ공급계약체결`, large order wins, amendments, or contract termination notices.
+
+## Claude.ai Viewer Export Path
+
+- Use this path when the user wants to work from the live DART viewer inside a browser session instead of manually copying text.
+- Supported first-pass page pattern: `https://dart.fss.or.kr/dsaf001/main.do*`
+- Install the unpacked Chrome extension from `integrations/claude-dart-extension/`.
+- Open the DART viewer page and let the extension auto-run.
+- If the popup shows `Export ready`, save `dart-browser-export.json`.
+- Normalize the saved export before section parsing:
+
+```text
+node skills/kr-stock-dart-analysis/scripts/normalize-browser-dart-export.js --input dart-browser-export.json --output dart-text.txt
+node skills/kr-stock-dart-analysis/scripts/extract-dart-sections.js --input dart-text.txt --output sections.json
+node skills/kr-stock-dart-analysis/scripts/verify-dart-coverage.js --input sections.json --output coverage.json
+```
+
+- This path has no alternate extraction route inside the extension flow. If extraction fails, retry on the viewer page and improve the extractor rather than silently switching source paths.
 
 ## Section Sweep And Coverage Verification
 
@@ -49,6 +66,13 @@ Use this step for annual `사업보고서`, `감사보고서`, or any filing whe
    - `parsed`: safe to cite normally with source mapping.
    - `partial`: cite cautiously and mark the limitation.
    - `missing` or `needs_review`: do not convert this into `not separately disclosed`.
+
+Deep-read mode is mandatory, not optional, when:
+
+- the filing is an annual `사업보고서` or audited annual report
+- the user wants a reusable filing artifact
+- the filing is being used to support a broader memo or stock thesis
+- customer concentration, related-party revenue, segment margin, backlog, or capital-allocation claims matter to the conclusion
 
 Recommended annual-report sweep targets:
 
@@ -124,7 +148,7 @@ For long annual filings, tighten that rule:
 
 1. Check the relevant body section.
 2. Check the attached audit or review report if note detail matters.
-3. Check the official IR PDF fallback path if the DART viewer is weak.
+3. Check the official IR PDF route if the DART viewer is weak.
 4. Confirm the section is not `missing` or `needs_review` in the coverage report.
 5. Only then use `not separately disclosed`.
 
@@ -391,6 +415,34 @@ When a long filing section sweep was required, keep a reusable companion artifac
    - compact per-section metadata
 
 This cache is meant to make the next filing update easier, not to hide evidence.
+
+## Claim Recheck Loop
+
+Use this step whenever the filing output supports a broader stock memo, data pack, or thesis write-up.
+
+1. Build a short claim list.
+   Pull the 3-8 highest-impact claims from:
+   - the scoped brief's must-answer questions
+   - the current memo draft
+   - the data pack
+   - your own top-line filing summary
+2. Phrase each claim so it can be falsified.
+   Good examples:
+   - `LG CNS의 연결 기준 계열 매출 비중은 약 60%다`
+   - `삼성전자 DS 마진 회복 근거가 사업보고서에 직접 적혀 있다`
+   - `두산에너빌리티 수주잔고는 계열사 관련 사업을 제외한다`
+3. Recheck each claim against the filing set.
+   Prefer the exact note, section, or table that directly proves or weakens the statement.
+4. Assign one status per claim.
+   - `confirmed`
+   - `partially_supported`
+   - `contradicted`
+   - `not_separately_disclosed`
+   - `needs_follow_up`
+5. Keep the result visible.
+   Write the claim, status, supporting value if any, and source section into `dart-reference.md` and `dart-cache.json`.
+6. Use the claim status downstream.
+   A memo should not present a thesis-critical statement as settled if the DART recheck left it `partially_supported`, `contradicted`, or `needs_follow_up`.
 
 ## Failure Modes To Avoid
 

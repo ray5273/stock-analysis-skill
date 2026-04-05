@@ -16,6 +16,26 @@ python skills/kr-stock-dart-analysis/scripts/extract-pdf-text.py --input "[ì‚¼ì„
 
 Use this when the source filing is a local PDF and you want a plain-text export before running section extraction and coverage verification.
 
+## `scripts/normalize-browser-dart-export.js`
+
+Run:
+
+```text
+node skills/kr-stock-dart-analysis/scripts/normalize-browser-dart-export.js --input dart-browser-export.json --output dart-text.txt
+```
+
+Use this when the filing body was captured from the Chrome extension in `integrations/claude-dart-extension/` and you want to feed that browser export into the existing section-extraction flow.
+
+Expected input:
+
+- `meta`: URL, title, company/date candidates, capture timestamp
+- `extraction.status`: must be `ready`
+- `content.sections[]`: structured viewer sections captured by the extension
+
+Sample browser export:
+
+- [`examples/kr-stock-dart-analysis/dart-browser-export-sample.json`](../../../examples/kr-stock-dart-analysis/dart-browser-export-sample.json)
+
 ## `scripts/extract-dart-sections.js`
 
 Run:
@@ -62,3 +82,8 @@ Outputs:
 
 - `dart-reference.md`: analyst-readable digest
 - `dart-cache.json`: dated coverage metadata for later updates
+
+Notes:
+
+- After generation, populate `verifiedClaims` in `dart-cache.json` and the `## DART Recheck` table in `dart-reference.md` when the filing supports a broader memo.
+- Annual-filing work should not leave thesis-critical claims outside this recheck loop.

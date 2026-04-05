@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Claude DART Extractor</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="panel">
+      <h1>Claude DART Extractor</h1>
+      <p id="status-line" class="status status-idle">Checking page...</p>
+      <p id="detail-line" class="detail"></p>
+      <dl class="meta">
+        <div>
+          <dt>Company</dt>
+          <dd id="company-name">-</dd>
+        </div>
+        <div>
+          <dt>Filing date</dt>
+          <dd id="filing-date">-</dd>
+        </div>
+        <div>
+          <dt>Sections</dt>
+          <dd id="section-count">-</dd>
+        </div>
+      </dl>
+      <div class="actions">
+        <button id="save-button" disabled>Save Export</button>
+        <button id="retry-button" disabled>Retry</button>
+      </div>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

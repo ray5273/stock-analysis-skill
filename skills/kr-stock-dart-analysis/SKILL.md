@@ -13,6 +13,8 @@ Use this skill to turn Korean DART filings into a precise, reusable evidence pac
 
 <!-- KR_DART_COVERAGE_VERIFICATION_RULE -->
 
+<!-- KR_DART_CLAIM_RECHECK_RULE -->
+
 ## Language
 
 - Default to Korean for all user-facing output, headings, notes, and summaries unless the user explicitly asks for English.
@@ -31,6 +33,9 @@ Use this skill to turn Korean DART filings into a precise, reusable evidence pac
 - Keep a source map for each material fact: document title, filing date, section or table label, and whether the number is directly disclosed or derived.
 - If the workspace is writable and the user wants a reusable artifact, write the result to `analysis-example/kr/<company>/dart-analysis.md`.
 - When the request depends on a long `사업보고서`, `감사보고서`, or note-heavy annual filing, also build `analysis-example/kr/<company>/dart-reference.md` and `analysis-example/kr/<company>/dart-cache.json` so the section sweep, coverage check, and dated cache remain reusable.
+- When the user is working in `Claude.ai`, the preferred viewer-capture path is the Chrome extension under `integrations/claude-dart-extension/`: let the extension auto-extract the DART viewer page, save `dart-browser-export.json`, then run `normalize-browser-dart-export.js` before section extraction.
+- For annual `사업보고서`, `감사보고서`, or any memo-critical filing read, treat `deep-read mode` as the default rather than an optional fallback. Do not skip the full section sweep when the filing is long and thesis-critical.
+- When upstream analysis, a data pack, or your own draft memo contains important claims, convert those claims into a DART recheck list and verify them against the filing before finalizing the output.
 - For `수주계약건만`, `단일판매ㆍ공급계약만`, or similar requests, use the fixed Korean contract-list format from `references/output-format.md` unless the user explicitly asks for a different shape.
 - If the user asks for `수주잔고 대비 매출`, `백로그 커버리지`, or similar backlog-coverage metrics, calculate them only on a like-for-like basis and label them as a derived coverage read rather than a formally disclosed KPI unless the company discloses the metric directly.
 - If the user asks for both `수주잔고` and `계약 만기 분포`, use an integrated backlog mode that combines the official backlog table, contract-disclosure list, maturity buckets, and coverage metrics in one Korean artifact.
@@ -45,6 +50,8 @@ Use this skill to turn Korean DART filings into a precise, reusable evidence pac
    Gather the target DART filing, the prior comparable filing needed for quarter-only derivations, and any attached audit or review reports that clarify disclosure gaps.
 2A. Run a section sweep for long filings.
    For annual `사업보고서`, `감사보고서`, or similarly long filings, first build a TOC-level section index, parse every section you can reach, and verify coverage before writing the final analysis.
+2B. Build a claim recheck queue.
+   For any annual-filing analysis that feeds a broader stock memo, extract the 3-8 claims most likely to affect the thesis and verify them explicitly from DART before signing off.
 3. Determine the measurement basis.
    Decide which tables are consolidated versus separate and which values are cumulative versus quarter-only before extracting or deriving any metric.
 4. Extract the results block.
@@ -75,8 +82,9 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 - Keep restatements, accounting basis changes, and scope changes visible when they affect comparability.
 - Ask a short user-need check before extraction when the must-answer filing questions are not already defined by `kr-stock-plan` or the active request.
 - Use the latest annual audit report for customer concentration or segment-note detail when the current quarterly or half-year filing does not repeat it, but label the date mismatch.
-- When the user asks for related-party or internal-group revenue share, prefer the latest annual audit report note even if the DART viewer is inconvenient, and accept the company IR `감사보고서` download page as a primary-source fallback path to the same audited note.
+- When the user asks for related-party or internal-group revenue share, prefer the latest annual audit report note even if the DART viewer is inconvenient, and accept the company IR `감사보고서` download page only as the same official audited-note route rather than a separate fallback workflow.
 - When the user asks for related-party or internal-group revenue share, check whether the filing provides both `연결` and `별도` notes. If both exist, show the connected but different meanings instead of stopping after the consolidated note.
+- For memo-critical annual-filing work, do not stop after section extraction. Convert important claims into `confirmed`, `partially supported`, `contradicted`, or `not separately disclosed` using explicit filing evidence.
 - When a result is only meaningful after subtracting prior cumulative figures, show the calculation path briefly.
 - Separate `회계상 특수관계자 비중` from `대규모기업집단 계열회사 포함 내부그룹 비중` when the note discloses both. Do not collapse them into one unlabeled percentage.
 - Separate `연결 기준 내부그룹 매출 비중` from `별도 기준 특수관계자 거래 구조`. The former is usually used for external revenue concentration, while the latter often includes transactions with subsidiaries.
@@ -115,6 +123,7 @@ For long annual filings, keep the coverage-verification result visible enough th
 - A source map another analyst can audit quickly
 - A dated section-coverage check for long annual filings
 - A reusable reference digest and cache when the document is large enough that downstream work should not re-read the whole filing
+- A claim recheck block for the highest-impact memo claims when the filing work feeds a broader analysis
 
 ## Handoff Guidance
 

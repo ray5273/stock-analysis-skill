@@ -1,0 +1,97 @@
+{
+  "meta": {
+    "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260316001234",
+    "title": "LG CNS 사업보고서",
+    "companyNameCandidate": "LG CNS",
+    "filingDateCandidate": "2026-03-16",
+    "capturedAt": "2026-04-05T09:30:00.000Z"
+  },
+  "extraction": {
+    "status": "ready",
+    "errors": [],
+    "diagnostics": {
+      "contexts": [
+        {
+          "source": "top-document",
+          "frameUrl": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260316001234",
+          "accessible": true
+        },
+        {
+          "source": "iframe",
+          "frameUrl": "https://dart.fss.or.kr/report/viewer.do?rcpNo=20260316001234",
+          "accessible": true
+        }
+      ],
+      "iframeCount": 1,
+      "candidateCount": 2,
+      "bestCandidate": {
+        "source": "iframe",
+        "frameUrl": "https://dart.fss.or.kr/report/viewer.do?rcpNo=20260316001234",
+        "textLength": 2732,
+        "headingCount": 4,
+        "tableCount": 1
+      }
+    }
+  },
+  "content": {
+    "rawText": "I. 회사의 개요 LG CNS는 기업 대상 IT 서비스와 클라우드 전환 사업을 영위한다. II. 사업의 내용 클라우드와 스마트엔지니어링이 핵심 성장축이며 주요 고객은 그룹 계열과 대형 엔터프라이즈 고객이다. III. 재무에 관한 사항 2025년 연결 매출은 5조 9,826억원, 영업이익은 5,129억원이다. 연결재무제표 주석 주석에는 특수관계자 거래와 주요 고객 정보가 기재되어 있다.",
+    "textLength": 2732,
+    "headings": [
+      {
+        "title": "I. 회사의 개요",
+        "level": 1
+      },
+      {
+        "title": "II. 사업의 내용",
+        "level": 1
+      },
+      {
+        "title": "III. 재무에 관한 사항",
+        "level": 1
+      },
+      {
+        "title": "연결재무제표 주석",
+        "level": 2
+      }
+    ],
+    "sections": [
+      {
+        "title": "I. 회사의 개요",
+        "level": 1,
+        "content": "LG CNS는 기업 대상 IT 서비스, 클라우드, 스마트엔지니어링 사업을 영위한다. 공공, 금융, 제조, 물류 고객을 대상으로 디지털 전환 프로젝트를 수행한다.",
+        "contentLength": 92,
+        "preview": "LG CNS는 기업 대상 IT 서비스, 클라우드, 스마트엔지니어링 사업을 영위한다. 공공, 금융, 제조, 물류 고객을 대상으로 디지털 전환 프로젝트를 수행한다."
+      },
+      {
+        "title": "II. 사업의 내용",
+        "level": 1,
+        "content": "클라우드와 스마트엔지니어링이 핵심 성장축이다. 회사는 애플리케이션 현대화, AI 전환, 데이터센터 구축과 운영을 포함한 통합 서비스를 제공한다. 주요 고객은 그룹 계열과 대형 엔터프라이즈 고객이다.",
+        "contentLength": 128,
+        "preview": "클라우드와 스마트엔지니어링이 핵심 성장축이다. 회사는 애플리케이션 현대화, AI 전환, 데이터센터 구축과 운영을 포함한 통합 서비스를 제공한다."
+      },
+      {
+        "title": "III. 재무에 관한 사항",
+        "level": 1,
+        "content": "2025년 연결 매출은 5조 9,826억원, 영업이익은 5,129억원이다. 수익성은 클라우드와 고마진 프로젝트 믹스의 개선 영향을 받았다. 회사는 연결 기준 실적과 별도 기준 실적을 구분해 기재한다.",
+        "contentLength": 118,
+        "preview": "2025년 연결 매출은 5조 9,826억원, 영업이익은 5,129억원이다. 수익성은 클라우드와 고마진 프로젝트 믹스의 개선 영향을 받았다."
+      },
+      {
+        "title": "연결재무제표 주석",
+        "level": 2,
+        "content": "주석에는 특수관계자 거래, 주요 고객, 부문 정보, 우발부채 관련 항목이 포함되어 있다. 고객집중도 확인 시 주요 고객 주석과 특수관계자 주석을 함께 점검해야 한다.",
+        "contentLength": 103,
+        "preview": "주석에는 특수관계자 거래, 주요 고객, 부문 정보, 우발부채 관련 항목이 포함되어 있다. 고객집중도 확인 시 주요 고객 주석과 특수관계자 주석을 함께 점검해야 한다."
+      }
+    ],
+    "links": [
+      {
+        "text": "연결재무제표 주석",
+        "href": "https://dart.fss.or.kr/report/viewer.do?rcpNo=20260316001234&dcmNo=10000001"
+      }
+    ],
+    "tableCount": 1,
+    "source": "iframe",
+    "sourceUrl": "https://dart.fss.or.kr/report/viewer.do?rcpNo=20260316001234"
+  }
+}

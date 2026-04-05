@@ -46,6 +46,7 @@ node skills/kr-stock-analysis/scripts/chart-basics.js --input examples/kr/chart-
 node skills/kr-stock-analysis/scripts/peer-valuation.js --input examples/kr/peer-sample.json
 node skills/kr-stock-analysis/scripts/fetch-kr-chart.js --ticker 066970 --range 3mo
 node skills/kr-stock-analysis/scripts/portfolio-snapshot.js --input examples/kr/portfolio-sample.json
+node skills/kr-stock-dart-analysis/scripts/normalize-browser-dart-export.js --input examples/kr-stock-dart-analysis/dart-browser-export-sample.json --output dart-text.txt
 ```
 
 ## Architecture
@@ -72,8 +73,16 @@ All scripts accept JSON via `--input` and output Markdown or PNG. They use only 
 | `extract-report-baseline.js` | Parse an existing KR memo into baseline metadata for follow-up updates |
 | `normalize-update-log.js` | Render or append a dated update block to an existing KR memo |
 | `portfolio-snapshot.js` | SMA20 deviation + RSI14 snapshot table across multiple KRX positions from JSON (kr only, MCP fallback) |
+| `normalize-browser-dart-export.js` | Convert a Chrome extension DART viewer export into plain text for section parsing |
 
 Input JSON schemas are documented in `references/script-inputs.md` with sample files under `examples/<market>/`.
+
+### Claude.ai DART Viewer Integration
+
+- The Chrome extension lives under `integrations/claude-dart-extension/`.
+- It targets `https://dart.fss.or.kr/dsaf001/main.do*` and auto-attempts extraction when the viewer page loads.
+- The popup exposes `Save Export` and `Retry` instead of using a separate fallback path.
+- The saved `dart-browser-export.json` should be normalized with `skills/kr-stock-dart-analysis/scripts/normalize-browser-dart-export.js` before running section extraction and coverage verification.
 
 ### Skill Prompt Design
 
