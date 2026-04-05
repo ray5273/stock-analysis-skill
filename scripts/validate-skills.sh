@@ -170,6 +170,26 @@ if (!pattern.test(text)) {
             exit 1
         fi
 
+        if ! grep -q 'KR_DART_REFERENCE_DIGEST_RULE' "$SKILL_DIR/SKILL.md"; then
+            echo "Expected kr-stock-dart-analysis skill rules to include the reference-digest marker." >&2
+            exit 1
+        fi
+
+        if ! grep -q 'KR_DART_COVERAGE_VERIFICATION_RULE' "$SKILL_DIR/SKILL.md"; then
+            echo "Expected kr-stock-dart-analysis skill rules to include the coverage-verification marker." >&2
+            exit 1
+        fi
+
+        if ! grep -q '^## 파싱 커버리지 요약$' "$SKILL_DIR/references/output-format.md"; then
+            echo "Expected kr-stock-dart-analysis output format to include parsing coverage summary." >&2
+            exit 1
+        fi
+
+        if ! grep -q '^## 미공시 확인 로그$' "$SKILL_DIR/references/output-format.md"; then
+            echo "Expected kr-stock-dart-analysis output format to include nondisclosure verification log." >&2
+            exit 1
+        fi
+
         LG_COVERAGE_DIR="$REPO_ROOT/analysis-example/kr/LG CNS"
         if [ ! -d "$LG_COVERAGE_DIR" ]; then
             echo "Expected an LG CNS integrated example under analysis-example/kr." >&2
@@ -180,20 +200,37 @@ if (!pattern.test(text)) {
             echo "Expected an LG CNS integrated example to include the coverage-summary marker." >&2
             exit 1
         fi
+
+        if [ ! -f "$LG_COVERAGE_DIR/dart-reference.md" ]; then
+            echo "Expected an LG CNS DART reference example under analysis-example/kr." >&2
+            exit 1
+        fi
+
+        if ! grep -q 'KR_DART_REFERENCE_DIGEST_EXAMPLE' "$LG_COVERAGE_DIR/dart-reference.md"; then
+            echo "Expected the LG CNS DART reference example to include the reference-digest marker." >&2
+            exit 1
+        fi
     fi
 
     if [ "$SKILL_NAME" = "kr-stock-update" ]; then
         BASELINE_SCRIPT="$SKILL_DIR/scripts/extract-report-baseline.js"
         NORMALIZE_SCRIPT="$SKILL_DIR/scripts/normalize-update-log.js"
         REPORT_SAMPLE="$REPO_ROOT/analysis-example/kr/LG CNS/memo.md"
+        REFERENCE_SAMPLE="$REPO_ROOT/analysis-example/kr/LG CNS/dart-reference.md"
+        DART_CACHE_SAMPLE="$REPO_ROOT/analysis-example/kr/LG CNS/dart-cache.json"
         UPDATE_JSON="$TMP_ROOT/kr-stock-update.json"
         UPDATE_JSON_REPLACE="$TMP_ROOT/kr-stock-update-replace.json"
         UPDATED_REPORT="$TMP_ROOT/kr-stock-update.md"
         BASELINE_OUT="$TMP_ROOT/kr-stock-update-baseline.json"
 
-        node "$BASELINE_SCRIPT" --input "$REPORT_SAMPLE" --output "$BASELINE_OUT" >/dev/null
+        node "$BASELINE_SCRIPT" --input "$REPORT_SAMPLE" --reference "$REFERENCE_SAMPLE" --dart-cache "$DART_CACHE_SAMPLE" --output "$BASELINE_OUT" >/dev/null
         if ! grep -q '"memoDate": "2026-04-02"' "$BASELINE_OUT"; then
             echo "Baseline parser did not capture the memo date." >&2
+            exit 1
+        fi
+
+        if ! grep -q '"lastFilingChecked": "2026-03-16"' "$BASELINE_OUT"; then
+            echo "Baseline parser did not capture the DART reference metadata." >&2
             exit 1
         fi
 

@@ -7,6 +7,7 @@
 - Identify the target period and whether the user wants a broad filing digest or a narrower question such as results, segments, customer concentration, capex, related-party disclosures, or a contract-disclosure list.
 - If a `kr-stock-plan` brief already exists, inherit its exact security definition, output mode, and must-answer questions before expanding scope.
 - Set the reusable output path early when the workspace is writable. Default to `analysis-example/kr/<company>/dart-analysis.md`.
+- If the filing is long enough that a full section sweep matters, also reserve `analysis-example/kr/<company>/dart-reference.md` and `analysis-example/kr/<company>/dart-cache.json`.
 
 ## Filing Set
 
@@ -25,6 +26,46 @@ Try to gather the smallest complete set that supports a precise answer:
    Optional support for management explanations or presentation tables.
 6. KRX or DART contract disclosures
    Needed when the user asks for `단일판매ㆍ공급계약체결`, large order wins, amendments, or contract termination notices.
+
+## Section Sweep And Coverage Verification
+
+Use this step for annual `사업보고서`, `감사보고서`, or any filing where missing a note or appendix would materially change the answer.
+
+1. Build the expected section list first.
+   Start from the filing TOC or the visible heading list and keep the exact section titles.
+2. Parse the filing into section units.
+   At minimum, keep the section title, line or anchor position, content length, table presence, and a short preview.
+3. Compare expected sections with parsed sections.
+   Label each item as:
+   - `parsed`
+   - `partial`
+   - `missing`
+   - `needs_review`
+4. Treat weak parses honestly.
+   A heading-only capture, an abnormally short block, or a note-heavy section with no visible table or numeric block should not count as fully parsed.
+5. Keep the verification artifact.
+   Write the dated section report into `dart-reference.md` and the machine-readable state into `dart-cache.json` when the workspace is writable.
+6. Use verification status in the analysis.
+   - `parsed`: safe to cite normally with source mapping.
+   - `partial`: cite cautiously and mark the limitation.
+   - `missing` or `needs_review`: do not convert this into `not separately disclosed`.
+
+Recommended annual-report sweep targets:
+
+- `I. 회사의 개요`
+- `II. 사업의 내용`
+- `III. 재무에 관한 사항`
+- `IV. 이사의 경영진단 및 분석의견`
+- `V. 회계감사인의 감사의견 등`
+- `VI. 이사회 등 회사의 기관에 관한 사항`
+- `VII. 주주에 관한 사항`
+- `VIII. 임원 및 직원 등에 관한 사항`
+- `IX. 계열회사 등에 관한 사항`
+- `X. 대주주 등과의 거래내용`
+- `XI. 그 밖에 투자자 보호를 위하여 필요한 사항`
+- `XII. 상세표`
+- `연결재무제표 주석`
+- `재무제표 주석`
 
 ## Measurement Basis
 
@@ -78,6 +119,14 @@ Extract only what is actually disclosed and relevant to the user's question:
 - single-sales or supply-contract disclosures, amendments, and termination notices
 
 When a useful split is missing, say `not separately disclosed` and move on.
+
+For long annual filings, tighten that rule:
+
+1. Check the relevant body section.
+2. Check the attached audit or review report if note detail matters.
+3. Check the official IR PDF fallback path if the DART viewer is weak.
+4. Confirm the section is not `missing` or `needs_review` in the coverage report.
+5. Only then use `not separately disclosed`.
 
 For `특수관계자`, `관련당사자`, `내부거래`, `계열 매출`, or `내부그룹 매출 비중` requests:
 
@@ -320,6 +369,29 @@ After the DART extraction is complete:
 - hand off to `kr-stock-data-pack` for valuation, governance, chart, and outside-view blocks
 - hand off to `kr-stock-analysis` for thesis, risks, catalysts, and conclusion
 
+## Reference Digest And Cache
+
+When a long filing section sweep was required, keep a reusable companion artifact:
+
+1. `dart-reference.md`
+   Human-readable digest with:
+   - filing metadata
+   - coverage summary
+   - parsed vs partial vs missing sections
+   - short section summaries
+   - nondisclosure verification notes
+   - next-update watchlist
+2. `dart-cache.json`
+   Machine-readable state with:
+   - `reference.asOf`
+   - `reference.lastCheckedAt`
+   - `reference.lastFilingChecked`
+   - coverage counts
+   - missing, partial, and review-needed sections
+   - compact per-section metadata
+
+This cache is meant to make the next filing update easier, not to hide evidence.
+
 ## Failure Modes To Avoid
 
 - quoting cumulative nine-month or half-year numbers as if they were quarter-only results
@@ -331,5 +403,6 @@ After the DART extraction is complete:
 - mixing `매출 비중` and `계약 비중` into one table without showing that the numerators come from different disclosure systems
 - collapsing contract amendments or corrections into one unlabeled contract row
 - flattening `not disclosed` into silence instead of making the gap explicit
+- flattening `missing parse` or `needs_review` into `not separately disclosed`
 - attributing a result change to management commentary when the filing does not state that reason
 - ignoring restatements, note revisions, or reporting-segment changes

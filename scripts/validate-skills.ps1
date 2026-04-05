@@ -154,7 +154,12 @@ foreach ($skillDir in $skillDirs) {
         if (-not $skillMd.Contains("KR_DART_COVERAGE_SUMMARY_RULE")) {
             Write-Error "Expected kr-stock-dart-analysis skill rules to include the coverage-summary marker."
         }
-
+        if (-not $skillMd.Contains("KR_DART_REFERENCE_DIGEST_RULE")) {
+            Write-Error "Expected kr-stock-dart-analysis skill rules to include the reference-digest marker."
+        }
+        if (-not $skillMd.Contains("KR_DART_COVERAGE_VERIFICATION_RULE")) {
+            Write-Error "Expected kr-stock-dart-analysis skill rules to include the coverage-verification marker."
+        }
         $coverageExampleFiles = Get-ChildItem -Path (Join-Path $repoRoot "analysis-example\kr\LG CNS") -Filter "*.md"
         if (-not $coverageExampleFiles -or $coverageExampleFiles.Count -eq 0) {
             Write-Error "Expected an LG CNS integrated example under analysis-example\\kr."
@@ -170,20 +175,34 @@ foreach ($skillDir in $skillDirs) {
         if (-not $hasCoverageSummaryExample) {
             Write-Error "Expected an LG CNS integrated example to include the coverage-summary marker."
         }
+
+        $referenceExamplePath = Join-Path $repoRoot "analysis-example\kr\LG CNS\dart-reference.md"
+        if (-not (Test-Path $referenceExamplePath)) {
+            Write-Error "Expected an LG CNS DART reference example under analysis-example\\kr."
+        }
+        $referenceExample = [System.IO.File]::ReadAllText($referenceExamplePath, [System.Text.Encoding]::UTF8)
+        if (-not $referenceExample.Contains("KR_DART_REFERENCE_DIGEST_EXAMPLE")) {
+            Write-Error "Expected the LG CNS DART reference example to include the reference-digest marker."
+        }
     }
 
     if ($skillDir.Name -eq "kr-stock-update") {
         $baselineScript = ".\skills\kr-stock-update\scripts\extract-report-baseline.js"
         $normalizeScript = ".\skills\kr-stock-update\scripts\normalize-update-log.js"
         $reportSample = ".\analysis-example\kr\LG CNS\memo.md"
+        $referenceSample = ".\analysis-example\kr\LG CNS\dart-reference.md"
+        $dartCacheSample = ".\analysis-example\kr\LG CNS\dart-cache.json"
         $updateJson = Join-Path $tempRoot "kr-stock-update.json"
         $updateJsonReplace = Join-Path $tempRoot "kr-stock-update-replace.json"
         $updatedReport = Join-Path $tempRoot "kr-stock-update.md"
         $baselineOut = Join-Path $tempRoot "kr-stock-update-baseline.json"
 
-        node $baselineScript --input $reportSample --output $baselineOut | Out-Null
+        node $baselineScript --input $reportSample --reference $referenceSample --dart-cache $dartCacheSample --output $baselineOut | Out-Null
         if (-not (([System.IO.File]::ReadAllText($baselineOut)) -match '"memoDate": "2026-04-02"')) {
             Write-Error "Baseline parser did not capture the memo date."
+        }
+        if (-not (([System.IO.File]::ReadAllText($baselineOut)) -match '"lastFilingChecked": "2026-03-16"')) {
+            Write-Error "Baseline parser did not capture the DART reference metadata."
         }
 
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)

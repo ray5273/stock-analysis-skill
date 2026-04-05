@@ -9,6 +9,10 @@ Use this skill to turn Korean DART filings into a precise, reusable evidence pac
 
 <!-- KR_DART_COVERAGE_SUMMARY_RULE -->
 
+<!-- KR_DART_REFERENCE_DIGEST_RULE -->
+
+<!-- KR_DART_COVERAGE_VERIFICATION_RULE -->
+
 ## Language
 
 - Default to Korean for all user-facing output, headings, notes, and summaries unless the user explicitly asks for English.
@@ -26,6 +30,7 @@ Use this skill to turn Korean DART filings into a precise, reusable evidence pac
 - If the user asks `2027년까지 얼마`, `2028년까지 얼마`, or a similar remaining-contract question, produce a `계약 종료시점 분포`, a short `커버리지 요약`, and a full `누적 계약 커버리지` table from the latest effective contract state, while clearly noting that this is not the same as official unrecognized backlog unless the filing discloses backlog directly.
 - Keep a source map for each material fact: document title, filing date, section or table label, and whether the number is directly disclosed or derived.
 - If the workspace is writable and the user wants a reusable artifact, write the result to `analysis-example/kr/<company>/dart-analysis.md`.
+- When the request depends on a long `사업보고서`, `감사보고서`, or note-heavy annual filing, also build `analysis-example/kr/<company>/dart-reference.md` and `analysis-example/kr/<company>/dart-cache.json` so the section sweep, coverage check, and dated cache remain reusable.
 - For `수주계약건만`, `단일판매ㆍ공급계약만`, or similar requests, use the fixed Korean contract-list format from `references/output-format.md` unless the user explicitly asks for a different shape.
 - If the user asks for `수주잔고 대비 매출`, `백로그 커버리지`, or similar backlog-coverage metrics, calculate them only on a like-for-like basis and label them as a derived coverage read rather than a formally disclosed KPI unless the company discloses the metric directly.
 - If the user asks for both `수주잔고` and `계약 만기 분포`, use an integrated backlog mode that combines the official backlog table, contract-disclosure list, maturity buckets, and coverage metrics in one Korean artifact.
@@ -38,6 +43,8 @@ Use this skill to turn Korean DART filings into a precise, reusable evidence pac
    Confirm the company, ticker, report type, period, and whether the user wants a broad filing read, results summary, segment comparison, customer concentration check, contract list, or another filing-specific slice.
 2. Build the filing set.
    Gather the target DART filing, the prior comparable filing needed for quarter-only derivations, and any attached audit or review reports that clarify disclosure gaps.
+2A. Run a section sweep for long filings.
+   For annual `사업보고서`, `감사보고서`, or similarly long filings, first build a TOC-level section index, parse every section you can reach, and verify coverage before writing the final analysis.
 3. Determine the measurement basis.
    Decide which tables are consolidated versus separate and which values are cumulative versus quarter-only before extracting or deriving any metric.
 4. Extract the results block.
@@ -53,6 +60,7 @@ Use this skill to turn Korean DART filings into a precise, reusable evidence pac
 
 Read [references/workflow.md](references/workflow.md) for the filing-extraction checklist.
 Read [references/output-format.md](references/output-format.md) for the default evidence-pack shape.
+Read [references/script-inputs.md](references/script-inputs.md) when using the bundled DART section, coverage, and reference scripts.
 
 ## Operating Rules
 
@@ -60,6 +68,7 @@ Read [references/output-format.md](references/output-format.md) for the default 
 - Default to consolidated figures. If only separate figures are available for a block, say that explicitly.
 - Use the filing's exact period labels. Do not flatten `3Q cumulative`, `half-year cumulative`, and `annual` into one generic period.
 - If a mix split, segment profit, customer concentration figure, or backlog figure is not separately disclosed in the filing set, write `not separately disclosed` instead of guessing.
+- Do not write `not separately disclosed` for a long annual filing until the section coverage check is complete and the relevant section is not `missing` or `needs_review`.
 - Use the company's stated reasons for growth or margin change only when the filing or attached official earnings material says them explicitly.
 - If IR material adds color but DART is silent or less specific, anchor the number to DART and label the extra explanation as official IR commentary.
 - If DART and IR differ, prefer the filing for formal numbers and note the mismatch.
@@ -91,6 +100,8 @@ Read [references/output-format.md](references/output-format.md) for the default 
 
 If a number matters to the conclusion, keep the filing citation visible. If you cannot trace a material number back to the filing set, mark it as outside the filing scope.
 
+For long annual filings, keep the coverage-verification result visible enough that another analyst can distinguish `true nondisclosure` from `parse gap`.
+
 ## Minimum Output Standard
 
 - Filing scope with exact document names and dates
@@ -102,6 +113,8 @@ If a number matters to the conclusion, keep the filing citation visible. If you 
 - Filing-stated reasons for change
 - Clear `not separately disclosed` notes for missing but important items
 - A source map another analyst can audit quickly
+- A dated section-coverage check for long annual filings
+- A reusable reference digest and cache when the document is large enough that downstream work should not re-read the whole filing
 
 ## Handoff Guidance
 

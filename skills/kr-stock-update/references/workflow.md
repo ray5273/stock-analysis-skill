@@ -19,6 +19,11 @@ Before searching for new information:
 3. Parse `최근 업데이트일` if present.
 4. Parse existing `Update Log` dates and source URLs.
 5. Read the existing `Summary`, `Risks`, and `What Would Change My Mind` sections so you know what the original thesis was.
+6. If `dart-reference.md` or `dart-cache.json` exists, also parse:
+   - `reference 기준일`
+   - `최근 확인일`
+   - `마지막 반영 공시일`
+   - missing, partial, and review-needed sections
 
 Use `scripts/extract-report-baseline.js` when possible so the baseline metadata is explicit.
 
@@ -30,6 +35,12 @@ Default source window:
 - end date: now
 
 The update process should search the full window after `기준일`, then avoid duplicate write-back by checking whether the same event date or source URL already appears in the memo.
+
+If a DART cache is available, use it to focus the filing recheck:
+
+- prioritize sections that were previously `missing`, `partial`, or `needs_review`
+- if a new annual or quarterly filing arrived after `lastFilingChecked`, rerun the section coverage check before treating old `not separately disclosed` judgments as still valid
+- keep the memo update and the filing-reference refresh connected but conceptually separate
 
 This is intentional:
 

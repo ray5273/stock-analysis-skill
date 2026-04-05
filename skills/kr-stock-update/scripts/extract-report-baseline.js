@@ -11,6 +11,12 @@ function parseArgs(argv) {
     if (arg === "--input") {
       result.input = argv[i + 1];
       i += 1;
+    } else if (arg === "--reference") {
+      result.reference = argv[i + 1];
+      i += 1;
+    } else if (arg === "--dart-cache") {
+      result.dartCache = argv[i + 1];
+      i += 1;
     } else if (arg === "--output") {
       result.output = argv[i + 1];
       i += 1;
@@ -27,11 +33,12 @@ function parseArgs(argv) {
 function usage() {
   return [
     "Usage:",
-    "  node extract-report-baseline.js --input analysis-example/kr/<company>/memo.md [--output baseline.json]",
+    "  node extract-report-baseline.js --input analysis-example/kr/<company>/memo.md [--reference analysis-example/kr/<company>/dart-reference.md] [--dart-cache analysis-example/kr/<company>/dart-cache.json] [--output baseline.json]",
     "",
     "Notes:",
     "  - Parses memo metadata from an existing markdown report.",
     "  - Extracts memo date, recent update date, update-log dates, source URLs, and a short summary excerpt.",
+    "  - Can also ingest DART reference digest and cache metadata for later filing updates.",
   ].join("\n");
 }
 
@@ -39,9 +46,13 @@ function readText(filePath) {
   return fs.readFileSync(path.resolve(filePath), "utf8");
 }
 
+function readJson(filePath) {
+  return JSON.parse(fs.readFileSync(path.resolve(filePath), "utf8"));
+}
+
 function extractSingleLine(text, label) {
-  const pattern = new RegExp(`^${label}:\\s*(.+)$`, "m");
-  return text.match(pattern)?.[1]?.trim() || null;
+  const pattern = new RegExp(`^(?:[-*]\\s*)?${label}:\\s*(.+)$`, "m");
+  return text.match(pattern)?.[1]?.trim().replace(/^`|`$/g, "") || null;
 }
 
 function extractTitle(text) {
@@ -125,6 +136,58 @@ function inferTickerFromUrls(urls) {
   return null;
 }
 
+function fileExists(filePath) {
+  return Boolean(filePath) && fs.existsSync(path.resolve(filePath));
+}
+
+function extractListSection(text, heading) {
+  const section = extractSection(text, heading);
+  if (!section) {
+    return [];
+  }
+
+  return section
+    .split("\n")
+    .map((line) => line.replace(/^[-*]\s*/, "").trim())
+    .filter(Boolean);
+}
+
+function parseReferenceMetadata(referencePath) {
+  if (!fileExists(referencePath)) {
+    return null;
+  }
+
+  const text = readText(referencePath);
+  return {
+    path: path.resolve(referencePath),
+    title: extractTitle(text),
+    referenceDate: extractSingleLine(text, "reference 기준일"),
+    lastCheckedDate: extractSingleLine(text, "최근 확인일"),
+    lastFilingChecked: extractSingleLine(text, "마지막 반영 공시일"),
+    tocCount: extractSingleLine(text, "TOC 기준 섹션 수"),
+    parsedCount: extractSingleLine(text, "완전 파싱"),
+    partialCount: extractSingleLine(text, "부분 파싱"),
+    missingCount: extractSingleLine(text, "누락"),
+    needsReviewCount: extractSingleLine(text, "재검토 필요"),
+    nextCheckSections: extractListSection(text, "다음 업데이트 우선 확인 항목"),
+  };
+}
+
+function parseDartCache(cachePath) {
+  if (!fileExists(cachePath)) {
+    return null;
+  }
+
+  const payload = readJson(cachePath);
+  return {
+    path: path.resolve(cachePath),
+    asOf: payload.reference?.asOf || null,
+    lastCheckedAt: payload.reference?.lastCheckedAt || null,
+    lastFilingChecked: payload.reference?.lastFilingChecked || null,
+    coverage: payload.coverage || null,
+  };
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help || !args.input) {
@@ -139,6 +202,8 @@ function main() {
   const recentUpdate = extractSingleLine(text, "최근 업데이트일");
   const updateDates = extractUpdateDates(text);
   const sourceUrls = extractSourceUrls(text);
+  const referenceMetadata = parseReferenceMetadata(args.reference);
+  const dartCacheMetadata = parseDartCache(args.dartCache);
 
   const payload = {
     path: absoluteInput,
@@ -152,6 +217,8 @@ function main() {
     existingSourceUrls: sourceUrls,
     summaryExcerpt: extractSummaryExcerpt(text),
     inferredTicker: inferTickerFromUrls(sourceUrls),
+    dartReference: referenceMetadata,
+    dartCache: dartCacheMetadata,
   };
 
   const serialized = `${JSON.stringify(payload, null, 2)}\n`;

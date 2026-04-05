@@ -79,6 +79,7 @@ Primary instructions:
 
 - [skills/kr-stock-plan/SKILL.md](skills/kr-stock-plan/SKILL.md)
 - [skills/kr-stock-dart-analysis/SKILL.md](skills/kr-stock-dart-analysis/SKILL.md)
+- [skills/kr-stock-dart-analysis/references/script-inputs.md](skills/kr-stock-dart-analysis/references/script-inputs.md)
 - [skills/kr-stock-data-pack/SKILL.md](skills/kr-stock-data-pack/SKILL.md)
 - [skills/kr-stock-analysis/SKILL.md](skills/kr-stock-analysis/SKILL.md)
 - [skills/kr-stock-analysis/references/blended-source-notes.md](skills/kr-stock-analysis/references/blended-source-notes.md)
@@ -88,6 +89,7 @@ Current behavior:
 
 1. `kr-stock-plan` now starts with a short user-needs check, converts a vague Korean stock request into a clear security definition, output mode, key questions, and a recommended workflow, and should continue into the downstream skills automatically unless the user asked for planning only.
 2. `kr-stock-dart-analysis` acts as the filing-precision stage when the work depends on exact DART-backed result, segment, customer, backlog, contract, or disclosure wording detail, and should first ask a short filing-needs check when the target slice is still unclear.
+   For long annual filings, it should also keep a `dart-reference.md` digest and `dart-cache.json` coverage cache so later updates can reuse section-level verification instead of re-reading the entire filing blindly.
 3. `kr-stock-data-pack` collects dated price context, filings, results, governance facts, valuation inputs, chart inputs, and optional outside-view inputs before drafting, and should first confirm which pack blocks the user actually wants when that is not already defined.
 4. `kr-stock-analysis` writes the final output as a `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, or `pair compare` for KRX-listed companies, and should first confirm the final decision frame or section priorities when they are still ambiguous.
 5. `kr-stock-update` preserves the original memo date, refreshes `최근 업데이트일`, and appends or replaces dated follow-up blocks under `## Update Log`.
@@ -118,6 +120,9 @@ Bundled helpers:
 - `scripts/chart-basics.js` writes the requested `--png-out` path as the main trend chart and writes a sibling `*-overlay.png` file for the heavier indicator view
 - `scripts/valuation-bands.js` for 3-5 year valuation band summaries
 - `scripts/peer-valuation.js` for comparable-company valuation tables
+- `skills/kr-stock-dart-analysis/scripts/extract-dart-sections.js` for building a section index from a text export of a DART filing
+- `skills/kr-stock-dart-analysis/scripts/verify-dart-coverage.js` for checking whether the filing TOC was fully parsed
+- `skills/kr-stock-dart-analysis/scripts/build-dart-reference.js` for generating `dart-reference.md` and `dart-cache.json`
 - `skills/kr-stock-update/scripts/extract-report-baseline.js` for parsing memo metadata, update dates, and existing source URLs
 - `skills/kr-stock-update/scripts/normalize-update-log.js` for rendering a normalized dated update block and writing it back into the memo
 
@@ -362,6 +367,8 @@ Use $kr-sector-update to update analysis-example/kr-sector/국내 데이터센�
 - [KR - 엘앤에프](<analysis-example/kr/엘앤에프/memo.md>)
 - [KR - LG CNS Research Brief](<analysis-example/kr/LG CNS/리서치브리프.md>)
 - [KR - LG CNS DART 분석](<analysis-example/kr/LG CNS/dart-analysis.md>)
+- [KR - LG CNS DART reference](<analysis-example/kr/LG CNS/dart-reference.md>)
+- [KR - 삼성전자 DART reference](<analysis-example/kr/삼성전자/dart-reference.md>)
 - [KR - LG CNS 수주 통합 분석](<analysis-example/kr/LG CNS/수주통합분석.md>)
 - [KR - LG CNS](<analysis-example/kr/LG CNS/memo.md>)
 - [KR - 삼성SDS 리서치 브리프](<analysis-example/kr/삼성SDS/리서치브리프.md>)
@@ -370,6 +377,7 @@ Use $kr-sector-update to update analysis-example/kr-sector/국내 데이터센�
 - [KR - 삼성SDS](<analysis-example/kr/삼성SDS/memo.md>)
 - [KR - LG전자 DART 분석](<analysis-example/kr/LG전자/dart-analysis.md>)
 - [KR - 두산에너빌리티 DART 분석](<analysis-example/kr/두산에너빌리티/dart-analysis.md>)
+- [KR - 두산에너빌리티 DART reference](<analysis-example/kr/두산에너빌리티/dart-reference.md>)
 - [KR - 두산에너빌리티 수주 통합 분석](<analysis-example/kr/두산에너빌리티/수주통합분석.md>)
 - [KR - 한전KPS 수주계약 리스트](<analysis-example/kr/한전KPS/수주계약리스트.md>)
 - [KR - 한미글로벌 수주계약 리스트](<analysis-example/kr/한미글로벌/수주계약리스트.md>)

@@ -70,6 +70,7 @@ Use $kr-stock-plan as the entry point for Korean stock work. Have it ask what th
 
 - [skills/kr-stock-plan/SKILL.md](skills/kr-stock-plan/SKILL.md)
 - [skills/kr-stock-dart-analysis/SKILL.md](skills/kr-stock-dart-analysis/SKILL.md)
+- [skills/kr-stock-dart-analysis/references/script-inputs.md](skills/kr-stock-dart-analysis/references/script-inputs.md)
 - [skills/kr-stock-data-pack/SKILL.md](skills/kr-stock-data-pack/SKILL.md)
 - [skills/kr-stock-analysis/SKILL.md](skills/kr-stock-analysis/SKILL.md)
 - [skills/kr-stock-analysis/references/blended-source-notes.md](skills/kr-stock-analysis/references/blended-source-notes.md)
@@ -79,6 +80,7 @@ Use $kr-stock-plan as the entry point for Korean stock work. Have it ask what th
 
 1. `kr-stock-plan`은 먼저 사용자가 무엇을 원하는지 짧게 확인한 뒤, 모호한 종목 요청을 정확한 종목, 주식 종류, 기간, 출력 모드, 핵심 질문, 추천 워크플로가 담긴 브리프로 정리하고, 브리프만 요청한 경우가 아니면 하위 skill까지 자동으로 이어서 실행합니다.
 2. `kr-stock-dart-analysis`는 최신 DART 공시에서 매출, 영업이익, 사업부문, 고객집중, 수주, 계약공시, 증감 사유를 정확한 표와 섹션 단위로 정리하고, 범위가 모호하면 먼저 사용자가 공시에서 무엇을 보고 싶은지 짧게 확인합니다.
+   긴 사업보고서나 감사보고서라면 이후 업데이트를 위해 `dart-reference.md`와 `dart-cache.json`도 함께 남겨 섹션별 커버리지와 재확인 필요 항목을 재사용합니다.
 3. `kr-stock-data-pack`은 가격 기준일, 공시, 실적, 거버넌스, 밸류 입력값, 차트 입력값, 필요할 때는 증권사·전문매체·독립 분석의 외부 관점도 구조화해서 모으고, 어떤 블록이 필요한지 불명확하면 먼저 짧게 확인합니다.
 4. `kr-stock-analysis`는 KRX 상장 주식 기준으로 `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, `pair compare`를 작성하고, 최종 산출물의 의사결정 프레임이나 강조 섹션이 불명확하면 먼저 짧게 확인합니다.
 5. `kr-stock-update`는 기존 `기준일`을 보존하고 `최근 업데이트일`과 `## Update Log`만 증분 갱신합니다.
@@ -109,6 +111,9 @@ kr-stock-plan
 - `scripts/chart-basics.js`: `--png-out`으로 지정한 파일은 메인 추세 차트로 저장하고, 같은 이름의 `-overlay.png` 파일을 보조지표 차트로 추가 생성
 - `scripts/valuation-bands.js`: 3~5년 밸류에이션 밴드 요약
 - `scripts/peer-valuation.js`: 피어 밸류에이션 표 생성
+- `skills/kr-stock-dart-analysis/scripts/extract-dart-sections.js`: DART 원문 텍스트에서 섹션 인덱스 생성
+- `skills/kr-stock-dart-analysis/scripts/verify-dart-coverage.js`: 목차 대비 파싱 커버리지 검증
+- `skills/kr-stock-dart-analysis/scripts/build-dart-reference.js`: `dart-reference.md`와 `dart-cache.json` 생성
 - [skills/kr-stock-update/scripts/extract-report-baseline.js](skills/kr-stock-update/scripts/extract-report-baseline.js): 메모 기준일, 업데이트 날짜, source URL 추출
 - [skills/kr-stock-update/scripts/normalize-update-log.js](skills/kr-stock-update/scripts/normalize-update-log.js): 날짜별 업데이트 블록 생성 및 메모 반영
 
@@ -283,6 +288,8 @@ $kr-sector-analysis로 국내 보안관제 시장 보고서를 작성해줘. 시
 - [KR - 엘앤에프](<analysis-example/kr/엘앤에프/memo.md>)
 - [KR - LG CNS 리서치 브리프](<analysis-example/kr/LG CNS/리서치브리프.md>)
 - [KR - LG CNS DART 분석](<analysis-example/kr/LG CNS/dart-analysis.md>)
+- [KR - LG CNS DART reference](<analysis-example/kr/LG CNS/dart-reference.md>)
+- [KR - 삼성전자 DART reference](<analysis-example/kr/삼성전자/dart-reference.md>)
 - [KR - LG CNS 수주 통합 분석](<analysis-example/kr/LG CNS/수주통합분석.md>)
 - [KR - LG CNS](<analysis-example/kr/LG CNS/memo.md>)
 - [KR - 삼성SDS 리서치 브리프](<analysis-example/kr/삼성SDS/리서치브리프.md>)
@@ -291,6 +298,7 @@ $kr-sector-analysis로 국내 보안관제 시장 보고서를 작성해줘. 시
 - [KR - 삼성SDS](<analysis-example/kr/삼성SDS/memo.md>)
 - [KR - LG전자 DART 분석](<analysis-example/kr/LG전자/dart-analysis.md>)
 - [KR - 두산에너빌리티 DART 분석](<analysis-example/kr/두산에너빌리티/dart-analysis.md>)
+- [KR - 두산에너빌리티 DART reference](<analysis-example/kr/두산에너빌리티/dart-reference.md>)
 - [KR - 두산에너빌리티 수주 통합 분석](<analysis-example/kr/두산에너빌리티/수주통합분석.md>)
 - [KR - 한전KPS 수주계약 리스트](<analysis-example/kr/한전KPS/수주계약리스트.md>)
 - [KR - 한미글로벌 수주계약 리스트](<analysis-example/kr/한미글로벌/수주계약리스트.md>)

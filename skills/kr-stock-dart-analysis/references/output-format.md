@@ -6,6 +6,10 @@
 
 <!-- KR_DART_STANDALONE_QUARTER_SECTION -->
 
+<!-- KR_DART_REFERENCE_DIGEST_SECTION -->
+
+<!-- KR_DART_COVERAGE_VERIFICATION_SECTION -->
+
 아래 섹션 순서를 기본값으로 사용한다.
 
 ```md
@@ -168,6 +172,53 @@
 - 계약공시 전용 모드의 메인 금액 컬럼은 `억원` 기준으로 쓴다. 필요하면 정확한 `원` 금액은 `비고`나 본문 메모에 따로 남긴다.
 - 추정 보완 대신 `not separately disclosed` 또는 `검색 결과 없음`을 쓴다.
 - 사용자가 해석을 요구하지 않으면 해석 메모는 최소화한다.
+
+## DART Reference Digest 형식
+
+긴 `사업보고서`, `감사보고서`, 또는 note-heavy 공시를 정밀 추출할 때는 아래 companion 형식을 함께 쓴다.
+
+```md
+# <회사명> DART Reference
+
+## Reference Cache Metadata
+- 회사명:
+- 티커:
+- 기준 문서:
+- 공시일:
+- reference 기준일:
+- 최근 확인일:
+- 마지막 반영 공시일:
+- TOC 기준 섹션 수:
+- 완전 파싱:
+- 부분 파싱:
+- 누락:
+- 재검토 필요:
+
+## 문서 커버리지
+| 항목 | 값 |
+| --- | --- |
+
+## 파싱 커버리지 요약
+| 섹션 | 상태 | 본문 길이 | 표 수 | 숫자 블록 수 |
+| --- | --- | --- | --- | --- |
+
+## 핵심 섹션별 요약
+| 섹션 | 요약 | 비고 |
+| --- | --- | --- |
+
+## 미공시 확인 로그
+- `not separately disclosed`로 처리한 항목과 확인 근거
+
+## 다음 업데이트 우선 확인 항목
+- ...
+```
+
+## 커버리지 검증 규칙
+
+- 긴 사업보고서에서는 `## 파싱 커버리지 요약`을 기본으로 남긴다.
+- 상태값은 `parsed`, `partial`, `missing`, `needs_review`를 사용한다.
+- `missing` 또는 `needs_review` 상태인 섹션은 미공시 확정이 아니라 재확인 대상으로 취급한다.
+- `미공시 확인 로그`에는 어떤 섹션이나 주석을 확인한 뒤 `not separately disclosed`로 판단했는지 남긴다.
 
 ## 수주 통합 분석 형식
 

@@ -10,6 +10,7 @@ Use this skill when the user already has a Korean stock memo and wants follow-up
 ## Quick Start
 
 - Start from an existing markdown memo file, usually `analysis-example/kr/<company>/memo.md`.
+- If a matching `analysis-example/kr/<company>/dart-reference.md` or `dart-cache.json` exists, read it together with the memo so the update can reuse prior filing coverage and recheck only the sections that changed.
 - Treat disclosures, earnings, capital allocation, governance moves, and company news as time-sensitive. Verify current sources before using them.
 - Use the memo's `기준일` as the minimum source date for the follow-up search.
 - Deduplicate against the memo's existing `Update Log` dates and source URLs when possible.
@@ -20,7 +21,7 @@ Use this skill when the user already has a Korean stock memo and wants follow-up
 ## Workflow
 
 1. Read the baseline memo.
-   Use `scripts/extract-report-baseline.js` to parse the memo date, current update status, existing update dates, and existing source URLs.
+   Use `scripts/extract-report-baseline.js` to parse the memo date, current update status, existing update dates, existing source URLs, and optional DART reference/cache metadata.
 2. Gather only new information.
    Read DART filings, KRX disclosures, company IR materials, and recent company-specific news published after the memo date.
 3. Filter for materiality.
@@ -41,6 +42,7 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 - Use `scripts/extract-report-baseline.js` to parse an existing markdown memo into structured baseline metadata.
 - Use `scripts/normalize-update-log.js` to render a dated update block and optionally write it back into the memo file.
 - Run all bundled scripts with `node`.
+- If a DART reference digest exists, use it to identify which annual-filing sections were already parsed, which were partial, and which still need review.
 
 ## Operating Rules
 
