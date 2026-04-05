@@ -13,25 +13,27 @@ If the workspace is writable, write this memo to `analysis-example/kr/<company>/
 3. Revenue Mix
    Cover product or segment mix first, then geography mix, then customer concentration. If a layer is not separately disclosed, say that explicitly.
 4. What The Latest Results Say
-   Pull the most relevant facts from the latest filing or earnings package.
-5. Street / Alternative Views
-   Summarize the most useful sell-side, specialist-media, or independent takes. Show what outside sources agree on, where they disagree, and which claims are still ahead of what the filing proves. Use short labels such as `Confirmed by filing`, `Street view`, `Specialist media`, `Independent view`, or `Not separately disclosed` when they improve clarity.
-6. Current Valuation Snapshot
-   Use a compact table and include current price, market cap, trailing PER, forward PER, EV/EBITDA, P/B, and FCF yield. Add EV/Sales, dividend yield, ROE, net debt or net cash, and treasury shares when available.
-7. Historical Valuation Bands
-   Show 3-5 years of P/E, EV/EBITDA, and P/B bands with a markdown summary and ASCII charts when the time series can be assembled. If a metric is not meaningful, explain why.
-8. Chart and Positioning
-   Add a short technical read with price trend, MA5, MA20, MA60, MA120, Bollinger Bands, Ichimoku, RSI, volume regime, and nearby breakout or breakdown levels. If you are writing a memo file, place the split PNG charts at the top of this section with normal markdown image links: first a main trend chart for OHLC candlesticks, the close line, moving averages, volume, and a visible current-price guide, then an overlay chart for Bollinger Bands, Ichimoku, and RSI. Make sure both images keep readable axes and labels, and prefer Korean legend or panel labels for Korean stock memos when the font environment supports them. End the section with a chart-only flow conclusion. If you do not have enough OHLCV history, say that directly and give a lighter price-action read instead.
-9. Governance and Structure
-   Always include ownership, board composition, CEO or chair split, treasury share treatment, shareholder return policy, and related-party or cross-holding issues when relevant. For each point, say why it matters for minority holders.
-10. Catalysts
-   List the next few events or conditions that could change the market view.
-11. Risks
-   List the main downside cases and what evidence would support them.
-12. What Would Change My Mind
-   State concrete conditions that would flip the view.
-13. Additional Research Questions
-   Add 4-8 company-specific follow-up questions that come directly from the current memo's evidence gaps. For each item, write the question first and then a short `why it matters` explanation. Pull the highest-impact unresolved items from `Street / Alternative Views`, unresolved disclosures, unclear economics, customer concentration, governance details, capital allocation, or rerating conditions before adding broader diligence ideas. Do not simply restate catalysts or risks.
+    Pull the most relevant facts from the latest filing or earnings package.
+5. DART Recheck
+   Add a compact table for the 3-8 most important memo claims. Show `주장`, `상태`, `확인값 또는 판단`, `출처`, and `비고`. Use statuses such as `confirmed`, `partially supported`, `contradicted`, `not separately disclosed`, or `needs follow-up`.
+6. Street / Alternative Views
+    Summarize the most useful sell-side, specialist-media, or independent takes. Show what outside sources agree on, where they disagree, and which claims are still ahead of what the filing proves. Use short labels such as `Confirmed by filing`, `Street view`, `Specialist media`, `Independent view`, or `Not separately disclosed` when they improve clarity.
+7. Current Valuation Snapshot
+    Use a compact table and include current price, market cap, trailing PER, forward PER, EV/EBITDA, P/B, and FCF yield. Add EV/Sales, dividend yield, ROE, net debt or net cash, and treasury shares when available.
+8. Historical Valuation Bands
+    Show 3-5 years of P/E, EV/EBITDA, and P/B bands with a markdown summary and ASCII charts when the time series can be assembled. If a metric is not meaningful, explain why.
+9. Chart and Positioning
+    Add a short technical read with price trend, MA5, MA20, MA60, MA120, Bollinger Bands, Ichimoku, RSI, MACD, ADX/DMI, volume regime, and nearby breakout or breakdown levels. If you are writing a memo file, place the three PNG charts at the top of this section with normal markdown image links: first a main trend chart for OHLC candlesticks, the close line, moving averages, volume, and a visible current-price guide, then an overlay chart for Bollinger Bands, Ichimoku, and RSI, then a momentum chart for MACD, signal, histogram, and ADX/DMI. Make sure all three images keep readable axes and labels, and prefer Korean legend or panel labels for Korean stock memos when the font environment supports them. End the section with a chart-only flow conclusion. If you do not have enough OHLCV history, say that directly and give a lighter price-action read instead.
+10. Governance and Structure
+    Always include ownership, board composition, CEO or chair split, treasury share treatment, shareholder return policy, and related-party or cross-holding issues when relevant. For each point, say why it matters for minority holders.
+11. Catalysts
+    List the next few events or conditions that could change the market view.
+12. Risks
+    List the main downside cases and what evidence would support them.
+13. What Would Change My Mind
+    State concrete conditions that would flip the view.
+14. Additional Research Questions
+    Add 4-8 company-specific follow-up questions that come directly from the current memo's evidence gaps. For each item, write the question first and then a short `why it matters` explanation. Pull the highest-impact unresolved items from `Street / Alternative Views`, unresolved disclosures, unclear economics, customer concentration, governance details, capital allocation, or rerating conditions before adding broader diligence ideas. Do not simply restate catalysts or risks.
 
 ## Quick View
 

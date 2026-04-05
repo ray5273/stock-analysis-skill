@@ -13,6 +13,7 @@ Use this skill to write the final Korean stock memo or event note.
 - If the final deliverable shape or emphasis is still unclear, ask the user the shortest clarifying questions first: what decision they are making, what depth they want, and which sections matter most.
 - Prefer using a scoped brief from `kr-stock-plan` and a fact pack from `kr-stock-data-pack` before drafting.
 - When the latest filing details are central to the conclusion, strongly prefer a `kr-stock-dart-analysis` pass before drafting so segment, margin, and disclosure wording stay exact.
+- For annual-filing-backed memo work, treat DART recheck as mandatory for thesis-critical claims instead of an optional extra step.
 - Route the output mode early.
   - `quick view` for compact decision support
   - `full memo` for deeper initiation-style analysis
@@ -34,11 +35,13 @@ Use this skill to write the final Korean stock memo or event note.
    Pull sell-side notes, specialist media, or independent long-form analysis to surface market framing, disagreements, and open questions.
 5. Build the memo.
    Separate verified facts from inference, keep section boundaries clean, and label what came from primary sources versus outside interpretation.
-6. Surface follow-up diligence.
+6. Run DART recheck on key claims.
+   Before finalizing the memo, convert the 3-8 most important business, customer, segment, backlog, related-party, capital-allocation, or governance claims into a DART verification list and route them through `kr-stock-dart-analysis` or an existing `dart-cache.json`.
+7. Surface follow-up diligence.
    Review the draft for missing disclosures, unverified assumptions, rerating conditions, and unresolved outside claims, then convert only the highest-impact gaps into company-specific research questions.
-7. Use the right helpers.
+8. Use the right helpers.
    Pull chart, valuation-band, and peer-comparison helpers only when they materially improve the output.
-8. Write the file deliverable.
+9. Write the file deliverable.
    Keep the markdown memo synchronized with the final answer.
 
 Read [references/workflow.md](references/workflow.md) for the analysis checklist.
@@ -51,7 +54,7 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 
 - Use `scripts/peer-valuation.js` when the user provides peer metrics and you need a consistent markdown comparison table.
 - Use `scripts/fetch-kr-chart.js` when you need current KRX daily bars and the user did not already provide OHLCV history.
-- Use `scripts/chart-basics.js` when you need a technical read plus split PNG charts that separate the main price trend from heavier overlay indicators inside a markdown memo.
+- Use `scripts/chart-basics.js` when you need a technical read plus three-part PNG charts that separate the main price trend, heavier overlay indicators, and momentum panels for `MACD` and `ADX/DMI` inside a markdown memo.
 - Use `scripts/valuation-bands.js` when the user provides 3-5 years of historical valuation multiples and you need markdown tables plus ASCII band charts for P/E, EV/EBITDA, and P/B.
 - Run all bundled scripts with `node`.
 
@@ -61,6 +64,7 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 - Ask a short user-need check before drafting when the active brief does not already define the mode, must-answer questions, or section priorities.
 - Use exact dates for disclosures, earnings, guidance, and news.
 - Separate verified facts from your inference.
+- A thesis-critical statement is not fully verified until it survives the DART recheck step when a relevant filing exists.
 - Use primary sources to anchor core numbers, customer concentration, capital allocation facts, and governance facts.
 - Use outside research to capture framing, disagreement, and thesis pressure points instead of repeating company marketing language.
 - Label outside interpretation as `Street view`, `Specialist media`, `Independent view`, or `Not separately disclosed` when the distinction matters.
@@ -70,6 +74,7 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 - Do not let one broker note, one blog post, or one media article become the sole basis for the conclusion.
 - For full memos, turn material evidence gaps into concrete follow-up questions instead of leaving them implicit.
 - For full memos, use `Street / Alternative Views` to show where the market view agrees, disagrees, or runs ahead of what the filing proves.
+- For full memos, attach a short `DART Recheck` block that shows which key claims were confirmed, weakened, contradicted, or left not separately disclosed.
 - Keep `Additional Research Questions` company-specific and avoid repeating catalysts, risks, or generic diligence prompts.
 - Distinguish ordinary shares, preferred shares, holding companies, and operating subsidiaries when the listing structure matters.
 - If you produced a full single-stock memo, keep the file deliverable synchronized with the final chat answer rather than letting the report drift.

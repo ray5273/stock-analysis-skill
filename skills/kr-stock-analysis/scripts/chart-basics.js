@@ -98,12 +98,19 @@ const HANGUL_FINALS = [
   [], ["ㄱ"], ["ㄲ"], ["ㄱ", "ㅅ"], ["ㄴ"], ["ㄴ", "ㅈ"], ["ㄴ", "ㅎ"], ["ㄷ"], ["ㄹ"], ["ㄹ", "ㄱ"], ["ㄹ", "ㅁ"], ["ㄹ", "ㅂ"],
   ["ㄹ", "ㅅ"], ["ㄹ", "ㅌ"], ["ㄹ", "ㅍ"], ["ㄹ", "ㅎ"], ["ㅁ"], ["ㅂ"], ["ㅂ", "ㅅ"], ["ㅅ"], ["ㅆ"], ["ㅇ"], ["ㅈ"], ["ㅊ"], ["ㅋ"], ["ㅌ"], ["ㅍ"], ["ㅎ"],
 ];
-const EXTERNAL_TEXT_HELPER = path.resolve(__dirname, "render-text-mask.py");
+const EXTERNAL_TEXT_HELPER_PY = path.resolve(__dirname, "render-text-mask.py");
+const EXTERNAL_TEXT_HELPER_PS1 = path.resolve(__dirname, "render-text-mask.ps1");
 const EXTERNAL_FONT_CANDIDATES = [
   process.env.KR_STOCK_CHART_FONT,
+  "C:\\Windows\\Fonts\\malgun.ttf",
+  "C:\\Windows\\Fonts\\malgunbd.ttf",
+  "C:\\Windows\\Fonts\\NanumGothic.ttf",
+  "C:\\Windows\\Fonts\\NotoSansKR-VF.ttf",
+  "C:\\Windows\\Fonts\\notosanskr-medium.ttf",
   "/mnt/c/Windows/Fonts/malgun.ttf",
-  "/mnt/c/Windows/Fonts/NotoSansKR-VF.ttf",
+  "/mnt/c/Windows/Fonts/malgunbd.ttf",
   "/mnt/c/Windows/Fonts/NanumGothic.ttf",
+  "/mnt/c/Windows/Fonts/NotoSansKR-VF.ttf",
   "/mnt/c/Windows/Fonts/NotoSerifKR-VF.ttf",
 ].filter(Boolean);
 const EXTERNAL_TEXT_STATE = {
@@ -159,8 +166,8 @@ function usage() {
     "  - The input JSON must include bars with date and close.",
     "  - high and low are required for Bollinger and Ichimoku overlays to be fully useful.",
     "  - volume is optional but recommended for volume panel and participation read.",
-    "  - When --png-out is set, the script writes the main trend chart to that path and a sibling overlay chart to *-overlay.png.",
-    "  - The markdown output prints both image snippets when PNG output is enabled.",
+    "  - When --png-out is set, the script writes the main trend chart to that path and sibling overlay and momentum charts to *-overlay.png and *-momentum.png.",
+    "  - The markdown output prints all three image snippets when PNG output is enabled.",
   ].join("\n");
 }
 
@@ -260,6 +267,38 @@ function rollingAverageSeries(values, period) {
   });
 }
 
+function emaSeries(values, period) {
+  const result = Array(values.length).fill(null);
+  const multiplier = 2 / (period + 1);
+  const seed = [];
+  let ema = null;
+
+  values.forEach((value, index) => {
+    if (!Number.isFinite(value)) {
+      result[index] = null;
+      return;
+    }
+
+    if (!Number.isFinite(ema)) {
+      seed.push(value);
+      if (seed.length < period) {
+        result[index] = null;
+        return;
+      }
+      if (seed.length === period) {
+        ema = average(seed);
+        result[index] = ema;
+        return;
+      }
+    }
+
+    ema = value * multiplier + ema * (1 - multiplier);
+    result[index] = ema;
+  });
+
+  return result;
+}
+
 function rollingMaxSeries(values, period) {
   return values.map((_, index) => {
     const window = windowValues(values, index, period);
@@ -329,6 +368,116 @@ function bollingerSeries(values, period = 20, multiplier = 2) {
     return (value - lower[index]) / middle[index];
   });
   return { middle, upper, lower, bandwidth };
+}
+
+function macdSeries(values, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
+  const fast = emaSeries(values, fastPeriod);
+  const slow = emaSeries(values, slowPeriod);
+  const macd = values.map((_, index) => {
+    if (!Number.isFinite(fast[index]) || !Number.isFinite(slow[index])) {
+      return null;
+    }
+    return fast[index] - slow[index];
+  });
+  const signal = emaSeries(macd, signalPeriod);
+  const histogram = macd.map((value, index) => {
+    if (!Number.isFinite(value) || !Number.isFinite(signal[index])) {
+      return null;
+    }
+    return value - signal[index];
+  });
+  return { fast, slow, macd, signal, histogram };
+}
+
+function adxSeries(highs, lows, closes, period = 14) {
+  const length = closes.length;
+  const tr = Array(length).fill(null);
+  const plusDm = Array(length).fill(null);
+  const minusDm = Array(length).fill(null);
+
+  for (let index = 1; index < length; index += 1) {
+    if (
+      ![highs[index], lows[index], closes[index - 1], highs[index - 1], lows[index - 1]].every(Number.isFinite)
+    ) {
+      continue;
+    }
+
+    const highDiff = highs[index] - highs[index - 1];
+    const lowDiff = lows[index - 1] - lows[index];
+    plusDm[index] = highDiff > lowDiff && highDiff > 0 ? highDiff : 0;
+    minusDm[index] = lowDiff > highDiff && lowDiff > 0 ? lowDiff : 0;
+    tr[index] = Math.max(
+      highs[index] - lows[index],
+      Math.abs(highs[index] - closes[index - 1]),
+      Math.abs(lows[index] - closes[index - 1]),
+    );
+  }
+
+  const smoothTr = Array(length).fill(null);
+  const smoothPlusDm = Array(length).fill(null);
+  const smoothMinusDm = Array(length).fill(null);
+  const plusDi = Array(length).fill(null);
+  const minusDi = Array(length).fill(null);
+  const dx = Array(length).fill(null);
+  const adx = Array(length).fill(null);
+
+  if (length <= period * 2) {
+    return { plusDi, minusDi, adx, dx };
+  }
+
+  let initialTr = 0;
+  let initialPlusDm = 0;
+  let initialMinusDm = 0;
+  for (let index = 1; index <= period; index += 1) {
+    if (![tr[index], plusDm[index], minusDm[index]].every(Number.isFinite)) {
+      return { plusDi, minusDi, adx, dx };
+    }
+    initialTr += tr[index];
+    initialPlusDm += plusDm[index];
+    initialMinusDm += minusDm[index];
+  }
+
+  smoothTr[period] = initialTr;
+  smoothPlusDm[period] = initialPlusDm;
+  smoothMinusDm[period] = initialMinusDm;
+
+  for (let index = period; index < length; index += 1) {
+    if (index > period) {
+      if (![tr[index], plusDm[index], minusDm[index]].every(Number.isFinite)) {
+        continue;
+      }
+      smoothTr[index] = smoothTr[index - 1] - smoothTr[index - 1] / period + tr[index];
+      smoothPlusDm[index] = smoothPlusDm[index - 1] - smoothPlusDm[index - 1] / period + plusDm[index];
+      smoothMinusDm[index] = smoothMinusDm[index - 1] - smoothMinusDm[index - 1] / period + minusDm[index];
+    }
+
+    if (![smoothTr[index], smoothPlusDm[index], smoothMinusDm[index]].every(Number.isFinite) || smoothTr[index] === 0) {
+      continue;
+    }
+
+    plusDi[index] = (smoothPlusDm[index] / smoothTr[index]) * 100;
+    minusDi[index] = (smoothMinusDm[index] / smoothTr[index]) * 100;
+    const denominator = plusDi[index] + minusDi[index];
+    dx[index] = denominator === 0 ? 0 : (Math.abs(plusDi[index] - minusDi[index]) / denominator) * 100;
+  }
+
+  let adxSeed = 0;
+  for (let index = period; index < period * 2; index += 1) {
+    if (!Number.isFinite(dx[index])) {
+      return { plusDi, minusDi, adx, dx };
+    }
+    adxSeed += dx[index];
+  }
+  adx[period * 2 - 1] = adxSeed / period;
+
+  for (let index = period * 2; index < length; index += 1) {
+    if (!Number.isFinite(dx[index]) || !Number.isFinite(adx[index - 1])) {
+      continue;
+    }
+    adx[index] = ((adx[index - 1] * (period - 1)) + dx[index]) / period;
+  }
+
+  return { plusDi, minusDi, adx, dx };
 }
 
 function midpoint(highs, lows, index, period) {
@@ -435,6 +584,112 @@ function classifyRsi(rsiValue) {
     return "oversold";
   }
   return "neutral";
+}
+
+function classifyMacd(macdData, latestIndex) {
+  const macdValue = macdData.macd[latestIndex];
+  const signalValue = macdData.signal[latestIndex];
+  const histogramValue = macdData.histogram[latestIndex];
+  const prevMacd = latestIndex > 0 ? macdData.macd[latestIndex - 1] : null;
+  const prevSignal = latestIndex > 0 ? macdData.signal[latestIndex - 1] : null;
+  const prevHistogram = latestIndex > 0 ? macdData.histogram[latestIndex - 1] : null;
+
+  let crossState = "insufficient-data";
+  if ([macdValue, signalValue, prevMacd, prevSignal].every(Number.isFinite)) {
+    if (macdValue >= signalValue && prevMacd < prevSignal) {
+      crossState = "bullish-cross";
+    } else if (macdValue <= signalValue && prevMacd > prevSignal) {
+      crossState = "bearish-cross";
+    } else if (macdValue > signalValue) {
+      crossState = "bullish";
+    } else if (macdValue < signalValue) {
+      crossState = "bearish";
+    } else {
+      crossState = "flat";
+    }
+  }
+
+  let zeroState = "insufficient-data";
+  if (Number.isFinite(macdValue)) {
+    if (macdValue > 0) {
+      zeroState = "above-zero";
+    } else if (macdValue < 0) {
+      zeroState = "below-zero";
+    } else {
+      zeroState = "at-zero";
+    }
+  }
+
+  let histogramState = "insufficient-data";
+  if ([histogramValue, prevHistogram].every(Number.isFinite)) {
+    const latestMagnitude = Math.abs(histogramValue);
+    const prevMagnitude = Math.abs(prevHistogram);
+    if (latestMagnitude > prevMagnitude * 1.03) {
+      histogramState = "expanding";
+    } else if (latestMagnitude < prevMagnitude * 0.97) {
+      histogramState = "contracting";
+    } else {
+      histogramState = "stable";
+    }
+  }
+
+  return {
+    macdValue,
+    signalValue,
+    histogramValue,
+    crossState,
+    zeroState,
+    histogramState,
+  };
+}
+
+function classifyAdx(adxData, latestIndex) {
+  const adxValue = adxData.adx[latestIndex];
+  const plusDiValue = adxData.plusDi[latestIndex];
+  const minusDiValue = adxData.minusDi[latestIndex];
+  const prevAdx = latestIndex > 0 ? adxData.adx[latestIndex - 1] : null;
+
+  let directionState = "insufficient-data";
+  if ([plusDiValue, minusDiValue].every(Number.isFinite)) {
+    if (plusDiValue > minusDiValue) {
+      directionState = "bullish";
+    } else if (plusDiValue < minusDiValue) {
+      directionState = "bearish";
+    } else {
+      directionState = "flat";
+    }
+  }
+
+  let strengthState = "insufficient-data";
+  if (Number.isFinite(adxValue)) {
+    if (adxValue >= 25) {
+      strengthState = "strong-trend";
+    } else if (adxValue >= 20) {
+      strengthState = "building-trend";
+    } else {
+      strengthState = "weak-trend";
+    }
+  }
+
+  let slopeState = "insufficient-data";
+  if ([adxValue, prevAdx].every(Number.isFinite)) {
+    if (adxValue > prevAdx + 0.5) {
+      slopeState = "rising";
+    } else if (adxValue < prevAdx - 0.5) {
+      slopeState = "falling";
+    } else {
+      slopeState = "flat";
+    }
+  }
+
+  return {
+    adxValue,
+    plusDiValue,
+    minusDiValue,
+    directionState,
+    strengthState,
+    slopeState,
+  };
 }
 
 function classifyMovingAverageStructure(close, maValues) {
@@ -623,10 +878,28 @@ function classifyChartFlow(metrics) {
     bearish += 1;
   }
 
+  if (metrics.macd.crossState === "bullish-cross") {
+    bullish += 1;
+  } else if (metrics.macd.crossState === "bearish-cross") {
+    bearish += 1;
+  } else if (metrics.macd.crossState === "bullish" && metrics.macd.zeroState === "above-zero") {
+    bullish += 1;
+  } else if (metrics.macd.crossState === "bearish" && metrics.macd.zeroState === "below-zero") {
+    bearish += 1;
+  }
+
   if (metrics.volumeRatio >= 1.2) {
     if (metrics.latestClose >= metrics.ma20Value) {
       bullish += 1;
     } else {
+      bearish += 1;
+    }
+  }
+
+  if (metrics.adx.strengthState === "strong-trend" || metrics.adx.strengthState === "building-trend") {
+    if (metrics.adx.directionState === "bullish") {
+      bullish += 1;
+    } else if (metrics.adx.directionState === "bearish") {
       bearish += 1;
     }
   }
@@ -659,6 +932,8 @@ function buildMetrics(bars) {
   const ma60Series = rollingAverageSeries(closes, 60);
   const ma120Series = rollingAverageSeries(closes, 120);
   const rsi14Series = rsiSeries(closes, 14);
+  const macd = macdSeries(closes, 12, 26, 9);
+  const adx = adxSeries(highs, lows, closes, 14);
   const volume20Series = rollingAverageSeries(volumes, 20);
   const bollinger = bollingerSeries(closes, 20, 2);
   const ichimoku = ichimokuSeries(highs, lows, closes);
@@ -698,6 +973,8 @@ function buildMetrics(bars) {
     rsi14Series,
     rsi14Value: rsi14Series[latestIndex],
     rsiState: classifyRsi(rsi14Series[latestIndex]),
+    macdSeriesData: macd,
+    adxSeriesData: adx,
     avgVolume20: volume20Series[latestIndex],
     volumeRatio,
     volumeRegime: classifyVolume(volumeRatio),
@@ -713,6 +990,8 @@ function buildMetrics(bars) {
     hasBreakoutHistory: Number.isFinite(breakoutLevel) && Number.isFinite(breakdownLevel),
   };
 
+  metrics.macd = classifyMacd(macd, latestIndex);
+  metrics.adx = classifyAdx(adx, latestIndex);
   metrics.chartFlow = classifyChartFlow(metrics);
   return metrics;
 }
@@ -819,7 +1098,8 @@ function resolveExternalTextRenderer() {
   }
 
   EXTERNAL_TEXT_STATE.checked = true;
-  if (!fs.existsSync(EXTERNAL_TEXT_HELPER)) {
+  const helperPath = process.platform === "win32" ? EXTERNAL_TEXT_HELPER_PS1 : EXTERNAL_TEXT_HELPER_PY;
+  if (!fs.existsSync(helperPath)) {
     return EXTERNAL_TEXT_STATE;
   }
 
@@ -863,22 +1143,43 @@ function loadExternalTextMask(text, scale = 1) {
   }
 
   try {
-    const stdout = execFileSync(
-      "python3",
-      [
-        EXTERNAL_TEXT_HELPER,
-        "--font-path",
-        renderer.fontPath,
-        "--font-size",
-        String(externalFontSize(scale)),
-        "--text",
-        normalized,
-      ],
-      {
-        encoding: "utf8",
-        maxBuffer: 16 * 1024 * 1024,
-      },
-    );
+    const stdout =
+      process.platform === "win32"
+        ? execFileSync(
+            "powershell",
+            [
+              "-ExecutionPolicy",
+              "Bypass",
+              "-File",
+              EXTERNAL_TEXT_HELPER_PS1,
+              "-FontPath",
+              renderer.fontPath,
+              "-FontSize",
+              String(externalFontSize(scale)),
+              "-Text",
+              normalized,
+            ],
+            {
+              encoding: "utf8",
+              maxBuffer: 16 * 1024 * 1024,
+            },
+          )
+        : execFileSync(
+            "python3",
+            [
+              EXTERNAL_TEXT_HELPER_PY,
+              "--font-path",
+              renderer.fontPath,
+              "--font-size",
+              String(externalFontSize(scale)),
+              "--text",
+              normalized,
+            ],
+            {
+              encoding: "utf8",
+              maxBuffer: 16 * 1024 * 1024,
+            },
+          );
     const mask = normalizeExternalTextPayload(stdout);
     EXTERNAL_TEXT_CACHE.set(cacheKey, mask);
     return mask;
@@ -1292,6 +1593,15 @@ function buildChartPngs(data, bars, metrics, options) {
     volumeDown: [239, 68, 68, 255],
     rsi: [124, 58, 237, 255],
     rsiGuide: [148, 163, 184, 255],
+    macd: [37, 99, 235, 255],
+    signal: [249, 115, 22, 255],
+    histogramPositive: [34, 197, 94, 220],
+    histogramNegative: [239, 68, 68, 220],
+    zeroGuide: [148, 163, 184, 255],
+    adx: [30, 41, 59, 255],
+    plusDi: [34, 197, 94, 255],
+    minusDi: [239, 68, 68, 255],
+    adxGuide: [148, 163, 184, 255],
   };
 
   const margin = { left: 100, right: 120, top: 84, bottom: 78 };
@@ -1304,6 +1614,9 @@ function buildChartPngs(data, bars, metrics, options) {
   const mainPriceHeight = dualPanelHeight - mainVolumeHeight;
   const overlayRsiHeight = Math.max(90, Math.min(150, Math.round(dualPanelHeight * 0.22)));
   const overlayPriceHeight = dualPanelHeight - overlayRsiHeight;
+  const momentumHistogramHeight = Math.max(80, Math.min(120, Math.round(dualPanelHeight * 0.22)));
+  const momentumAdxHeight = Math.max(90, Math.min(140, Math.round(dualPanelHeight * 0.28)));
+  const momentumLineHeight = dualPanelHeight - momentumHistogramHeight - momentumAdxHeight - gap;
 
   const priceSeries = {
     close: barsWindow.map((bar) => bar.close),
@@ -1315,6 +1628,12 @@ function buildChartPngs(data, bars, metrics, options) {
     bbLower: metrics.bollingerSeriesData.lower.slice(startIndex),
     tenkan: metrics.ichimokuSeriesData.tenkan.slice(startIndex),
     kijun: metrics.ichimokuSeriesData.kijun.slice(startIndex),
+    macd: metrics.macdSeriesData.macd.slice(startIndex),
+    signal: metrics.macdSeriesData.signal.slice(startIndex),
+    histogram: metrics.macdSeriesData.histogram.slice(startIndex),
+    adx: metrics.adxSeriesData.adx.slice(startIndex),
+    plusDi: metrics.adxSeriesData.plusDi.slice(startIndex),
+    minusDi: metrics.adxSeriesData.minusDi.slice(startIndex),
   };
 
   const volumeMax = Math.max(...barsWindow.map((bar) => (Number.isFinite(bar.volume) ? bar.volume : 0)), 1);
@@ -1373,6 +1692,51 @@ function buildChartPngs(data, bars, metrics, options) {
     });
   };
 
+  const drawAdxAxis = (buffer, panelTop, panelHeight) => {
+    [20, 25, 40].forEach((level) => {
+      const y = valueToY(level, 0, 60, panelTop, panelHeight);
+      drawLine(buffer, width, height, margin.left, y, margin.left + plotWidth, y, theme.adxGuide, 1);
+      drawText(buffer, width, height, margin.left + plotWidth + 10, y - 7, String(level), theme.muted, 2);
+    });
+  };
+
+  const buildIndicatorRange = (seriesCollection, options = {}) => {
+    const values = [];
+    seriesCollection.forEach((series) => {
+      series.forEach((value) => {
+        if (Number.isFinite(value)) {
+          values.push(value);
+        }
+      });
+    });
+    if (options.includeZero) {
+      values.push(0);
+    }
+    if (values.length === 0) {
+      return { min: -1, max: 1 };
+    }
+    let minValue = Math.min(...values);
+    let maxValue = Math.max(...values);
+    if (minValue === maxValue) {
+      minValue -= 1;
+      maxValue += 1;
+    }
+    const padding = (maxValue - minValue) * 0.12;
+    return {
+      min: minValue - padding,
+      max: maxValue + padding,
+    };
+  };
+
+  const drawZeroGuide = (buffer, panelTop, panelHeight, range, color = theme.zeroGuide) => {
+    if (!(range.min <= 0 && range.max >= 0)) {
+      return;
+    }
+    const y = valueToY(0, range.min, range.max, panelTop, panelHeight);
+    drawLine(buffer, width, height, margin.left, y, margin.left + plotWidth, y, color, 1);
+    drawText(buffer, width, height, margin.left + plotWidth + 10, y - 7, "0", theme.muted, 2);
+  };
+
   const drawDateTicks = (buffer, xForSlot, chartBottom, labelBottom, totalSlotsForGrid) => {
     const dateTickIndices = pickTickIndices(barsWindow.length, 6);
     dateTickIndices.forEach((index) => {
@@ -1395,10 +1759,143 @@ function buildChartPngs(data, bars, metrics, options) {
   const chartPaths = {
     mainOutput: path.resolve(options.pngOut),
     overlayOutput: path.resolve(appendSuffixToPath(options.pngOut, "overlay")),
+    momentumOutput: path.resolve(appendSuffixToPath(options.pngOut, "momentum")),
     mainImagePath: options.imagePath || path.basename(options.pngOut),
     overlayImagePath: options.imagePath
       ? appendSuffixToPath(options.imagePath, "overlay")
       : appendSuffixToPath(path.basename(options.pngOut), "overlay"),
+    momentumImagePath: options.imagePath
+      ? appendSuffixToPath(options.imagePath, "momentum")
+      : appendSuffixToPath(path.basename(options.pngOut), "momentum"),
+  };
+
+  const buildMomentumChart = () => {
+    const buffer = createRgbaBuffer(width, height, theme.background);
+    const totalSlotsForMomentum = barsWindow.length;
+    const chartTitle = String(data.name || data.ticker || "UNKNOWN");
+    const xForSlot = (slot) => {
+      if (totalSlotsForMomentum <= 1) {
+        return margin.left + plotWidth / 2;
+      }
+      return margin.left + (plotWidth * slot) / (totalSlotsForMomentum - 1);
+    };
+
+    const macdTop = margin.top + headerHeight;
+    const histogramTop = macdTop + momentumLineHeight + gap;
+    const adxTop = histogramTop + momentumHistogramHeight + gap;
+    const macdRange = buildIndicatorRange([priceSeries.macd, priceSeries.signal], { includeZero: true });
+    const histogramRange = buildIndicatorRange([priceSeries.histogram], { includeZero: true });
+    const adxRange = { min: 0, max: 60 };
+
+    fillRect(buffer, width, height, margin.left, macdTop, plotWidth, momentumLineHeight, theme.panel);
+    fillRect(buffer, width, height, margin.left, histogramTop, plotWidth, momentumHistogramHeight, theme.panel);
+    fillRect(buffer, width, height, margin.left, adxTop, plotWidth, momentumAdxHeight, theme.panel);
+
+    drawLine(buffer, width, height, margin.left, macdTop, margin.left + plotWidth, macdTop, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, macdTop + momentumLineHeight, margin.left + plotWidth, macdTop + momentumLineHeight, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, histogramTop, margin.left + plotWidth, histogramTop, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, histogramTop + momentumHistogramHeight, margin.left + plotWidth, histogramTop + momentumHistogramHeight, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, adxTop, margin.left + plotWidth, adxTop, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, adxTop + momentumAdxHeight, margin.left + plotWidth, adxTop + momentumAdxHeight, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, macdTop, margin.left, adxTop + momentumAdxHeight, theme.border, 1);
+    drawLine(buffer, width, height, margin.left + plotWidth, macdTop, margin.left + plotWidth, adxTop + momentumAdxHeight, theme.border, 1);
+
+    drawText(buffer, width, height, margin.left, margin.top + 4, chartTitle, theme.text, 3);
+    drawText(buffer, width, height, margin.left, margin.top + 34, `${data.ticker || "UNKNOWN"} MACD momentum`, theme.muted, 2);
+    drawText(buffer, width, height, margin.left + plotWidth, margin.top + 10, `As of ${metrics.latest.date}`, theme.muted, 2, "right");
+
+    let legendX = margin.left;
+    const legendY = margin.top + 56;
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.macd, "MACD");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.signal, "Signal");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.histogramPositive, "Histogram +");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.histogramNegative, "Histogram -");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.adx, "ADX");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.plusDi, "+DI");
+    drawLegendItem(buffer, width, height, legendX, legendY, theme.minusDi, "-DI");
+
+    drawText(buffer, width, height, margin.left - 56, macdTop + 6, "MACD", theme.muted, 2);
+    drawText(buffer, width, height, margin.left - 86, histogramTop + 6, "Histogram", theme.muted, 2);
+    drawText(buffer, width, height, margin.left - 60, adxTop + 6, "ADX/DMI", theme.muted, 2);
+
+    drawPriceAxis(buffer, macdTop, momentumLineHeight, macdRange.min, macdRange.max);
+    drawPriceAxis(buffer, histogramTop, momentumHistogramHeight, histogramRange.min, histogramRange.max);
+    drawAdxAxis(buffer, adxTop, momentumAdxHeight);
+    drawZeroGuide(buffer, macdTop, momentumLineHeight, macdRange);
+    drawZeroGuide(buffer, histogramTop, momentumHistogramHeight, histogramRange);
+    drawDateTicks(buffer, xForSlot, adxTop + momentumAdxHeight, adxTop + momentumAdxHeight + 14, totalSlotsForMomentum);
+    drawText(buffer, width, height, margin.left + plotWidth / 2, adxTop + momentumAdxHeight + 42, "Date", theme.muted, 2, "center");
+
+    const macdPoints = mapSeriesToPoints(priceSeries.macd, xForSlot, 0, macdRange.min, macdRange.max, macdTop, momentumLineHeight, totalSlotsForMomentum);
+    const signalPoints = mapSeriesToPoints(priceSeries.signal, xForSlot, 0, macdRange.min, macdRange.max, macdTop, momentumLineHeight, totalSlotsForMomentum);
+    const histogramPoints = mapSeriesToPoints(
+      priceSeries.histogram,
+      xForSlot,
+      0,
+      histogramRange.min,
+      histogramRange.max,
+      histogramTop,
+      momentumHistogramHeight,
+      totalSlotsForMomentum,
+    );
+    const adxPoints = mapSeriesToPoints(priceSeries.adx, xForSlot, 0, adxRange.min, adxRange.max, adxTop, momentumAdxHeight, totalSlotsForMomentum);
+    const plusDiPoints = mapSeriesToPoints(priceSeries.plusDi, xForSlot, 0, adxRange.min, adxRange.max, adxTop, momentumAdxHeight, totalSlotsForMomentum);
+    const minusDiPoints = mapSeriesToPoints(priceSeries.minusDi, xForSlot, 0, adxRange.min, adxRange.max, adxTop, momentumAdxHeight, totalSlotsForMomentum);
+    const histogramZeroY = valueToY(0, histogramRange.min, histogramRange.max, histogramTop, momentumHistogramHeight);
+
+    const histogramBarWidth = Math.max(4, Math.floor(plotWidth / Math.max(totalSlotsForMomentum * 1.9, 1)));
+    priceSeries.histogram.forEach((value, index) => {
+      const point = histogramPoints[index];
+      if (!point || !Number.isFinite(value)) {
+        return;
+      }
+      const topY = Math.min(point.y, histogramZeroY);
+      const barHeight = Math.max(2, Math.abs(point.y - histogramZeroY));
+      fillRect(
+        buffer,
+        width,
+        height,
+        point.x - histogramBarWidth / 2,
+        topY,
+        histogramBarWidth,
+        barHeight,
+        value >= 0 ? theme.histogramPositive : theme.histogramNegative,
+      );
+    });
+
+    drawSeries(buffer, width, height, macdPoints, theme.macd, 3);
+    drawSeries(buffer, width, height, signalPoints, theme.signal, 3);
+    drawSeries(buffer, width, height, adxPoints, theme.adx, 3);
+    drawSeries(buffer, width, height, plusDiPoints, theme.plusDi, 2);
+    drawSeries(buffer, width, height, minusDiPoints, theme.minusDi, 2);
+
+    const latestMacdPoint = macdPoints[barsWindow.length - 1];
+    if (latestMacdPoint) {
+      fillRect(buffer, width, height, latestMacdPoint.x - 4, latestMacdPoint.y - 4, 8, 8, theme.macd);
+      drawValueCallout(
+        buffer,
+        width,
+        height,
+        margin.left + plotWidth - 8,
+        latestMacdPoint.y,
+        `MACD ${formatAxisNumber(metrics.macd.macdValue)}`,
+        theme,
+        macdTop,
+        momentumLineHeight,
+      );
+    }
+
+    const latestSignalPoint = signalPoints[barsWindow.length - 1];
+    if (latestSignalPoint) {
+      fillRect(buffer, width, height, latestSignalPoint.x - 4, latestSignalPoint.y - 4, 8, 8, theme.signal);
+    }
+
+    const latestAdxPoint = adxPoints[barsWindow.length - 1];
+    if (latestAdxPoint) {
+      fillRect(buffer, width, height, latestAdxPoint.x - 4, latestAdxPoint.y - 4, 8, 8, theme.adx);
+    }
+
+    writePng(chartPaths.momentumOutput, buffer);
   };
 
   const buildMainTrendChart = () => {
@@ -1653,11 +2150,13 @@ function buildChartPngs(data, bars, metrics, options) {
 
   buildMainTrendChart();
   buildOverlayChart();
+  buildMomentumChart();
 
   return {
     imagePaths: {
       main: chartPaths.mainImagePath,
       overlay: chartPaths.overlayImagePath,
+      momentum: chartPaths.momentumImagePath,
     },
     chartBarsUsed: barsWindow.length,
     leadBarsUsed: leadSlots,
@@ -1665,84 +2164,165 @@ function buildChartPngs(data, bars, metrics, options) {
 }
 
 function renderRead(metrics) {
-  const maLine = (() => {
+  const formatLevel = (value) => (Number.isFinite(value) ? formatAxisNumber(value) : "n/a");
+  const aboveLevels = ([
+    metrics.ichimoku.tenkan,
+    metrics.ma20Value,
+    metrics.ichimoku.kijun,
+    metrics.breakoutLevel,
+    metrics.ichimoku.currentCloudA,
+    metrics.ichimoku.currentCloudB,
+  ])
+    .filter((value) => Number.isFinite(value) && value > metrics.latestClose)
+    .sort((left, right) => left - right);
+  const belowLevels = ([
+    metrics.breakdownLevel,
+    metrics.bollinger.lower,
+    metrics.ma120Value,
+    metrics.ichimoku.currentCloudA,
+    metrics.ichimoku.currentCloudB,
+  ])
+    .filter((value) => Number.isFinite(value) && value < metrics.latestClose)
+    .sort((left, right) => right - left);
+  const nearestRecovery = aboveLevels.length > 0 ? aboveLevels[0] : null;
+  const nextRecovery = aboveLevels.length > 1 ? aboveLevels[1] : null;
+  const nearestSupport = belowLevels.length > 0 ? belowLevels[0] : null;
+
+  const trendLine = (() => {
     if (metrics.movingAverageStructure === "strong-bullish") {
-      return `- Moving averages are stacked bullishly: price is above MA5, MA20, MA60, and MA120, which is a strong trend-following structure.`;
+      return `- Trend structure: price is above MA5, MA20, MA60, and MA120, so the trend stack is fully bullish.`;
     }
     if (metrics.movingAverageStructure === "strong-bearish") {
-      return `- Moving averages are stacked bearishly: price is below MA5, MA20, MA60, and MA120, so the primary trend is still down.`;
+      return `- Trend structure: price is below MA5, MA20, MA60, and MA120, so the trend stack remains firmly bearish.`;
     }
     if (metrics.movingAverageStructure === "rebound-inside-downtrend") {
-      return `- The short-term setup looks like a rebound attempt, but price still sits inside a broader downtrend when read against MA60 and MA120.`;
+      return `- Trend structure: price has lifted above MA20 but still sits below MA60, so this is a rebound attempt inside a broader downtrend.`;
     }
     if (metrics.movingAverageStructure === "pullback-inside-uptrend") {
-      return `- Price is pulling back inside a broader uptrend rather than breaking the long trend outright.`;
+      return `- Trend structure: price is below MA20 but still above MA60, which keeps this closer to a pullback than a full trend break.`;
     }
     if (metrics.movingAverageStructure === "bullish") {
-      return `- Price is above the medium and long moving averages, which keeps the trend constructive even if the very short-term line is noisy.`;
+      return `- Trend structure: price is above the medium- and long-term averages, so the broader trend still leans constructive.`;
     }
     if (metrics.movingAverageStructure === "bearish") {
-      return `- Price is below the medium and long moving averages, so rallies still need to prove they are more than short-term rebounds.`;
+      return `- Trend structure: price is below MA20, MA60, and MA120, so rallies still need confirmation before they count as trend recovery.`;
     }
-    return `- Moving-average structure is mixed or incomplete, so trend confirmation is limited.`;
+    return `- Trend structure: moving averages are mixed, so trend confirmation is still limited.`;
   })();
 
-  const bollingerLine = (() => {
+  const volatilityLine = (() => {
+    let bandText = "price is around the middle of the Bollinger range";
     if (metrics.bollinger.state === "above-upper-band") {
-      return `- Bollinger Bands show price pushing above the upper band, which usually means strong momentum but also higher short-term crowding risk.`;
+      bandText = "price is pushing above the upper Bollinger band";
+    } else if (metrics.bollinger.state === "below-lower-band") {
+      bandText = "price is pressing below the lower Bollinger band";
+    } else if (metrics.bollinger.state === "upper-half") {
+      bandText = "price is in the upper half of the Bollinger range";
+    } else if (metrics.bollinger.state === "lower-half") {
+      bandText = "price is in the lower half of the Bollinger range";
     }
-    if (metrics.bollinger.state === "below-lower-band") {
-      return `- Bollinger Bands show price below the lower band, which usually means breakdown pressure or a washed-out oversold condition.`;
+
+    let widthText = "band width is stable";
+    if (metrics.bollinger.bandwidthRegime === "expanding") {
+      widthText = "band width is expanding, so volatility is widening";
+    } else if (metrics.bollinger.bandwidthRegime === "contracting") {
+      widthText = "band width is contracting, so volatility is compressing";
     }
-    const positionText =
-      metrics.bollinger.state === "upper-half"
-        ? "the upper half of the band"
-        : metrics.bollinger.state === "lower-half"
-          ? "the lower half of the band"
-          : "the middle band";
-    const widthText =
-      metrics.bollinger.bandwidthRegime === "expanding"
-        ? "Band width is expanding, so volatility is widening."
-        : metrics.bollinger.bandwidthRegime === "contracting"
-          ? "Band width is contracting, so volatility is compressing."
-          : "Band width is not showing an extreme expansion or squeeze.";
-    return `- Bollinger Bands place price near ${positionText}. ${widthText}`;
+
+    return `- Volatility: ${bandText}, and ${widthText}.`;
   })();
 
-  const ichimokuLine = (() => {
-    if (metrics.ichimoku.cloudPosition === "insufficient-data") {
-      return `- Ichimoku read is limited because current cloud values need more high-low history.`;
-    }
+  const cloudLine = (() => {
     const cloudText =
       metrics.ichimoku.cloudPosition === "above-cloud"
-        ? "Price is above the current cloud"
+        ? "price is above the current cloud"
         : metrics.ichimoku.cloudPosition === "below-cloud"
-          ? "Price is below the current cloud"
-          : "Price is inside the current cloud";
+          ? "price is below the current cloud"
+          : metrics.ichimoku.cloudPosition === "inside-cloud"
+            ? "price is inside the current cloud"
+            : "current cloud positioning is unavailable";
     const tkText =
       metrics.ichimoku.tkCross === "bullish"
         ? "Tenkan is above Kijun"
         : metrics.ichimoku.tkCross === "bearish"
           ? "Tenkan is below Kijun"
-          : "Tenkan and Kijun are flat to each other";
+          : metrics.ichimoku.tkCross === "flat"
+            ? "Tenkan and Kijun are flat"
+            : "Tenkan/Kijun positioning is unavailable";
     const futureText =
       metrics.ichimoku.futureCloudBias === "bullish"
         ? "the projected cloud is bullish"
         : metrics.ichimoku.futureCloudBias === "bearish"
           ? "the projected cloud is bearish"
-          : "the projected cloud is flat or unclear";
-    return `- Ichimoku shows that ${cloudText.toLowerCase()}, ${tkText.toLowerCase()}, and ${futureText}.`;
+          : metrics.ichimoku.futureCloudBias === "flat"
+            ? "the projected cloud is flat"
+            : "the projected cloud is unavailable";
+    return `- Cloud read: ${cloudText}, ${tkText.toLowerCase()}, and ${futureText}.`;
   })();
 
-  const participationLine = (() => {
+  const momentumLine = (() => {
     const rsiText =
       metrics.rsiState === "overbought"
-        ? "RSI is overbought"
+        ? `RSI14 is overbought at ${formatNumber(metrics.rsi14Value)}`
         : metrics.rsiState === "oversold"
-          ? "RSI is oversold"
+          ? `RSI14 is oversold at ${formatNumber(metrics.rsi14Value)}`
           : metrics.rsiState === "neutral"
-            ? "RSI is neutral"
-            : "RSI is unavailable";
+            ? `RSI14 is neutral at ${formatNumber(metrics.rsi14Value)}`
+            : "RSI14 is unavailable";
+    const macdCrossText =
+      metrics.macd.crossState === "bullish-cross"
+        ? "MACD has just crossed bullishly through signal"
+        : metrics.macd.crossState === "bearish-cross"
+          ? "MACD has just crossed bearishly through signal"
+          : metrics.macd.crossState === "bullish"
+            ? "MACD remains above signal"
+            : metrics.macd.crossState === "bearish"
+              ? "MACD remains below signal"
+              : "MACD/signal relationship is limited";
+    const zeroText =
+      metrics.macd.zeroState === "above-zero"
+        ? "MACD is above zero"
+        : metrics.macd.zeroState === "below-zero"
+          ? "MACD is below zero"
+          : metrics.macd.zeroState === "at-zero"
+            ? "MACD is sitting on zero"
+            : "";
+    const histogramText =
+      metrics.macd.histogramState === "expanding"
+        ? "histogram momentum is expanding"
+        : metrics.macd.histogramState === "contracting"
+          ? "histogram momentum is contracting"
+          : metrics.macd.histogramState === "stable"
+            ? "histogram momentum is stable"
+            : "histogram trend is unavailable";
+    const adxText =
+      metrics.adx.strengthState === "strong-trend"
+        ? `ADX shows a strong trend, with ${
+            metrics.adx.directionState === "bullish"
+              ? "+DI in front"
+              : metrics.adx.directionState === "bearish"
+                ? "-DI in front"
+                : "directional lines overlapping"
+          }`
+        : metrics.adx.strengthState === "building-trend"
+          ? `ADX shows a trend that is building, with ${
+              metrics.adx.directionState === "bullish"
+                ? "+DI slightly ahead"
+                : metrics.adx.directionState === "bearish"
+                  ? "-DI slightly ahead"
+                  : "directional lines still close"
+            }`
+          : metrics.adx.strengthState === "weak-trend"
+            ? "ADX still reads as a weak-trend environment"
+            : "ADX trend-strength read is unavailable";
+    const adxSlopeText =
+      metrics.adx.slopeState === "rising"
+        ? "trend strength is rising"
+        : metrics.adx.slopeState === "falling"
+          ? "trend strength is fading"
+          : metrics.adx.slopeState === "flat"
+            ? "trend strength is flat"
+            : "trend-strength slope is unavailable";
     const volumeText =
       metrics.volumeRegime === "heavy"
         ? "volume is running heavy versus the 20-day average"
@@ -1751,30 +2331,46 @@ function renderRead(metrics) {
           : metrics.volumeRegime === "normal"
             ? "volume is close to the 20-day average"
             : "volume comparison is unavailable";
-    return `- Momentum and participation: ${rsiText}, and ${volumeText}.`;
+    const macdSummary = zeroText ? `${macdCrossText}, and ${zeroText}` : macdCrossText;
+    return `- Momentum and participation: ${rsiText}; ${macdSummary}; ${histogramText}; ${adxText}, and ${adxSlopeText}; ${volumeText}.`;
   })();
 
-  const flowLine = (() => {
+  const practicalLine = (() => {
+    const recoveryText = Number.isFinite(nearestRecovery)
+      ? `first recovery check is ${formatLevel(nearestRecovery)}`
+      : "near-term recovery level is unavailable";
+    const nextRecoveryText = Number.isFinite(nextRecovery)
+      ? `then ${formatLevel(nextRecovery)}`
+      : null;
+    const supportText = Number.isFinite(nearestSupport)
+      ? `nearest support watch is ${formatLevel(nearestSupport)}`
+      : "support watch is unavailable";
+    const breakoutText = Number.isFinite(metrics.breakoutLevel)
+      ? `20-day breakout level sits at ${formatLevel(metrics.breakoutLevel)}`
+      : "20-day breakout level is unavailable";
+    const breakdownText = Number.isFinite(metrics.breakdownLevel)
+      ? `20-day breakdown level sits at ${formatLevel(metrics.breakdownLevel)}`
+      : "20-day breakdown level is unavailable";
+
+    let flowText = "chart-only flow is range-bound or base-building";
     if (metrics.chartFlow === "bullish continuation") {
-      return `- Chart-only flow: this still reads like bullish continuation rather than a late counter-trend bounce.`;
+      flowText = "chart-only flow still reads as bullish continuation";
+    } else if (metrics.chartFlow === "bearish continuation") {
+      flowText = "chart-only flow still reads as bearish continuation";
+    } else if (metrics.chartFlow === "technical rebound inside broader downtrend") {
+      flowText = "chart-only flow looks like a technical rebound inside a broader downtrend";
+    } else if (metrics.chartFlow === "pullback inside broader uptrend") {
+      flowText = "chart-only flow looks like a pullback inside a broader uptrend";
     }
-    if (metrics.chartFlow === "bearish continuation") {
-      return `- Chart-only flow: this still reads like bearish continuation, and the stock has not yet regained a reliable trend-following structure.`;
-    }
-    if (metrics.chartFlow === "technical rebound inside broader downtrend") {
-      return `- Chart-only flow: this looks like a technical rebound attempt inside a larger downtrend, so resistance levels matter more than breakout excitement.`;
-    }
-    if (metrics.chartFlow === "pullback inside broader uptrend") {
-      return `- Chart-only flow: this looks more like a pullback inside a bigger uptrend than a full trend break.`;
-    }
-    return `- Chart-only flow: this looks range-bound or base-building, so confirmation matters more than prediction.`;
+
+    return `- Practical checklist: ${supportText}; ${recoveryText}${nextRecoveryText ? `, ${nextRecoveryText}` : ""}; ${breakoutText}; ${breakdownText}; ${flowText}.`;
   })();
 
-  console.log(maLine);
-  console.log(bollingerLine);
-  console.log(ichimokuLine);
-  console.log(participationLine);
-  console.log(flowLine);
+  console.log(trendLine);
+  console.log(volatilityLine);
+  console.log(cloudLine);
+  console.log(momentumLine);
+  console.log(practicalLine);
 }
 
 function main() {
@@ -1812,6 +2408,8 @@ function main() {
   console.log(`- Bollinger read: ${metrics.bollinger.state}`);
   console.log(`- Ichimoku read: ${metrics.ichimoku.cloudPosition}`);
   console.log(`- RSI state: ${metrics.rsiState}`);
+  console.log(`- MACD state: ${metrics.macd.crossState} / ${metrics.macd.zeroState}`);
+  console.log(`- ADX state: ${metrics.adx.strengthState} / ${metrics.adx.directionState} / ${metrics.adx.slopeState}`);
   console.log(`- Volume regime: ${metrics.volumeRegime}`);
   console.log(`- Chart-only flow: ${metrics.chartFlow}`);
   console.log("");
@@ -1823,8 +2421,10 @@ function main() {
     console.log("");
     console.log(`![${data.name || data.ticker || "Chart"} overlay chart](${pngInfo.imagePaths.overlay})`);
     console.log("");
+    console.log(`![${data.name || data.ticker || "Chart"} momentum chart](${pngInfo.imagePaths.momentum})`);
+    console.log("");
     console.log(
-      `The main chart uses OHLC candlesticks with upper and lower wicks, plus MA5, MA20, MA60, MA120, and volume. The overlay chart separates Bollinger Bands, Ichimoku cloud lines, and RSI14, and reserves ${pngInfo.leadBarsUsed} forward slots for the projected cloud.`,
+      `The main chart uses OHLC candlesticks with upper and lower wicks, plus MA5, MA20, MA60, MA120, and volume. The overlay chart separates Bollinger Bands, Ichimoku cloud lines, and RSI14, and reserves ${pngInfo.leadBarsUsed} forward slots for the projected cloud. The momentum chart focuses on MACD, signal, histogram, and ADX/DMI so crossovers, momentum acceleration, and trend strength are easier to see.`,
     );
     console.log("");
   }
@@ -1848,6 +2448,15 @@ function main() {
   console.log(`| Future Cloud A | ${formatNumber(metrics.ichimoku.futureCloudA)} |`);
   console.log(`| Future Cloud B | ${formatNumber(metrics.ichimoku.futureCloudB)} |`);
   console.log(`| RSI 14 | ${formatNumber(metrics.rsi14Value)} |`);
+  console.log(`| MACD | ${formatNumber(metrics.macd.macdValue)} |`);
+  console.log(`| Signal | ${formatNumber(metrics.macd.signalValue)} |`);
+  console.log(`| Histogram | ${formatNumber(metrics.macd.histogramValue)} |`);
+  console.log(`| MACD State | ${metrics.macd.crossState} / ${metrics.macd.zeroState} |`);
+  console.log(`| Histogram State | ${metrics.macd.histogramState} |`);
+  console.log(`| ADX 14 | ${formatNumber(metrics.adx.adxValue)} |`);
+  console.log(`| +DI | ${formatNumber(metrics.adx.plusDiValue)} |`);
+  console.log(`| -DI | ${formatNumber(metrics.adx.minusDiValue)} |`);
+  console.log(`| ADX State | ${metrics.adx.strengthState} / ${metrics.adx.directionState} / ${metrics.adx.slopeState} |`);
   console.log(`| Avg Volume 20 | ${formatInteger(metrics.avgVolume20)} |`);
   console.log(`| Volume vs Avg 20 | ${formatPercentRatio(metrics.volumeRatio, 1)} |`);
   console.log(`| 20D Breakout Level | ${formatNumber(metrics.breakoutLevel)} |`);

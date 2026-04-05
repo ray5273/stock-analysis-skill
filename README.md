@@ -94,7 +94,7 @@ Current behavior:
 3. `kr-stock-data-pack` collects dated price context, filings, results, governance facts, valuation inputs, chart inputs, and optional outside-view inputs before drafting, and should first confirm which pack blocks the user actually wants when that is not already defined.
 4. `kr-stock-analysis` writes the final output as a `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, or `pair compare` for KRX-listed companies, and should first confirm the final decision frame or section priorities when they are still ambiguous.
 5. `kr-stock-update` preserves the original memo date, refreshes `최근 업데이트일`, and appends or replaces dated follow-up blocks under `## Update Log`.
-6. `kr-stock-analysis` chart output now defaults to a three-chart view so price action is easier to read: one main PNG for `OHLC candlesticks + close line + MA5/20/60/120 + volume`, one overlay PNG for `Bollinger + Ichimoku + RSI14`, and one momentum PNG for `MACD + signal + histogram`.
+6. `kr-stock-analysis` chart output now defaults to a three-chart view so price action is easier to read: one main PNG for `OHLC candlesticks + close line + MA5/20/60/120 + volume`, one overlay PNG for `Bollinger + Ichimoku + RSI14`, and one momentum PNG for `MACD + signal + histogram + ADX/DMI`.
 
 Recommended pipeline:
 
@@ -116,9 +116,9 @@ Routing guide:
 Bundled helpers:
 
 - `scripts/fetch-kr-chart.js` for current KRX daily bars
-- `scripts/chart-basics.js` for technical reads plus three-part PNG chart output that separates the main trend view, the heavier overlays, and MACD momentum
+- `scripts/chart-basics.js` for technical reads plus three-part PNG chart output that separates the main trend view, the heavier overlays, and momentum panels for `MACD` and `ADX/DMI`
 - `scripts/chart-basics.js` now draws KR main charts with candlesticks, a close line, and a current-price guide, and uses Korean chart labels when a Hangul-capable local font is available
-- `scripts/chart-basics.js` writes the requested `--png-out` path as the main trend chart and writes sibling `*-overlay.png` and `*-momentum.png` files for the heavier indicator and MACD momentum views
+- `scripts/chart-basics.js` writes the requested `--png-out` path as the main trend chart and writes sibling `*-overlay.png` and `*-momentum.png` files for the heavier indicator and momentum views
 - `scripts/valuation-bands.js` for 3-5 year valuation band summaries
 - `scripts/peer-valuation.js` for comparable-company valuation tables
 - `skills/kr-stock-dart-analysis/scripts/extract-dart-sections.js` for building a section index from a text export of a DART filing

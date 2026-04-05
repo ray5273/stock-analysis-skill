@@ -85,7 +85,7 @@ Use $kr-stock-plan as the entry point for Korean stock work. Have it ask what th
 3. `kr-stock-data-pack`은 가격 기준일, 공시, 실적, 거버넌스, 밸류 입력값, 차트 입력값, 필요할 때는 증권사·전문매체·독립 분석의 외부 관점도 구조화해서 모으고, 어떤 블록이 필요한지 불명확하면 먼저 짧게 확인합니다.
 4. `kr-stock-analysis`는 KRX 상장 주식 기준으로 `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, `pair compare`를 작성하고, 최종 산출물의 의사결정 프레임이나 강조 섹션이 불명확하면 먼저 짧게 확인합니다.
 5. `kr-stock-update`는 기존 `기준일`을 보존하고 `최근 업데이트일`과 `## Update Log`만 증분 갱신합니다.
-6. `kr-stock-analysis`의 차트 출력은 이제 기본적으로 3분할이며, `OHLC 캔들스틱 + 종가선 + MA5/20/60/120 + 거래량` 메인 PNG 1장, `볼린저밴드 + 일목균형표 + RSI14` 오버레이 PNG 1장, `MACD + 시그널 + 히스토그램` 모멘텀 PNG 1장을 함께 생성합니다.
+6. `kr-stock-analysis`의 차트 출력은 이제 기본적으로 3분할이며, `OHLC 캔들스틱 + 종가선 + MA5/20/60/120 + 거래량` 메인 PNG 1장, `볼린저밴드 + 일목균형표 + RSI14` 오버레이 PNG 1장, `MACD + 시그널 + 히스토그램 + ADX/DMI` 모멘텀 PNG 1장을 함께 생성합니다.
 
 권장 파이프라인:
 
@@ -107,7 +107,7 @@ kr-stock-plan
 번들 도구:
 
 - `scripts/fetch-kr-chart.js`: KRX 일봉 데이터 조회
-- `scripts/chart-basics.js`: 주가/이평/거래량, 오버레이 지표, MACD 모멘텀을 분리한 3분할 PNG 차트 생성
+- `scripts/chart-basics.js`: 주가/이평/거래량, 오버레이 지표, `MACD + ADX/DMI` 모멘텀을 분리한 3분할 PNG 차트 생성
 - `scripts/chart-basics.js`: KR 메인 차트는 캔들스틱, 종가선, 현재가 가이드 라인을 기본으로 그리고, 한글 폰트를 찾을 수 있으면 범례와 패널명을 한글로 표시
 - `scripts/chart-basics.js`: `--png-out`으로 지정한 파일은 메인 추세 차트로 저장하고, 같은 이름의 `-overlay.png`, `-momentum.png` 파일을 보조지표/모멘텀 차트로 추가 생성
 - `scripts/valuation-bands.js`: 3~5년 밸류에이션 밴드 요약

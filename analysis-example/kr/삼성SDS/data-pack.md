@@ -90,6 +90,8 @@
   - Bollinger upper `167,536원`, lower `148,864원`
   - Ichimoku tenkan `155,250원`, kijun `173,100원`, current cloud A/B `174,225원 / 174,150원`
   - RSI14 `44.30`
+  - MACD `-4,581`, signal `-4,193`, histogram `-388`
+  - ADX14 `23.32`, +DI `16.66`, -DI `31.21`
   - Volume vs Avg20 `60.2%`
 
 ## Sources

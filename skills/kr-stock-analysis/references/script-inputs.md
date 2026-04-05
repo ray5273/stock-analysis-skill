@@ -46,8 +46,8 @@ Run:
 node scripts/chart-basics.js --input <path-to-json> [--png-out <path-to-png>] [--image-path <markdown-image-path>]
 ```
 
-When `--png-out` is set, the script writes the main trend chart to that exact path and writes a sibling overlay image to the same base name with `-overlay` before the extension. The markdown output references both images.
-When `--png-out` is set, the input JSON must include a non-empty `name` field so the company name is printed at the top of both PNG charts.
+When `--png-out` is set, the script writes the main trend chart to that exact path and writes sibling overlay and momentum images to the same base name with `-overlay` and `-momentum` before the extension. The momentum chart includes `MACD`, `signal`, `histogram`, and `ADX/DMI`, and the markdown output references all three images.
+When `--png-out` is set, the input JSON must include a non-empty `name` field so the company name is printed at the top of all PNG charts.
 
 Expected input:
 

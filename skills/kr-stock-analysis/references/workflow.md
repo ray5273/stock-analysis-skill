@@ -55,6 +55,20 @@ If a number matters to the conclusion, trace it back to a primary source when po
 - If a secondary source restates a number that already exists in filings, cite the filing for the number and use the secondary source only for interpretation.
 - Do not fill the section with repetitive newsroom summaries from the company itself.
 
+### DART Recheck
+
+- For annual-filing-backed memo work, always run a DART recheck loop on the most important claims before finalizing the memo.
+- Pull 3-8 claims from the draft memo, scoped brief, or data pack that would materially change the thesis if wrong.
+- Prefer claims about customer concentration, internal-group revenue, segment margin, backlog, capital allocation, liquidity, and management-stated reasons for change.
+- Route those claims through `kr-stock-dart-analysis` or an existing `dart-cache.json`.
+- Tag each one as:
+  - `confirmed`
+  - `partially supported`
+  - `contradicted`
+  - `not separately disclosed`
+  - `needs follow-up`
+- A full memo should not present a thesis-critical statement as settled if the DART recheck status is weaker than `confirmed`.
+
 ### Governance and Structure
 
 - Check controlling shareholder, ownership structure, and beneficial ownership where disclosed.
@@ -100,14 +114,14 @@ Use peer comparisons only if the peer set is genuinely comparable.
 - Prefer fetching about 1 year of daily bars before writing the chart section so MA120 and Ichimoku have enough history.
 - Use `scripts/fetch-kr-chart.js` to pull current KRX bars when the user did not provide price history.
 - When the output will become PNG chart assets, always pass the explicit company name with `--name "<회사명>"`. Do not rely on ticker fallback if you want the PNG title to show `삼성SDS`, `LG전자`, or another human-readable stock name.
-- Use `scripts/chart-basics.js` to generate both the markdown technical read and split PNG chart assets that can be embedded in the memo.
+- Use `scripts/chart-basics.js` to generate both the markdown technical read and the three-part PNG chart assets that can be embedded in the memo.
 - Gather at least 120 daily bars when possible.
-- Report latest close and date, MA5, MA20, MA60, MA120, Bollinger Bands, Ichimoku state, RSI 14, volume versus 20-day average, and nearby breakout or breakdown levels.
+- Report latest close and date, MA5, MA20, MA60, MA120, Bollinger Bands, Ichimoku state, RSI 14, MACD, ADX/DMI, volume versus 20-day average, and nearby breakout or breakdown levels.
 - The main chart should prefer OHLC candlesticks plus a close line and a visible current-price guide, while the overlay chart keeps heavier indicators separate.
-- The chart set should show readable axes, price labels, date labels, and a clearly separated overlay view instead of stacking every indicator on one price panel.
+- The chart set should show readable axes, price labels, date labels, and clearly separated overlay and momentum views instead of stacking every indicator on one price panel.
 - For Korean stock memos, prefer Korean legend and panel labels when a Hangul-capable local font is available.
 - Treat missing company-name titles as a chart-generation failure, not as an acceptable fallback. If a PNG would render without the company name, regenerate the input with `name` populated before producing the memo.
-- When you are writing a markdown memo file, embed the generated main trend PNG first and the overlay PNG immediately after it near the start of the chart section.
+- When you are writing a markdown memo file, embed the generated main trend PNG first, the overlay PNG immediately after it, and the momentum PNG right after that near the start of the chart section.
 - Keep chart analysis secondary to fundamentals. Use it to frame positioning, momentum, and key levels, not to override business reality.
 - End the chart section with a short chart-only conclusion that says whether the setup looks like bullish continuation, bearish continuation, a technical rebound, a pullback, or range-building.
 - If you do not have enough bars, say the chart read is limited and fall back to simple price-action context such as 1-week, 1-month, 3-month, and 52-week range behavior.
@@ -159,6 +173,7 @@ State:
 ### Evidence Gaps And Follow-Up Questions For Full Memos
 
 - After drafting the memo, classify open points into `verified`, `inferred`, `not disclosed`, and `still unverified`.
+- Use the DART recheck result to downgrade overconfident statements before the memo is finalized.
 - Promote only the highest-impact gaps into `Additional Research Questions`.
 - Prioritize gaps tied to valuation, earnings durability, governance, customer concentration, capital allocation, or rerating triggers.
 - Prioritize unresolved outside claims when sell-side or independent analysis makes them central to the market debate.
