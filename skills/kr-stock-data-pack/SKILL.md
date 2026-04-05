@@ -10,6 +10,7 @@ Use this skill to assemble the inputs that a downstream Korean stock memo needs.
 ## Quick Start
 
 - Treat prices, disclosures, IR materials, guidance, and company news as time-sensitive.
+- If the downstream pack shape is not already defined, ask the user what they actually need from this pack: valuation, chart, peers, outside views, governance, filing follow-up, or only a narrow subset.
 - Prefer primary sources first: DART, KRX disclosures, company IR, official financial statements, and governance pages.
 - If the user mainly needs exact filing extraction for quarterly, half-year, segment, customer-concentration, backlog, or contract-disclosure detail, use `kr-stock-dart-analysis` first and then pull the rest of the pack around it.
 - When the downstream memo needs more than official company framing, gather dated outside-view inputs from sell-side, specialist media, or detailed independent analysis.
@@ -42,3 +43,4 @@ Read [../kr-stock-analysis/references/blended-source-notes.md](../kr-stock-analy
 - Distinguish verified facts from your inference.
 - Label outside inputs by source role and keep their verification status visible.
 - Do not convert a thin source set into a confident valuation call.
+- Ask a short user-need check before gathering broad data blocks when the must-have sections are still unclear.

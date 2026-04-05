@@ -2,7 +2,7 @@
 
 ## Goal
 
-This skill is for scoping only.
+This skill starts with scoping, but when the user wants actual stock work it should also route and continue the downstream workflow instead of stopping at the brief.
 
 The output should make a downstream stock analyst answerable on:
 
@@ -19,6 +19,16 @@ Before handing off:
 2. Lock the share class.
 3. State whether the listing is an operating company, holding company, preferred line, or restructuring case.
 4. Note any obvious confusion risk with similarly named listings or subsidiaries.
+
+## User-Need Check
+
+Before finalizing the brief, ask the minimum clarifying questions needed to learn:
+
+- what decision the user is trying to make
+- whether they want planning only or the full workflow executed now
+- what depth they expect: quick view, full memo, event note, or compare
+- whether filing precision, valuation, chart work, peers, backlog, or contract detail must be included
+- what should explicitly stay out of scope
 
 ## Scope Questions
 
@@ -46,11 +56,16 @@ The brief should usually state:
 
 ## Workflow Routing
 
-Route the downstream work explicitly instead of leaving the sequence implicit.
+Route the downstream work explicitly instead of leaving the sequence implicit, and continue into it in the same turn unless the user asked to stop after planning.
 
 - Default stock workflow: `kr-stock-plan -> kr-stock-data-pack -> kr-stock-analysis`
 - Filing-heavy workflow: `kr-stock-plan -> kr-stock-dart-analysis -> kr-stock-data-pack -> kr-stock-analysis`
 - Direct filing-to-memo workflow is acceptable only when the user wants filing-grounded interpretation immediately and the extra fact-pack layers are not necessary.
+
+Execution rule:
+
+- If the user invoked `kr-stock-plan` to solve a stock question, treat the brief as an internal control step and then run the recommended downstream path yourself.
+- Stop after the brief only when the user explicitly asks for `plan only`, `brief only`, or equivalent.
 
 Prefer the filing-heavy workflow when the request depends on:
 

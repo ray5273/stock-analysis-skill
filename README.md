@@ -11,16 +11,18 @@ Included skills:
 
 Korean stock workflow shorthand: `kr-stock-plan -> kr-stock-dart-analysis -> kr-stock-data-pack -> kr-stock-analysis`
 
+`kr-stock-plan` should act as the entry-point orchestrator: if the user starts there and did not explicitly ask for `plan only`, it should ask a short needs check, build the brief, and continue through the downstream skills automatically.
+
 Suggested handoff prompt:
 
 ```text
-Use $kr-stock-plan to scope a Korean stock request first, route through $kr-stock-dart-analysis when filing precision matters, then build the dated fact base with $kr-stock-data-pack, and finish with $kr-stock-analysis.
+Use $kr-stock-plan as the entry point for Korean stock work. Have it first ask what the user actually needs, scope the request, route through $kr-stock-dart-analysis when filing precision matters, then build the dated fact base with $kr-stock-data-pack, and finish with $kr-stock-analysis unless the user explicitly asks to stop after planning.
 ```
 
 Concrete example:
 
 ```text
-Use $kr-stock-plan to scope LG CNS into a 12-24 month full memo. If the latest filing basis, segment detail, backlog, or contract disclosures are important, use $kr-stock-dart-analysis next. Then use $kr-stock-data-pack to assemble dated price, governance, valuation, chart, and outside-view inputs, and finish with $kr-stock-analysis for the final memo.
+Use $kr-stock-plan as the entry point for LG CNS. First ask what the user actually needs, scope it into a 12-24 month full memo, route through $kr-stock-dart-analysis if the latest filing basis, segment detail, backlog, or contract disclosures are important, then use $kr-stock-data-pack to assemble dated price, governance, valuation, chart, and outside-view inputs, and finish with $kr-stock-analysis for the final memo.
 ```
 
 - `us-stock-analysis` for U.S. stocks and U.S.-listed ETFs
@@ -84,10 +86,10 @@ Primary instructions:
 
 Current behavior:
 
-1. `kr-stock-plan` converts a vague Korean stock request into a clear security definition, output mode, key questions, and a recommended workflow.
-2. `kr-stock-dart-analysis` acts as the filing-precision stage when the work depends on exact DART-backed result, segment, customer, backlog, contract, or disclosure wording detail, with visible source mapping and standalone-quarter derivation notes when the filing is cumulative.
-3. `kr-stock-data-pack` collects dated price context, filings, results, governance facts, valuation inputs, chart inputs, and optional outside-view inputs before drafting.
-4. `kr-stock-analysis` writes the final output as a `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, or `pair compare` for KRX-listed companies, and full memos now add a `Street / Alternative Views` section before valuation and end with company-specific follow-up research questions tied to current evidence gaps.
+1. `kr-stock-plan` now starts with a short user-needs check, converts a vague Korean stock request into a clear security definition, output mode, key questions, and a recommended workflow, and should continue into the downstream skills automatically unless the user asked for planning only.
+2. `kr-stock-dart-analysis` acts as the filing-precision stage when the work depends on exact DART-backed result, segment, customer, backlog, contract, or disclosure wording detail, and should first ask a short filing-needs check when the target slice is still unclear.
+3. `kr-stock-data-pack` collects dated price context, filings, results, governance facts, valuation inputs, chart inputs, and optional outside-view inputs before drafting, and should first confirm which pack blocks the user actually wants when that is not already defined.
+4. `kr-stock-analysis` writes the final output as a `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, or `pair compare` for KRX-listed companies, and should first confirm the final decision frame or section priorities when they are still ambiguous.
 5. `kr-stock-update` preserves the original memo date, refreshes `최근 업데이트일`, and appends or replaces dated follow-up blocks under `## Update Log`.
 6. `kr-stock-analysis` chart output now defaults to a split view so price action is easier to read: one main PNG for `OHLC candlesticks + close line + MA5/20/60/120 + volume`, plus one overlay PNG for `Bollinger + Ichimoku + RSI14`.
 
@@ -95,7 +97,7 @@ Recommended pipeline:
 
 ```text
 kr-stock-plan
-  -> lock security, mode, and must-answer questions
+  -> ask user needs, then lock security, mode, and must-answer questions
   -> if filing precision matters: kr-stock-dart-analysis
   -> kr-stock-data-pack
   -> kr-stock-analysis
@@ -103,7 +105,7 @@ kr-stock-plan
 
 Routing guide:
 
-- Start with `kr-stock-plan` when the request is still ambiguous on ticker, share class, horizon, compare mode, or deliverable shape.
+- Start with `kr-stock-plan` when the request is still ambiguous on ticker, share class, horizon, compare mode, or deliverable shape. If the user started there for actual analysis work, continue automatically after the brief instead of waiting for another manual skill call.
 - Insert `kr-stock-dart-analysis` when the conclusion depends on exact DART wording, standalone-quarter derivation, segment detail, customer concentration, backlog, or contract disclosures.
 - Use `kr-stock-data-pack` to assemble the dated fact base around price, governance, valuation, chart, and outside-view inputs.
 - Finish with `kr-stock-analysis` for the final memo, event note, quick view, or pair compare.
@@ -229,47 +231,47 @@ CLAUDE_HOME=/tmp/claude-home bash ./scripts/install-all-claude-skills.sh
 ### Codex
 
 ```text
-Use $us-stock-analysis to prepare a dated investment memo for NVDA with valuation, catalysts, risks, and chart context.
+Use $us-stock-analysis for NVDA and write a dated investment memo with valuation, catalysts, risks, and chart context.
 ```
 
 ```text
-Use $kr-stock-plan to scope 064400.KS into a clear Korean stock research brief with ticker, share class, horizon, output mode, and key questions.
+Use $kr-stock-plan as the entry point for 064400.KS. First ask what I actually need, lock the ticker, share class, horizon, output mode, and key questions, then continue through the downstream Korean stock workflow automatically unless I ask for plan only.
 ```
 
 ```text
-Use $kr-stock-dart-analysis to extract a filing-grounded summary for LG CNS covering the latest quarterly or half-year revenue, operating profit, segment differences, customer concentration, and any standalone-quarter derivations needed from cumulative DART figures.
+Use $kr-stock-dart-analysis for LG CNS and extract a filing-grounded summary covering the latest quarterly or half-year revenue, operating profit, segment differences, customer concentration, and any standalone-quarter derivations needed from cumulative DART figures.
 ```
 
 ```text
-Use $kr-stock-dart-analysis to check a Korean company's disclosed order backlog, compare it with same-basis annual revenue, and report backlog coverage in Korean with clear source mapping and a note that the ratio is derived rather than a formally disclosed KPI.
+Use $kr-stock-dart-analysis to check a Korean company's disclosed order backlog, compare it with same-basis annual revenue, and report backlog coverage in Korean with clear source mapping and an explicit note that the ratio is derived rather than a formally disclosed KPI.
 ```
 
 ```text
-Use $kr-stock-dart-analysis to list all disclosed single-sales or supply contracts for a Korean company over the last 12 months, keeping original notices, amendments, counterparties, amounts, sales ratios, contract periods, and latest status visible row by row.
+Use $kr-stock-dart-analysis to list every disclosed single-sales or supply contract for a Korean company over the last 12 months, keeping original notices, amendments, counterparties, amounts, sales ratios, contract periods, and latest status visible row by row.
 ```
 
 ```text
-Use $kr-stock-dart-analysis to list all disclosed single-sales or supply contracts for a Korean company and add a maturity table showing how much current effective contract amount ends by 2027, by 2028, and by each later year, clearly labeled as contract-period coverage rather than formal backlog unless the filing discloses backlog.
+Use $kr-stock-dart-analysis to list every disclosed single-sales or supply contract for a Korean company and add a maturity table showing how much of the current effective contract amount ends by 2027, by 2028, and by each later year, clearly labeled as contract-period coverage rather than formal backlog unless the filing discloses backlog.
 ```
 
 ```text
-Use $kr-stock-data-pack to gather a dated company fact pack for LG CNS with price context, filings, latest results, governance facts, valuation inputs, chart inputs, and outside-view inputs from sell-side or specialist media.
+Use $kr-stock-data-pack for LG CNS and gather a dated company fact pack with price context, filings, latest results, governance facts, valuation inputs, chart inputs, and outside-view inputs from sell-side or specialist media.
 ```
 
 ```text
-Use $kr-stock-analysis to analyze 005930.KS with DART-based evidence, street or alternative views, valuation, governance checks, catalysts, chart context, and follow-up research questions.
+Use $kr-stock-analysis for 005930.KS and write an analysis with DART-based evidence, street or alternative views, valuation, governance checks, catalysts, chart context, and follow-up research questions.
 ```
 
 ```text
-Use $kr-stock-update to update analysis-example/kr/엘앤에프/memo.md with company-specific disclosures, IR materials, and news after the memo date, and append a dated update block to the same file.
+Use $kr-stock-update to refresh analysis-example/kr/엘앤에프/memo.md with company-specific disclosures, IR materials, and news published after the memo date, and append a dated update block to the same file.
 ```
 
 ```text
-Use $kr-portfolio-monitor to scan current Kiwoom-supported KRX holdings, compute SMA20 deviation and RSI14, and write the result to analysis-example/kr/portfolio-snapshot.md.
+Use $kr-portfolio-monitor to scan current Kiwoom-supported KRX holdings, compute SMA20 deviation and RSI14, and write the snapshot to analysis-example/kr/portfolio-snapshot.md.
 ```
 
 ```text
-Use $kr-sector-plan to scope a Korea data center sector report into a clean research brief with boundaries, key questions, and the right output mode.
+Use $kr-sector-plan to scope a Korea data center sector report into a clean research brief with clear boundaries, key questions, and the right output mode.
 ```
 
 ```text
@@ -281,25 +283,25 @@ Use $kr-sector-analysis to write a Korea security-operations market report with 
 ```
 
 ```text
-Use $kr-sector-compare to compare Korean robotics and smart-factory sectors on a same-date basis and explain which setup has the cleaner listed exposure.
+Use $kr-sector-compare to compare Korean robotics and smart-factory sectors on a same-date basis and explain which setup has the cleaner listed-company exposure.
 ```
 
 ```text
-Use $kr-sector-audit to review analysis-example/kr-sector/국내 데이터센터.md for unsupported market claims, stale dates, and listed-exposure overreach.
+Use $kr-sector-audit to review analysis-example/kr-sector/국내 데이터센터.md for unsupported market claims, stale dates, and overstated listed-company exposure.
 ```
 
 ```text
-Use $kr-sector-update to update analysis-example/kr-sector/국내 데이터센터.md with policy, regulation, and company developments after the memo date, and append a dated update block.
+Use $kr-sector-update to update analysis-example/kr-sector/국내 데이터센터.md with policy, regulation, and company developments published after the memo date, and append a dated update block.
 ```
 
 ### Claude Code
 
 ```text
-/us-stock-analysis prepare a dated investment memo for NVDA with valuation, catalysts, risks, and chart context.
+/us-stock-analysis write a dated investment memo for NVDA with valuation, catalysts, risks, and chart context.
 ```
 
 ```text
-/kr-stock-plan scope 064400.KS into a clear Korean stock research brief with ticker, share class, horizon, output mode, and key questions.
+/kr-stock-plan use 064400.KS as the entry point, ask what I actually need first, lock the ticker, share class, horizon, output mode, and key questions, then continue through the downstream Korean stock workflow automatically unless I ask for plan only.
 ```
 
 ```text

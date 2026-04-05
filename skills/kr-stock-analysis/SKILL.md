@@ -10,6 +10,7 @@ Use this skill to write the final Korean stock memo or event note.
 ## Quick Start
 
 - Treat prices, market caps, earnings, guidance, shareholder return policy, regulations, and company news as time-sensitive.
+- If the final deliverable shape or emphasis is still unclear, ask the user the shortest clarifying questions first: what decision they are making, what depth they want, and which sections matter most.
 - Prefer using a scoped brief from `kr-stock-plan` and a fact pack from `kr-stock-data-pack` before drafting.
 - When the latest filing details are central to the conclusion, strongly prefer a `kr-stock-dart-analysis` pass before drafting so segment, margin, and disclosure wording stay exact.
 - Route the output mode early.
@@ -57,6 +58,7 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 ## Operating Rules
 
 - Cite where each important factual claim came from.
+- Ask a short user-need check before drafting when the active brief does not already define the mode, must-answer questions, or section priorities.
 - Use exact dates for disclosures, earnings, guidance, and news.
 - Separate verified facts from your inference.
 - Use primary sources to anchor core numbers, customer concentration, capital allocation facts, and governance facts.

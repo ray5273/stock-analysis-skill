@@ -18,6 +18,7 @@ Use this skill to turn Korean DART filings into a precise, reusable evidence pac
 ## Quick Start
 
 - Start from the exact security, target period, and filing type before reading numbers.
+- If the exact filing scope or output slice is still unclear, ask the user the shortest possible questions first: what they need from the filing, what period matters, and whether this is a filing-only deliverable or an input to a broader memo.
 - Prefer the latest DART filing and its attached consolidated financial statements, notes, and business sections.
 - Determine `consolidated` versus `separate` and `cumulative` versus `standalone quarter` before quoting any result.
 - If the filing discloses only cumulative quarterly or half-year figures, derive the standalone quarter by subtracting the prior cumulative filing and label it clearly as `derived from cumulative filing`.
@@ -63,6 +64,7 @@ Read [references/output-format.md](references/output-format.md) for the default 
 - If IR material adds color but DART is silent or less specific, anchor the number to DART and label the extra explanation as official IR commentary.
 - If DART and IR differ, prefer the filing for formal numbers and note the mismatch.
 - Keep restatements, accounting basis changes, and scope changes visible when they affect comparability.
+- Ask a short user-need check before extraction when the must-answer filing questions are not already defined by `kr-stock-plan` or the active request.
 - Use the latest annual audit report for customer concentration or segment-note detail when the current quarterly or half-year filing does not repeat it, but label the date mismatch.
 - When the user asks for related-party or internal-group revenue share, prefer the latest annual audit report note even if the DART viewer is inconvenient, and accept the company IR `감사보고서` download page as a primary-source fallback path to the same audited note.
 - When the user asks for related-party or internal-group revenue share, check whether the filing provides both `연결` and `별도` notes. If both exist, show the connected but different meanings instead of stopping after the consolidated note.

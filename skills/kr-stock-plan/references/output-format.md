@@ -15,6 +15,11 @@ Use this default planning shape unless the user asked for something else.
 - Primary objective:
 - Decision frame:
 
+## User Needs
+- Planning only vs execute now:
+- Must-have workstreams:
+- Nice-to-have workstreams:
+
 ## Horizon
 - Time frame:
 - Event anchor:
