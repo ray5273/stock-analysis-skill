@@ -350,6 +350,17 @@ if ($sectorExampleCount -lt 2) {
     Write-Error "Expected at least two sector example markdown files under $sectorExampleRoot"
 }
 
+$memoFiles = Get-ChildItem -Path (Join-Path $repoRoot "analysis-example\kr") -Directory | ForEach-Object {
+    $memoFile = Join-Path $_.FullName "memo.md"
+    if (Test-Path $memoFile) { $memoFile }
+}
+foreach ($memoFile in $memoFiles) {
+    $memoCompany = Split-Path -Leaf (Split-Path -Parent $memoFile)
+    Write-Host "Quality gate: $memoCompany"
+    node (Join-Path $repoRoot "scripts\harness.js") --mode gate --company $memoCompany --memo-path $memoFile
+    if ($LASTEXITCODE -ne 0) { throw "Quality gate failed for $memoCompany" }
+}
+
 Write-Host "Validation passed."
 }
 finally {

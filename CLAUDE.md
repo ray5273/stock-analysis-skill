@@ -77,6 +77,26 @@ All scripts accept JSON via `--input` and output Markdown or PNG. They use only 
 
 Input JSON schemas are documented in `references/script-inputs.md` with sample files under `examples/<market>/`.
 
+### Harness
+
+`scripts/harness.js` automates script chaining and memo quality validation:
+
+```bash
+node scripts/harness.js --mode chart   --ticker 066970 --company "LG CNS"
+node scripts/harness.js --mode dart    --ticker 066970 --company "LG CNS" --dart-input export.json
+node scripts/harness.js --mode gate    --company "LG CNS"
+node scripts/harness.js --mode all     --ticker 066970 --company "LG CNS" --dart-input export.json
+```
+
+| Mode | What it does |
+|---|---|
+| `chart` | fetch-kr-chart.js → chart-basics.js (OHLCV fetch + PNG charts in one step) |
+| `dart` | normalize → extract → verify → build-reference (full DART browser export pipeline) |
+| `gate` | 9 structural quality checks on a finished memo (required sections, 기준일, chart PNGs, DART Recheck, valuation metrics, source dates) |
+| `all` | chart + dart (if `--dart-input`) + gate sequentially |
+
+The quality gate runs automatically as part of `validate-skills.sh` / `.ps1` against all example memos.
+
 ### Claude.ai DART Viewer Integration
 
 - The Chrome extension lives under `integrations/claude-dart-extension/`.

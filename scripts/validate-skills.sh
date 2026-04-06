@@ -93,12 +93,12 @@ if (!pattern.test(text)) {
 
         node "$FETCH_SCRIPT" --help >/dev/null
 
-        if ! grep -q '^5\. Street / Alternative Views$' "$SKILL_DIR/references/output-format.md"; then
+        if ! grep -q '^[0-9]\+\. Street / Alternative Views$' "$SKILL_DIR/references/output-format.md"; then
             echo "Expected full memo output format to include Street / Alternative Views." >&2
             exit 1
         fi
 
-        if ! grep -q '^13\. Additional Research Questions$' "$SKILL_DIR/references/output-format.md"; then
+        if ! grep -q '^[0-9]\+\. Additional Research Questions$' "$SKILL_DIR/references/output-format.md"; then
             echo "Expected full memo output format to include Additional Research Questions." >&2
             exit 1
         fi
@@ -385,5 +385,11 @@ if [ "$SECTOR_EXAMPLE_COUNT" -lt 2 ]; then
     echo "Expected at least two sector example markdown files under $SECTOR_EXAMPLE_ROOT" >&2
     exit 1
 fi
+
+for MEMO in "$REPO_ROOT/analysis-example/kr"/*/memo.md; do
+    COMPANY=$(basename "$(dirname "$MEMO")")
+    echo "Quality gate: $COMPANY"
+    node "$REPO_ROOT/scripts/harness.js" --mode gate --company "$COMPANY" --memo-path "$MEMO" || exit 1
+done
 
 echo "Validation passed."
