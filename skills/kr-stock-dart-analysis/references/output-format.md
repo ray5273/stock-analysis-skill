@@ -10,6 +10,8 @@
 
 <!-- KR_DART_COVERAGE_VERIFICATION_SECTION -->
 
+<!-- KR_DART_CLAIM_RECHECK_SECTION -->
+
 아래 섹션 순서를 기본값으로 사용한다.
 
 ```md
@@ -209,6 +211,10 @@
 ## 미공시 확인 로그
 - `not separately disclosed`로 처리한 항목과 확인 근거
 
+## DART Recheck
+| 주장 | 상태 | 확인값 또는 판단 | 출처 섹션 | 비고 |
+| --- | --- | --- | --- | --- |
+
 ## 다음 업데이트 우선 확인 항목
 - ...
 ```
@@ -219,6 +225,8 @@
 - 상태값은 `parsed`, `partial`, `missing`, `needs_review`를 사용한다.
 - `missing` 또는 `needs_review` 상태인 섹션은 미공시 확정이 아니라 재확인 대상으로 취급한다.
 - `미공시 확인 로그`에는 어떤 섹션이나 주석을 확인한 뒤 `not separately disclosed`로 판단했는지 남긴다.
+- `## DART Recheck`는 memo-critical claim이 있는 annual filing에서는 기본 섹션으로 남긴다.
+- 상태값은 `confirmed`, `partially_supported`, `contradicted`, `not_separately_disclosed`, `needs_follow_up`를 사용한다.
 
 ## 수주 통합 분석 형식
 

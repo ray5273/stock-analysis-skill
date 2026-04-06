@@ -52,6 +52,22 @@
     ],
     "needsReviewSections": []
   },
+  "verifiedClaims": [
+    {
+      "claim": "LG CNS의 연결 기준 계열 매출 비중은 약 60%다",
+      "status": "confirmed",
+      "value": "3,754,735,260천원 / 6,129,542,718천원 = 61.26%",
+      "sourceSection": "29. 특수관계자 등과의 거래 (연결)",
+      "checkedAt": "2026-04-05"
+    },
+    {
+      "claim": "LG전자, LG화학 고객 집중도가 여전히 높다",
+      "status": "confirmed",
+      "value": "LG전자 25.1%, LG화학 20.0%, 합산 45.1%",
+      "sourceSection": "4. 영업부문(연결)",
+      "checkedAt": "2026-04-05"
+    }
+  ],
   "sections": [
     {
       "id": "section-001",

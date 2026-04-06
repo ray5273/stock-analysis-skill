@@ -144,6 +144,12 @@ function buildMarkdown({ args, sectionsPayload, coveragePayload }) {
   lines.push("- `not separately disclosed`는 파싱 누락이 아니라, 해당 섹션 또는 주석을 확인한 뒤에도 별도 수치가 없는 경우에만 사용한다.");
   lines.push("- `missing` 또는 `needs_review` 상태의 섹션은 미공시로 확정하지 말고 재확인 대상으로 남긴다.");
   lines.push("");
+  lines.push("## DART Recheck");
+  lines.push("");
+  lines.push("| 주장 | 상태 | 확인값 또는 판단 | 출처 섹션 | 비고 |");
+  lines.push("| --- | --- | --- | --- | --- |");
+  lines.push("| 중요 주장 재확인 큐 미작성 | needs_follow_up | 아직 claim-oriented verification이 입력되지 않음 | not separately disclosed | memo-critical annual filing이면 이 표를 채워야 함 |");
+  lines.push("");
   lines.push("## 다음 업데이트 우선 확인 항목");
   lines.push("");
   for (const title of coveragePayload.missingSections.concat(coveragePayload.needsReviewSections).slice(0, 12)) {
@@ -181,6 +187,7 @@ function buildCache({ args, sectionsPayload, coveragePayload }) {
       partialSections: coveragePayload.partialSections,
       needsReviewSections: coveragePayload.needsReviewSections,
     },
+    verifiedClaims: [],
     sections: (sectionsPayload.sections || []).map((section) => ({
       id: section.id,
       title: section.title,
