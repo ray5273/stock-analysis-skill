@@ -27,6 +27,16 @@ Try to gather the smallest complete set that supports a precise answer:
 6. KRX or DART contract disclosures
    Needed when the user asks for `단일판매ㆍ공급계약체결`, large order wins, amendments, or contract termination notices.
 
+For note-driven annual tasks, steps 1-4 are mandatory before relying on step 5.
+
+## DART-First Enforcement
+
+- Treat these as note-driven tasks by default: customer concentration, geography mix, related-party transactions, internal-group revenue, segment margin, treasury-share detail, capital-allocation notes, and any memo-critical claim that depends on a filing note or appendix.
+- Do not use company IR pages, newsroom posts, or third-party disclosure mirrors as substitutes for the DART filing path when a note-driven task is still incomplete.
+- Accept a company IR `감사보고서` download page only as an alternate route to the same official audit or review PDF, not as a separate evidence standard.
+- If the relevant DART note, appendix, or attached audit or review report has not been checked yet, the task is not complete.
+- If note extraction remains partial after a real DART attempt, hand the item off as `partial`, `needs_review`, or `not separately disclosed after DART check` instead of filling the gap from company-site summaries.
+
 ## Claude.ai Viewer Export Path
 
 - Use this path when the user wants to work from the live DART viewer inside a browser session instead of manually copying text.
@@ -66,6 +76,8 @@ Use this step for annual `사업보고서`, `감사보고서`, or any filing whe
    - `parsed`: safe to cite normally with source mapping.
    - `partial`: cite cautiously and mark the limitation.
    - `missing` or `needs_review`: do not convert this into `not separately disclosed`.
+
+For memo-critical annual work, do not move downstream to a settled conclusion until the note-driven sections that affect the thesis are at least `parsed` or explicitly marked unresolved.
 
 Deep-read mode is mandatory, not optional, when:
 
@@ -151,6 +163,8 @@ For long annual filings, tighten that rule:
 3. Check the official IR PDF route if the DART viewer is weak.
 4. Confirm the section is not `missing` or `needs_review` in the coverage report.
 5. Only then use `not separately disclosed`.
+
+Step 3 is allowed only as the same official document route after attempting the DART filing path, not as a shortcut around DART-first work.
 
 For `특수관계자`, `관련당사자`, `내부거래`, `계열 매출`, or `내부그룹 매출 비중` requests:
 

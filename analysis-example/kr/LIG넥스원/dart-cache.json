@@ -1,0 +1,62 @@
+{
+  "company": "LIG넥스원",
+  "ticker": "079550",
+  "asOfDate": "2026-04-06",
+  "baseFilings": [
+    {
+      "title": "사업보고서 (2025.12)",
+      "date": "2026-03-23",
+      "status": "parsed"
+    },
+    {
+      "title": "정기주주총회 결과",
+      "date": "2026-03-31",
+      "status": "parsed"
+    },
+    {
+      "title": "2025년 4분기 영업(잠정) 실적",
+      "date": "2026-02-13",
+      "status": "partial"
+    }
+  ],
+  "coverage": {
+    "annualResults": "parsed",
+    "annualSegmentMix": "parsed",
+    "geographyMix": "parsed",
+    "customerConcentration": "parsed",
+    "backlog": "parsed",
+    "contractAssetsLiabilities": "parsed",
+    "relatedPartyTransactions": "parsed",
+    "cashFlow": "parsed",
+    "shareholderMeeting": "parsed",
+    "quarterlySegmentMatrix4Q25": "needs_review",
+    "countryLevelExportMix": "needs_review"
+  },
+  "verifiedClaims": [
+    {
+      "claim": "2025년 audited 실적은 강했다.",
+      "status": "confirmed",
+      "evidence": "매출 4,306,936백만원, 영업이익 319,442백만원"
+    },
+    {
+      "claim": "고객집중도는 공식 자료로 확인되지 않는다.",
+      "status": "contradicted",
+      "evidence": "A고객 46.4%, B고객 12.1%, 합계 58.4%"
+    },
+    {
+      "claim": "해외 매출 비중이 이미 절반 수준이다.",
+      "status": "contradicted",
+      "evidence": "해외 19.9%, 국내 80.1%"
+    },
+    {
+      "claim": "특수관계자 매출 의존도가 높다.",
+      "status": "contradicted",
+      "evidence": "strict 특수관계자 매출 1,305.9백만원, 연결 매출 대비 0.03%"
+    },
+    {
+      "claim": "backlog 확대와 현금전환은 같이 좋다.",
+      "status": "partially_supported",
+      "evidence": "기말 계약잔액 26.25조원, 영업활동현금흐름 -5,598억원"
+    }
+  ]
+}

@@ -132,6 +132,9 @@ foreach ($skillDir in $skillDirs) {
         if (-not $dataPackWorkflow.Contains("## Source Roles")) {
             Write-Error "Expected kr-stock-data-pack workflow to define source roles."
         }
+        if (-not $dataPackWorkflow.Contains("Do not fill a note-driven block from company IR alone")) {
+            Write-Error "Expected kr-stock-data-pack workflow to block company-IR-only backfills for note-driven claims."
+        }
 
         $dataPackOutputFormat = [System.IO.File]::ReadAllText((Join-Path $repoRoot "skills\kr-stock-data-pack\references\output-format.md"))
         if (-not $dataPackOutputFormat.Contains("## External Views")) {
@@ -143,6 +146,12 @@ foreach ($skillDir in $skillDirs) {
         $dartWorkflow = [System.IO.File]::ReadAllText((Join-Path $repoRoot "skills\kr-stock-dart-analysis\references\workflow.md"))
         if (-not $dartWorkflow.Contains("derived from cumulative filing")) {
             Write-Error "Expected kr-stock-dart-analysis workflow to define cumulative-derivation labeling."
+        }
+        if (-not $dartWorkflow.Contains("## DART-First Enforcement")) {
+            Write-Error "Expected kr-stock-dart-analysis workflow to define DART-first enforcement."
+        }
+        if (-not $dartWorkflow.Contains("Do not use company IR pages, newsroom posts, or third-party disclosure mirrors as substitutes for the DART filing path")) {
+            Write-Error "Expected kr-stock-dart-analysis workflow to prohibit non-DART substitutes for note-driven work."
         }
 
         $dartOutputFormat = [System.IO.File]::ReadAllText((Join-Path $repoRoot "skills\kr-stock-dart-analysis\references\output-format.md"))
@@ -164,6 +173,12 @@ foreach ($skillDir in $skillDirs) {
         }
         if (-not $skillMd.Contains("Default to Korean for all user-facing output")) {
             Write-Error "Expected kr-stock-dart-analysis skill rules to default user-facing output to Korean."
+        }
+        if (-not $skillMd.Contains("DART is the mandatory starting point")) {
+            Write-Error "Expected kr-stock-dart-analysis skill rules to make DART mandatory for note-driven annual work."
+        }
+        if (-not $skillMd.Contains("Do not satisfy a note-driven task from a company IR page")) {
+            Write-Error "Expected kr-stock-dart-analysis skill rules to block company-IR substitution before DART note checks."
         }
         if (-not $skillMd.Contains("KR_DART_COVERAGE_SUMMARY_RULE")) {
             Write-Error "Expected kr-stock-dart-analysis skill rules to include the coverage-summary marker."
@@ -360,6 +375,12 @@ foreach ($memoFile in $memoFiles) {
     node (Join-Path $repoRoot "scripts\harness.js") --mode gate --company $memoCompany --memo-path $memoFile
     if ($LASTEXITCODE -ne 0) { throw "Quality gate failed for $memoCompany" }
 }
+
+node (Join-Path $repoRoot "scripts\validate-contracts.js")
+if ($LASTEXITCODE -ne 0) { throw "Contract validation failed." }
+
+node (Join-Path $repoRoot "scripts\audit-analysis-artifacts.js")
+if ($LASTEXITCODE -ne 0) { throw "Golden artifact audit failed." }
 
 Write-Host "Validation passed."
 }

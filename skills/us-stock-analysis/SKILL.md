@@ -12,7 +12,7 @@ Use this skill to produce equity research style analysis for U.S. stocks and U.S
 - Treat prices, market caps, financial statements, guidance, analyst estimates, ownership, regulations, and news as time-sensitive. Verify them with current sources before using them.
 - Prefer primary sources first: SEC filings, investor relations pages, earnings releases, earnings decks, transcripts, exchange announcements, ETF fact sheets, and official macro data.
 - Pin the scope before analyzing: ticker, exchange, analysis horizon, comparison set, and the desired output type.
-- If the workspace is writable, treat the default deliverable as a markdown report file, not just a chat reply. For a U.S. stock or ETF, create or update `analysis-example/us/<company>.md`.
+- If the workspace is writable, treat the default deliverable as a markdown report file, not just a chat reply. For a U.S. stock or ETF, create or update `analysis-example/us/<company>/memo.md`.
 - State an explicit "as of" date in the final answer.
 
 ## Workflow

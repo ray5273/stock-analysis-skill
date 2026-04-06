@@ -308,30 +308,17 @@ node skills/kr-stock-dart-analysis/scripts/verify-dart-coverage.js --input secti
 
 ## 분석 예시
 
-- [KR - Portfolio Snapshot](analysis-example/kr/portfolio-snapshot.md)
-- [KR - 엘앤에프](<analysis-example/kr/엘앤에프/memo.md>)
-- [KR - LG CNS 리서치 브리프](<analysis-example/kr/LG CNS/리서치브리프.md>)
-- [KR - LG CNS DART 분석](<analysis-example/kr/LG CNS/dart-analysis.md>)
-- [KR - LG CNS DART reference](<analysis-example/kr/LG CNS/dart-reference.md>)
-- [KR - 삼성전자 DART reference](<analysis-example/kr/삼성전자/dart-reference.md>)
-- [KR - LG CNS 수주 통합 분석](<analysis-example/kr/LG CNS/수주통합분석.md>)
+- 검증된 golden example과 재사용 fixture만 링크합니다.
 - [KR - LG CNS](<analysis-example/kr/LG CNS/memo.md>)
-- [KR - 삼성SDS 리서치 브리프](<analysis-example/kr/삼성SDS/리서치브리프.md>)
-- [KR - 삼성SDS DART 분석](<analysis-example/kr/삼성SDS/dart-analysis.md>)
-- [KR - 삼성SDS Data Pack](<analysis-example/kr/삼성SDS/data-pack.md>)
-- [KR - 삼성SDS](<analysis-example/kr/삼성SDS/memo.md>)
-- [KR - LG전자 DART 분석](<analysis-example/kr/LG전자/dart-analysis.md>)
-- [KR - 두산에너빌리티 DART 분석](<analysis-example/kr/두산에너빌리티/dart-analysis.md>)
-- [KR - 두산에너빌리티 DART reference](<analysis-example/kr/두산에너빌리티/dart-reference.md>)
-- [KR - 두산에너빌리티 수주 통합 분석](<analysis-example/kr/두산에너빌리티/수주통합분석.md>)
-- [KR - 한전KPS 수주계약 리스트](<analysis-example/kr/한전KPS/수주계약리스트.md>)
-- [KR - 한미글로벌 수주계약 리스트](<analysis-example/kr/한미글로벌/수주계약리스트.md>)
+- [KR - LG CNS DART reference](<analysis-example/kr/LG CNS/dart-reference.md>)
 - [KR - 대양전기공업](<analysis-example/kr/대양전기공업/memo.md>)
 - [KR - DART browser export sample](examples/kr-stock-dart-analysis/dart-browser-export-sample.json)
 - [KR Sector - 국내 데이터센터](analysis-example/kr-sector/국내%20데이터센터.md)
 - [KR Sector - 국내 데이터센터 리서치 브리프](analysis-example/kr-sector/국내%20데이터센터-리서치브리프.md)
-- [KR Sector - 국내 IT SI 서비스](analysis-example/kr-sector/국내%20IT%20SI%20서비스.md)
-- [KR Sector - 국내 IT SI 서비스 리서치 브리프](analysis-example/kr-sector/국내%20IT%20SI%20서비스-리서치브리프.md)
+
+추가 최근 예시:
+
+- [KR - LIG넥스원](<analysis-example/kr/LIG넥스원/memo.md>)
 
 ## 검증
 
@@ -346,3 +333,10 @@ Linux 또는 macOS:
 ```bash
 bash ./scripts/validate-skills.sh
 ```
+
+이 검증에는 다음이 포함됩니다.
+
+- skill 명세 체크
+- 문서와 agent prompt의 산출물 경로 계약 체크
+- README 로컬 링크 존재 여부 체크
+- [docs/quality-rubrics.md](docs/quality-rubrics.md) 기준 golden example 감사

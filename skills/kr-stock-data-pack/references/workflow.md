@@ -34,6 +34,8 @@ For a standard company pack, try to gather:
 - Keep every important metric dated.
 - Note the source origin for each block.
 - Use `not separately disclosed` instead of inventing a split.
+- For note-driven blocks such as customer concentration, geography mix, related-party transactions, internal-group revenue, segment margin, or treasury-share detail, inherit the result from `kr-stock-dart-analysis` when annual-note evidence matters.
+- Do not fill a note-driven block from company IR alone when the relevant DART note read is still incomplete. Carry the block as `needs_review`, `partial`, or `not separately disclosed after DART check`.
 - For outside-view blocks, say whether the claim is `confirmed by filing`, `street inference`, `media report`, or `independent view`.
 - Keep interpretation light. The pack may note why a fact matters, but it should not decide the investment view.
 
@@ -43,4 +45,5 @@ For a standard company pack, try to gather:
 - turning the pack into a full memo
 - quoting media summaries when the filing already provides the number
 - treating a broker note or blog as a verified fact block without a primary-source check
+- backfilling a note-driven annual claim from company IR because the DART note read was skipped
 - omitting share-class or structure context when it changes the valuation frame
