@@ -61,6 +61,7 @@ If a number matters to the conclusion, trace it back to a primary source when po
 - Pull 3-8 claims from the draft memo, scoped brief, or data pack that would materially change the thesis if wrong.
 - Prefer claims about customer concentration, internal-group revenue, segment margin, backlog, capital allocation, liquidity, and management-stated reasons for change.
 - Route those claims through `kr-stock-dart-analysis` or an existing `dart-cache.json`.
+- Treat note-driven claims as unresolved until the DART filing path or attached official audit or review document has actually been checked. Company IR pages may add commentary but must not substitute for note verification.
 - Tag each one as:
   - `confirmed`
   - `partially supported`
@@ -68,6 +69,7 @@ If a number matters to the conclusion, trace it back to a primary source when po
   - `not separately disclosed`
   - `needs follow-up`
 - A full memo should not present a thesis-critical statement as settled if the DART recheck status is weaker than `confirmed`.
+- If the DART read is incomplete, downgrade the memo wording and surface the limitation explicitly instead of carrying a company-site summary as if it were filing-verified.
 
 ### Governance and Structure
 
@@ -221,6 +223,7 @@ Use this flow for pre-earnings and post-earnings requests:
 - Writing a technical read without enough price history or without saying the chart evidence is limited
 - Ignoring treasury shares or holding-company structure
 - Treating management commentary as fact without checking reported numbers
+- Treating a company IR page as sufficient evidence for a note-driven annual claim that should have been verified from DART
 - Letting company newsroom releases dominate the memo when outside debate is available
 - Treating one broker note, one media article, or one blog as confirmed fact
 - Copying a secondary-source number into the memo without saying whether the filing confirms it

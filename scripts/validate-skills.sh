@@ -93,17 +93,17 @@ if (!pattern.test(text)) {
 
         node "$FETCH_SCRIPT" --help >/dev/null
 
-        if ! grep -q '^[0-9]\+\. Street / Alternative Views$' "$SKILL_DIR/references/output-format.md"; then
+        if ! grep -Fq 'Street / Alternative Views' "$SKILL_DIR/references/output-format.md"; then
             echo "Expected full memo output format to include Street / Alternative Views." >&2
             exit 1
         fi
 
-        if ! grep -q '^[0-9]\+\. Additional Research Questions$' "$SKILL_DIR/references/output-format.md"; then
+        if ! grep -Fq 'Additional Research Questions' "$SKILL_DIR/references/output-format.md"; then
             echo "Expected full memo output format to include Additional Research Questions." >&2
             exit 1
         fi
 
-        if ! grep -q '^## Source Roles$' "$SKILL_DIR/SKILL.md"; then
+        if ! grep -Fq '## Source Roles' "$SKILL_DIR/SKILL.md"; then
             echo "Expected kr-stock-analysis skill rules to define source roles." >&2
             exit 1
         fi
@@ -123,11 +123,11 @@ if (!pattern.test(text)) {
             "$REPO_ROOT/analysis-example/kr/엘앤에프/memo.md" \
             "$REPO_ROOT/analysis-example/kr/대양전기공업/memo.md"
         do
-            if ! grep -q '^## Street / Alternative Views$' "$REPORT_SAMPLE"; then
+            if ! grep -Fq '## Street / Alternative Views' "$REPORT_SAMPLE"; then
                 echo "Expected stock memo example to include Street / Alternative Views: $REPORT_SAMPLE" >&2
                 exit 1
             fi
-            if ! grep -q '^## Additional Research Questions$' "$REPORT_SAMPLE"; then
+            if ! grep -Fq '## Additional Research Questions' "$REPORT_SAMPLE"; then
                 echo "Expected stock memo example to include Additional Research Questions: $REPORT_SAMPLE" >&2
                 exit 1
             fi
@@ -135,12 +135,17 @@ if (!pattern.test(text)) {
     fi
 
     if [ "$SKILL_NAME" = "kr-stock-data-pack" ]; then
-        if ! grep -q '^## Source Roles$' "$SKILL_DIR/references/workflow.md"; then
+        if ! grep -Fq '## Source Roles' "$SKILL_DIR/references/workflow.md"; then
             echo "Expected kr-stock-data-pack workflow to define source roles." >&2
             exit 1
         fi
 
-        if ! grep -q '^## External Views$' "$SKILL_DIR/references/output-format.md"; then
+        if ! grep -Fq 'Do not fill a note-driven block from company IR alone' "$SKILL_DIR/references/workflow.md"; then
+            echo "Expected kr-stock-data-pack workflow to block company-IR-only backfills for note-driven claims." >&2
+            exit 1
+        fi
+
+        if ! grep -Fq '## External Views' "$SKILL_DIR/references/output-format.md"; then
             echo "Expected kr-stock-data-pack output format to include External Views." >&2
             exit 1
         fi
@@ -152,12 +157,22 @@ if (!pattern.test(text)) {
             exit 1
         fi
 
+        if ! grep -Fq '## DART-First Enforcement' "$SKILL_DIR/references/workflow.md"; then
+            echo "Expected kr-stock-dart-analysis workflow to define DART-first enforcement." >&2
+            exit 1
+        fi
+
+        if ! grep -Fq 'Do not use company IR pages, newsroom posts, or third-party disclosure mirrors as substitutes for the DART filing path' "$SKILL_DIR/references/workflow.md"; then
+            echo "Expected kr-stock-dart-analysis workflow to prohibit non-DART substitutes for note-driven work." >&2
+            exit 1
+        fi
+
         if ! grep -q 'KR_DART_STANDALONE_QUARTER_SECTION' "$SKILL_DIR/references/output-format.md"; then
             echo "Expected kr-stock-dart-analysis output format to define the standalone-quarter section marker." >&2
             exit 1
         fi
 
-        if ! grep -q '^## Source Map$' "$SKILL_DIR/references/output-format.md"; then
+        if ! grep -Fq '## Source Map' "$SKILL_DIR/references/output-format.md"; then
             echo "Expected kr-stock-dart-analysis output format to include Source Map." >&2
             exit 1
         fi
@@ -182,6 +197,16 @@ if (!pattern.test(text)) {
             exit 1
         fi
 
+        if ! grep -Fq 'DART is the mandatory starting point' "$SKILL_DIR/SKILL.md"; then
+            echo "Expected kr-stock-dart-analysis skill rules to make DART mandatory for note-driven annual work." >&2
+            exit 1
+        fi
+
+        if ! grep -Fq 'Do not satisfy a note-driven task from a company IR page' "$SKILL_DIR/SKILL.md"; then
+            echo "Expected kr-stock-dart-analysis skill rules to block company-IR substitution before DART note checks." >&2
+            exit 1
+        fi
+
         if ! grep -q 'KR_DART_COVERAGE_SUMMARY_RULE' "$SKILL_DIR/SKILL.md"; then
             echo "Expected kr-stock-dart-analysis skill rules to include the coverage-summary marker." >&2
             exit 1
@@ -202,17 +227,17 @@ if (!pattern.test(text)) {
             exit 1
         fi
 
-        if ! grep -q '^## 파싱 커버리지 요약$' "$SKILL_DIR/references/output-format.md"; then
+        if ! grep -Fq '## 파싱 커버리지 요약' "$SKILL_DIR/references/output-format.md"; then
             echo "Expected kr-stock-dart-analysis output format to include parsing coverage summary." >&2
             exit 1
         fi
 
-        if ! grep -q '^## 미공시 확인 로그$' "$SKILL_DIR/references/output-format.md"; then
+        if ! grep -Fq '## 미공시 확인 로그' "$SKILL_DIR/references/output-format.md"; then
             echo "Expected kr-stock-dart-analysis output format to include nondisclosure verification log." >&2
             exit 1
         fi
 
-        if ! grep -q '^## DART Recheck$' "$SKILL_DIR/references/output-format.md"; then
+        if ! grep -Fq '## DART Recheck' "$SKILL_DIR/references/output-format.md"; then
             echo "Expected kr-stock-dart-analysis output format to include DART Recheck section." >&2
             exit 1
         fi
@@ -360,6 +385,9 @@ EOF
         fi
     fi
 done
+
+node "$REPO_ROOT/scripts/validate-contracts.js" >/dev/null
+node "$REPO_ROOT/scripts/audit-analysis-artifacts.js" >/dev/null
 
 SECTOR_EXAMPLE_ROOT="$REPO_ROOT/analysis-example/kr-sector"
 if [ ! -d "$SECTOR_EXAMPLE_ROOT" ]; then

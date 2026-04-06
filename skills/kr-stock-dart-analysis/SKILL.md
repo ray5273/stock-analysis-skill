@@ -26,6 +26,7 @@ Use this skill to turn Korean DART filings into a precise, reusable evidence pac
 - Start from the exact security, target period, and filing type before reading numbers.
 - If the exact filing scope or output slice is still unclear, ask the user the shortest possible questions first: what they need from the filing, what period matters, and whether this is a filing-only deliverable or an input to a broader memo.
 - Prefer the latest DART filing and its attached consolidated financial statements, notes, and business sections.
+- For note-driven annual questions, DART is the mandatory starting point. Open the DART filing, attached audit report, or attached review report before using any company-site material.
 - Determine `consolidated` versus `separate` and `cumulative` versus `standalone quarter` before quoting any result.
 - If the filing discloses only cumulative quarterly or half-year figures, derive the standalone quarter by subtracting the prior cumulative filing and label it clearly as `derived from cumulative filing`.
 - If the user asks only for `수주계약건` or `단일판매ㆍ공급계약` lists, switch into a disclosure-list mode and gather every relevant notice with original date, latest amendment status, counterparty, amount, sales ratio, and contract period.
@@ -40,6 +41,7 @@ Use this skill to turn Korean DART filings into a precise, reusable evidence pac
 - If the user asks for `수주잔고 대비 매출`, `백로그 커버리지`, or similar backlog-coverage metrics, calculate them only on a like-for-like basis and label them as a derived coverage read rather than a formally disclosed KPI unless the company discloses the metric directly.
 - If the user asks for both `수주잔고` and `계약 만기 분포`, use an integrated backlog mode that combines the official backlog table, contract-disclosure list, maturity buckets, and coverage metrics in one Korean artifact.
 - If the user asks about `특수관계자`, `관련당사자`, `내부거래`, `계열 매출`, or `내부그룹 매출 비중`, treat it as a note-driven task: locate the latest annual audit report or business-report notes first, check both the consolidated note and the separate-financial-statement note when available, then extract the revenue denominator, the related-party transaction note total, and any separately disclosed `대규모기업집단 계열회사` block before calculating any ratio.
+- Treat these as `note-driven tasks` by default when the answer depends on annual notes, appendices, or audited tables: customer concentration, geography mix, related-party transactions, internal-group revenue, segment margin, capital-allocation notes, treasury-share detail, and any claim that depends on a filing footnote rather than a headline IR slide.
 - If the user asks for `매출 비중`, `구성 비중`, `계약 비중`, or asks to analyze both together, switch into a `비중 통합 모드`: build one dated section for revenue mix ratios and one dated section for contract or backlog-related ratios, and keep scope mismatches explicit instead of forcing a single blended percentage.
 
 ## Workflow
@@ -52,6 +54,8 @@ Use this skill to turn Korean DART filings into a precise, reusable evidence pac
    For annual `사업보고서`, `감사보고서`, or similarly long filings, first build a TOC-level section index, parse every section you can reach, and verify coverage before writing the final analysis.
 2B. Build a claim recheck queue.
    For any annual-filing analysis that feeds a broader stock memo, extract the 3-8 claims most likely to affect the thesis and verify them explicitly from DART before signing off.
+2C. Enforce DART-first note completion.
+   For note-driven tasks, do not treat company IR pages, newsroom pages, or third-party mirrors as substitutes for the DART filing path. Finish the DART viewer or attached-audit/PDF read first, then use other official materials only as supplemental commentary.
 3. Determine the measurement basis.
    Decide which tables are consolidated versus separate and which values are cumulative versus quarter-only before extracting or deriving any metric.
 4. Extract the results block.
@@ -76,6 +80,7 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 - Use the filing's exact period labels. Do not flatten `3Q cumulative`, `half-year cumulative`, and `annual` into one generic period.
 - If a mix split, segment profit, customer concentration figure, or backlog figure is not separately disclosed in the filing set, write `not separately disclosed` instead of guessing.
 - Do not write `not separately disclosed` for a long annual filing until the section coverage check is complete and the relevant section is not `missing` or `needs_review`.
+- Do not satisfy a note-driven task from a company IR page when the relevant DART note, appendix, or attached audit report has not been checked yet.
 - Use the company's stated reasons for growth or margin change only when the filing or attached official earnings material says them explicitly.
 - If IR material adds color but DART is silent or less specific, anchor the number to DART and label the extra explanation as official IR commentary.
 - If DART and IR differ, prefer the filing for formal numbers and note the mismatch.
@@ -83,8 +88,10 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 - Ask a short user-need check before extraction when the must-answer filing questions are not already defined by `kr-stock-plan` or the active request.
 - Use the latest annual audit report for customer concentration or segment-note detail when the current quarterly or half-year filing does not repeat it, but label the date mismatch.
 - When the user asks for related-party or internal-group revenue share, prefer the latest annual audit report note even if the DART viewer is inconvenient, and accept the company IR `감사보고서` download page only as the same official audited-note route rather than a separate fallback workflow.
+- When you use a company IR `감사보고서` or reviewed-financial-statements download page, treat it only as an alternate path to the same official DART-attached document. It does not relax the DART-first requirement.
 - When the user asks for related-party or internal-group revenue share, check whether the filing provides both `연결` and `별도` notes. If both exist, show the connected but different meanings instead of stopping after the consolidated note.
 - For memo-critical annual-filing work, do not stop after section extraction. Convert important claims into `confirmed`, `partially supported`, `contradicted`, or `not separately disclosed` using explicit filing evidence.
+- If the note read is incomplete, hand off the item as `needs_review`, `partial`, or `not separately disclosed after DART check` rather than filling the gap with a company-site summary.
 - When a result is only meaningful after subtracting prior cumulative figures, show the calculation path briefly.
 - Separate `회계상 특수관계자 비중` from `대규모기업집단 계열회사 포함 내부그룹 비중` when the note discloses both. Do not collapse them into one unlabeled percentage.
 - Separate `연결 기준 내부그룹 매출 비중` from `별도 기준 특수관계자 거래 구조`. The former is usually used for external revenue concentration, while the latter often includes transactions with subsidiaries.
@@ -106,6 +113,8 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 4. KRX disclosures
    Use these for event timing, shareholder-return actions, exchange-level notices, and `단일판매ㆍ공급계약체결` style contract disclosures linked to the period.
 
+For note-driven tasks, items 1 and 2 are mandatory before 3.
+
 If a number matters to the conclusion, keep the filing citation visible. If you cannot trace a material number back to the filing set, mark it as outside the filing scope.
 
 For long annual filings, keep the coverage-verification result visible enough that another analyst can distinguish `true nondisclosure` from `parse gap`.
@@ -124,6 +133,7 @@ For long annual filings, keep the coverage-verification result visible enough th
 - A dated section-coverage check for long annual filings
 - A reusable reference digest and cache when the document is large enough that downstream work should not re-read the whole filing
 - A claim recheck block for the highest-impact memo claims when the filing work feeds a broader analysis
+- An explicit unresolved-items block when any note-driven claim could not be completed from DART or the attached official audit or review documents
 
 ## Handoff Guidance
 

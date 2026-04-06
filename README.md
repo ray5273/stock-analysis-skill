@@ -48,7 +48,7 @@ Shared behavior:
 - They are invoked explicitly through their skill names in Codex and Claude Code.
 - Stock and portfolio skills treat prices, valuation, filings, guidance, portfolio positions, and news as time-sensitive, so the workflow starts by verifying current sources instead of relying on memory.
 - Korea sector skills treat market metrics, policy changes, regulations, company exposure, and industry news as time-sensitive and keep source dates visible.
-- When the workspace is writable, the default deliverable is a markdown report file in `analysis-example/<market>/<company>.md` or `analysis-example/kr-sector/<sector>.md`, not just a chat answer.
+- When the workspace is writable, the default deliverable is a markdown report file in `analysis-example/<market>/<company>/memo.md` for stock work or `analysis-example/kr-sector/<sector>.md` for sector work, not just a chat answer.
 - The report file should stay synchronized with the final answer, with an explicit "as of" date.
 
 ### `us-stock-analysis`
@@ -174,15 +174,11 @@ Current behavior:
 
 Example research brief:
 
-- [analysis-example/kr-sector/국내 대기업집단 IT서비스사 지배구조-리서치브리프.md](analysis-example/kr-sector/국내%20대기업집단%20IT서비스사%20지배구조-리서치브리프.md)
-
-Example data pack:
-
-- [analysis-example/kr-sector/국내 대기업집단 IT서비스사 지배구조-data-pack.md](analysis-example/kr-sector/국내%20대기업집단%20IT서비스사%20지배구조-data-pack.md)
+- [analysis-example/kr-sector/국내 데이터센터-리서치브리프.md](analysis-example/kr-sector/국내%20데이터센터-리서치브리프.md)
 
 Example full report:
 
-- [analysis-example/kr-sector/국내 대기업집단 IT서비스사 지배구조.md](analysis-example/kr-sector/국내%20대기업집단%20IT서비스사%20지배구조.md)
+- [analysis-example/kr-sector/국내 데이터센터.md](analysis-example/kr-sector/국내%20데이터센터.md)
 
 ## Install
 
@@ -388,34 +384,18 @@ Reference files:
 
 ## Analysis Examples
 
-- [KR - Portfolio Snapshot](analysis-example/kr/portfolio-snapshot.md)
-- [KR - 엘앤에프](<analysis-example/kr/엘앤에프/memo.md>)
-- [KR - LG CNS Research Brief](<analysis-example/kr/LG CNS/리서치브리프.md>)
-- [KR - LG CNS DART 분석](<analysis-example/kr/LG CNS/dart-analysis.md>)
-- [KR - LG CNS DART reference](<analysis-example/kr/LG CNS/dart-reference.md>)
-- [KR - 삼성전자 DART reference](<analysis-example/kr/삼성전자/dart-reference.md>)
-- [KR - LG CNS 수주 통합 분석](<analysis-example/kr/LG CNS/수주통합분석.md>)
-- [KR - LG CNS](<analysis-example/kr/LG CNS/memo.md>)
-- [KR - 삼성SDS 리서치 브리프](<analysis-example/kr/삼성SDS/리서치브리프.md>)
-- [KR - 삼성SDS DART 분석](<analysis-example/kr/삼성SDS/dart-analysis.md>)
-- [KR - 삼성SDS Data Pack](<analysis-example/kr/삼성SDS/data-pack.md>)
-- [KR - 삼성SDS](<analysis-example/kr/삼성SDS/memo.md>)
-- [KR - 현대오토에버 리서치 브리프](<analysis-example/kr/현대오토에버/리서치브리프.md>)
-- [KR - 현대오토에버 DART 분석](<analysis-example/kr/현대오토에버/dart-analysis.md>)
-- [KR - 현대오토에버 DART reference](<analysis-example/kr/현대오토에버/dart-reference.md>)
-- [KR - 현대오토에버 Data Pack](<analysis-example/kr/현대오토에버/data-pack.md>)
-- [KR - 현대오토에버](<analysis-example/kr/현대오토에버/memo.md>)
-- [KR - LG전자 DART 분석](<analysis-example/kr/LG전자/dart-analysis.md>)
-- [KR - 두산에너빌리티 DART 분석](<analysis-example/kr/두산에너빌리티/dart-analysis.md>)
-- [KR - 두산에너빌리티 DART reference](<analysis-example/kr/두산에너빌리티/dart-reference.md>)
-- [KR - 두산에너빌리티 수주 통합 분석](<analysis-example/kr/두산에너빌리티/수주통합분석.md>)
-- [KR - 한전KPS 수주계약 리스트](<analysis-example/kr/한전KPS/수주계약리스트.md>)
-- [KR - 한미글로벌 수주계약 리스트](<analysis-example/kr/한미글로벌/수주계약리스트.md>)
-- [KR - 대양전기공업](<analysis-example/kr/대양전기공업/memo.md>)
+The list below is kept to audited golden examples and reusable fixtures so the links stay in sync with validation.
+
+- [KR - LG CNS Memo](<analysis-example/kr/LG CNS/memo.md>)
+- [KR - LG CNS DART Reference](<analysis-example/kr/LG CNS/dart-reference.md>)
+- [KR - 대양전기공업 Memo](<analysis-example/kr/대양전기공업/memo.md>)
 - [KR Sector - 국내 데이터센터](analysis-example/kr-sector/국내%20데이터센터.md)
 - [KR Sector - 국내 데이터센터 리서치 브리프](analysis-example/kr-sector/국내%20데이터센터-리서치브리프.md)
-- [KR Sector - 국내 IT SI 서비스](analysis-example/kr-sector/국내%20IT%20SI%20서비스.md)
-- [KR Sector - 국내 IT SI 서비스 리서치 브리프](analysis-example/kr-sector/국내%20IT%20SI%20서비스-리서치브리프.md)
+- [KR - DART browser export sample](examples/kr-stock-dart-analysis/dart-browser-export-sample.json)
+
+Additional recent example:
+
+- [KR - LIG넥스원 Memo](<analysis-example/kr/LIG넥스원/memo.md>)
 
 ## Validation
 
@@ -430,3 +410,10 @@ Linux or macOS:
 ```bash
 bash ./scripts/validate-skills.sh
 ```
+
+Validation now includes:
+
+- Skill spec checks
+- Output-path contract checks across docs and agent prompts
+- README local-link verification
+- Golden example audits using the rubric in [docs/quality-rubrics.md](docs/quality-rubrics.md)

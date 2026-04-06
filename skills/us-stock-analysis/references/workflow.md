@@ -20,7 +20,7 @@ If a number matters to the conclusion, trace it back to a primary source when po
 - Identify the legal listing context when it matters: ADR, common shares, preferred shares, LP structure, REIT, or ETF.
 - Identify the analysis horizon: trading, next earnings, 12-24 months, or multi-year compounder view.
 - Identify the user's goal: idea generation, validation, comparison, or risk review.
-- If the workspace is writable, set the output file path early. Default to `analysis-example/us/<company>.md` for a full report.
+- If the workspace is writable, set the output file path early. Default to `analysis-example/us/<company>/memo.md` for a full report.
 
 ### Business Quality
 
