@@ -93,6 +93,20 @@ foreach ($skillDir in $skillDirs) {
 
         node $fetchScript --help | Out-Null
 
+        $valuationSample = ".\examples\kr-stock-analysis\valuation-band-sample.json"
+        $valuationScript = ".\skills\kr-stock-analysis\scripts\valuation-chart.js"
+        $valuationOut = ".\.tmp\$(Split-Path -Leaf $tempRoot)\kr-valuation.png"
+        $valuationOutPer = ".\.tmp\$(Split-Path -Leaf $tempRoot)\kr-valuation-per.png"
+        $valuationOutPbr = ".\.tmp\$(Split-Path -Leaf $tempRoot)\kr-valuation-pbr.png"
+
+        node $valuationScript --input $valuationSample --png-out $valuationOut --image-path "valuation.png" | Out-Null
+        if (-not (Test-Path $valuationOutPer) -or (Get-Item $valuationOutPer).Length -le 0) {
+            Write-Error "Expected PER valuation PNG was not created: $valuationOutPer"
+        }
+        if (-not (Test-Path $valuationOutPbr) -or (Get-Item $valuationOutPbr).Length -le 0) {
+            Write-Error "Expected PBR valuation PNG was not created: $valuationOutPbr"
+        }
+
         $stockOutputFormat = [System.IO.File]::ReadAllText((Join-Path $repoRoot "skills\kr-stock-analysis\references\output-format.md"))
         if (-not $stockOutputFormat.Contains("DART Recheck")) {
             Write-Error "Expected full memo output format to include DART Recheck."

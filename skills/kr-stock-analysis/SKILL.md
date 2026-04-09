@@ -56,6 +56,7 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 - Use `scripts/fetch-kr-chart.js` when you need current KRX daily bars and the user did not already provide OHLCV history.
 - Use `scripts/chart-basics.js` when you need a technical read plus three-part PNG charts that separate the main price trend, heavier overlay indicators, and momentum panels for `MACD` and `ADX/DMI` inside a markdown memo.
 - Use `scripts/valuation-bands.js` when the user provides 3-5 years of historical valuation multiples and you need markdown tables plus ASCII band charts for P/E, EV/EBITDA, and P/B.
+- Use `scripts/valuation-chart.js` when the user provides 3-5 years of historical valuation multiples and you need PNG time-series charts for P/E, P/B, and EV/EBITDA bands that can be embedded in a markdown memo. Accepts the same input JSON as `valuation-bands.js`. Requires at least 3 years of data per metric; defaults to a 5-year window.
 - Run all bundled scripts with `node`.
 
 ## Operating Rules

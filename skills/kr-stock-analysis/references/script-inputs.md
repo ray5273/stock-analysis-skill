@@ -99,3 +99,33 @@ Expected JSON:
 ```
 
 Use this when the user already gathered 3-5 years of valuation history and needs a consistent markdown summary plus ASCII band view.
+
+Note: the actual sample at `examples/kr-stock-analysis/valuation-band-sample.json` and the code use a **flat array** format:
+
+```json
+{
+  "ticker": "005930.KS",
+  "name": "Samsung Electronics",
+  "asOf": "2026-03-20",
+  "historyYears": 5,
+  "series": [
+    { "date": "2021-03-31", "pe": 13.4, "evEbitda": 6.5, "pbr": 1.6 }
+  ]
+}
+```
+
+## `scripts/valuation-chart.js`
+
+Run:
+
+```text
+node scripts/valuation-chart.js --input <path-to-json> --png-out <path-to-png> [--image-path <markdown-image-path>] [--width 1200] [--height 800]
+```
+
+Generates time-series PNG charts for P/E, P/B, and EV/EBITDA valuation bands. Each chart shows the historical line, min/max shaded band, and median dashed line.
+
+When `--png-out` is set, the script writes separate PNG files with suffixes `-per`, `-pbr`, and `-evEbitda` before the extension. The markdown output references all generated images.
+
+Period policy: defaults to 5 years. If data spans less than 5 years but at least 3 years, charts are generated with the actual period shown in the title. If less than 3 years, the metric's chart is skipped.
+
+Expected input: same flat-array JSON format as `valuation-bands.js` (see above). The `name` field is required for PNG title rendering.

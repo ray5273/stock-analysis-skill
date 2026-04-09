@@ -47,6 +47,7 @@ node skills/kr-stock-analysis/scripts/peer-valuation.js --input examples/kr/peer
 node skills/kr-stock-analysis/scripts/fetch-kr-chart.js --ticker 066970 --range 3mo
 node skills/kr-stock-analysis/scripts/portfolio-snapshot.js --input examples/kr/portfolio-sample.json
 node skills/kr-stock-dart-analysis/scripts/normalize-browser-dart-export.js --input examples/kr-stock-dart-analysis/dart-browser-export-sample.json --output dart-text.txt
+node skills/kr-stock-analysis/scripts/valuation-chart.js --input examples/kr-stock-analysis/valuation-band-sample.json --png-out valuation.png
 ```
 
 ## Architecture
@@ -70,6 +71,7 @@ All scripts accept JSON via `--input` and output Markdown or PNG. They use only 
 | `chart-basics.js` | Technical summary (SMA20/50, RSI14, volume) + PNG chart from OHLCV JSON |
 | `fetch-kr-chart.js` | Fetch KRX OHLCV from Yahoo Finance → JSON for chart-basics (kr only) |
 | `valuation-bands.js` | ASCII valuation band charts from historical P/E, EV/EBITDA, P/B JSON (kr only) |
+| `valuation-chart.js` | PNG valuation band time-series charts (P/E, P/B, EV/EBITDA) from historical JSON (kr only) |
 | `extract-report-baseline.js` | Parse an existing KR memo into baseline metadata for follow-up updates |
 | `normalize-update-log.js` | Render or append a dated update block to an existing KR memo |
 | `portfolio-snapshot.js` | SMA20 deviation + RSI14 snapshot table across multiple KRX positions from JSON (kr only, MCP fallback) |

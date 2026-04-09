@@ -93,6 +93,22 @@ if (!pattern.test(text)) {
 
         node "$FETCH_SCRIPT" --help >/dev/null
 
+        VALUATION_SAMPLE="$REPO_ROOT/examples/kr-stock-analysis/valuation-band-sample.json"
+        VALUATION_SCRIPT="$SKILL_DIR/scripts/valuation-chart.js"
+        VALUATION_OUT="$TMP_ROOT/$SKILL_NAME-valuation.png"
+        VALUATION_OUT_PER="$TMP_ROOT/$SKILL_NAME-valuation-per.png"
+        VALUATION_OUT_PBR="$TMP_ROOT/$SKILL_NAME-valuation-pbr.png"
+
+        node "$VALUATION_SCRIPT" --input "$VALUATION_SAMPLE" --png-out "$VALUATION_OUT" --image-path "valuation.png" >/dev/null
+        if [ ! -s "$VALUATION_OUT_PER" ]; then
+            echo "Expected PER valuation PNG was not created: $VALUATION_OUT_PER" >&2
+            exit 1
+        fi
+        if [ ! -s "$VALUATION_OUT_PBR" ]; then
+            echo "Expected PBR valuation PNG was not created: $VALUATION_OUT_PBR" >&2
+            exit 1
+        fi
+
         if ! grep -Fq 'Street / Alternative Views' "$SKILL_DIR/references/output-format.md"; then
             echo "Expected full memo output format to include Street / Alternative Views." >&2
             exit 1
