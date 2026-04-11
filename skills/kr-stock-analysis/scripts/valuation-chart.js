@@ -538,6 +538,78 @@ function valueToY(value, minValue, maxValue, top, height) {
   return top + ((maxValue - value) / (maxValue - minValue)) * height;
 }
 
+const ZERO_BASELINE_AXIS_METRICS = new Set(["pe", "pbr"]);
+
+function roundToStepPrecision(value, step) {
+  const digits = countFractionDigits(step);
+  return Number(value.toFixed(digits));
+}
+
+function countFractionDigits(value) {
+  if (!Number.isFinite(value) || value <= 0) { return 0; }
+  let normalized = value;
+  let digits = 0;
+  while (digits < 6 && Math.abs(normalized - Math.round(normalized)) > 1e-8) {
+    normalized *= 10;
+    digits += 1;
+  }
+  return digits;
+}
+
+function niceStep(rawStep) {
+  if (!Number.isFinite(rawStep) || rawStep <= 0) { return 1; }
+  const exponent = Math.floor(Math.log10(rawStep));
+  const base = 10 ** exponent;
+  const normalized = rawStep / base;
+
+  if (normalized <= 1) { return 1 * base; }
+  if (normalized <= 2) { return 2 * base; }
+  if (normalized <= 5) { return 5 * base; }
+  return 10 * base;
+}
+
+function buildLinearTicks(minValue, maxValue, tickStep) {
+  const ticks = [];
+  const epsilon = tickStep / 1000;
+  for (let value = minValue; value <= maxValue + epsilon; value += tickStep) {
+    ticks.push(roundToStepPrecision(value, tickStep));
+  }
+  if (ticks.length === 0 || Math.abs(ticks[ticks.length - 1] - maxValue) > epsilon) {
+    ticks.push(roundToStepPrecision(maxValue, tickStep));
+  }
+  return ticks;
+}
+
+function computeAxisConfig(metricKey, minValue, maxValue) {
+  // PER/PBR read better when the viewer can anchor the band to zero.
+  if (ZERO_BASELINE_AXIS_METRICS.has(metricKey)) {
+    const yMin = 0;
+    const rawStep = Math.max(maxValue - yMin, 1e-6) / 5;
+    const tickStep = niceStep(rawStep);
+    const yMax = Math.max(tickStep, roundToStepPrecision(Math.ceil(maxValue / tickStep) * tickStep, tickStep));
+    return {
+      yMin,
+      yMax,
+      tickStep,
+      ticks: buildLinearTicks(yMin, yMax, tickStep),
+      labelDigits: countFractionDigits(tickStep),
+    };
+  }
+
+  const range = maxValue - minValue || 1;
+  const padding = range * 0.08;
+  const yMin = minValue - padding;
+  const yMax = maxValue + padding;
+  const tickStep = (yMax - yMin) / 5;
+  return {
+    yMin,
+    yMax,
+    tickStep,
+    ticks: buildLinearTicks(yMin, yMax, tickStep),
+    labelDigits: 1,
+  };
+}
+
 function appendSuffixToPath(targetPath, suffix) {
   const ext = path.extname(targetPath);
   if (ext) { return `${targetPath.slice(0, -ext.length)}-${suffix}${ext}`; }
@@ -572,17 +644,13 @@ function buildValuationChart(data, metricKey, label, pngPath, options) {
   const maxValue = Math.max(...values);
   const medianValue = median(values);
   const pctile = percentileRank(values, current);
+  const axis = computeAxisConfig(metricKey, minValue, maxValue);
 
   // Layout constants
   const margin = { top: 100, right: 100, bottom: 80, left: 100 };
   const plotWidth = width - margin.left - margin.right;
   const plotHeight = height - margin.top - margin.bottom;
-
-  // Value range with 8% padding
-  const range = maxValue - minValue || 1;
-  const padding = range * 0.08;
-  const yMin = minValue - padding;
-  const yMax = maxValue + padding;
+  const { yMin, yMax } = axis;
 
   // Theme
   const theme = {
@@ -628,17 +696,16 @@ function buildValuationChart(data, metricKey, label, pngPath, options) {
   legendX = drawLegendItem(buf, width, height, legendX, legendY, theme.medianLine, "Median");
   drawLegendItem(buf, width, height, legendX, legendY, theme.bandFill, "Min/Max Band");
 
-  // Y-axis ticks (5 ticks)
-  const yTickCount = 5;
-  for (let i = 0; i <= yTickCount; i += 1) {
-    const val = yMin + ((yMax - yMin) * i) / yTickCount;
+  // Y-axis ticks
+  for (let i = 0; i < axis.ticks.length; i += 1) {
+    const val = axis.ticks[i];
     const y = valueToY(val, yMin, yMax, margin.top, plotHeight);
     // Grid line
-    if (i > 0 && i < yTickCount) {
+    if (i > 0 && i < axis.ticks.length - 1) {
       drawDashedLine(buf, width, height, margin.left + 1, Math.round(y), margin.left + plotWidth - 1, Math.round(y), theme.grid, 1, 4, 4);
     }
     // Label
-    drawText(buf, width, height, margin.left - 8, Math.round(y) - 7, formatNumber(val), theme.textLight, 2, "right");
+    drawText(buf, width, height, margin.left - 8, Math.round(y) - 7, formatNumber(val, axis.labelDigits), theme.textLight, 2, "right");
   }
 
   // X-axis ticks
