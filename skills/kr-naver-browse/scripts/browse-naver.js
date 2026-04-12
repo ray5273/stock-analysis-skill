@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-// Reusable Naver browse helpers. No external deps — Node stdlib only.
+// Reusable Naver browse helpers. Node stdlib only.
 //
-// Other KR Naver skills (kr-naver-blogger, kr-naver-insight) `require()` this
-// module. It wraps the gstack `browse` binary and encodes Naver-specific URL
+// Other KR Naver skills (kr-naver-blogger, kr-naver-insight) require this
+// module. It wraps the gstack browse binary and encodes Naver-specific URL
 // patterns that are known to render text in headless mode.
 
 const fs = require("fs");
@@ -24,28 +24,54 @@ let lastRequestAt = 0;
 // Binary resolution
 // ---------------------------------------------------------------------------
 
+function executableCandidates(baseName) {
+  if (process.platform === "win32") {
+    return [`${baseName}.exe`, `${baseName}.cmd`, `${baseName}.bat`, baseName];
+  }
+  return [baseName];
+}
+
+function firstExecutableInDir(dirPath, baseName) {
+  if (!dirPath) return null;
+  for (const candidateName of executableCandidates(baseName)) {
+    const candidate = path.join(dirPath, candidateName);
+    if (!fs.existsSync(candidate)) continue;
+    if (process.platform === "win32") return candidate;
+    try {
+      fs.accessSync(candidate, fs.constants.X_OK);
+      return candidate;
+    } catch {
+      // keep looking
+    }
+  }
+  return null;
+}
+
 function resolveBrowseBinary() {
   if (cachedBin) return cachedBin;
 
-  const candidates = [];
   if (process.env.GSTACK_BROWSE_BIN) {
-    candidates.push(process.env.GSTACK_BROWSE_BIN);
-  }
-  candidates.push(path.join(os.homedir(), ".claude/skills/gstack/browse/dist/browse"));
-
-  for (const candidate of candidates) {
-    if (candidate && fs.existsSync(candidate)) {
-      try {
-        fs.accessSync(candidate, fs.constants.X_OK);
-        cachedBin = candidate;
-        return cachedBin;
-      } catch {
-        // not executable — keep looking
-      }
+    const explicit = path.resolve(process.env.GSTACK_BROWSE_BIN);
+    if (fs.existsSync(explicit)) {
+      cachedBin = explicit;
+      return cachedBin;
     }
   }
 
-  // Fall back to $PATH lookup, but only trust it if help text looks like gstack.
+  const candidateDirs = [
+    path.join(__dirname, "..", "vendor", "gstack", "browse", "dist"),
+    path.join(os.homedir(), ".codex", "skills", "gstack", "browse", "dist"),
+    path.join(os.homedir(), ".claude", "skills", "gstack", "browse", "dist"),
+  ];
+
+  for (const candidateDir of candidateDirs) {
+    const candidate = firstExecutableInDir(candidateDir, "browse");
+    if (candidate) {
+      cachedBin = candidate;
+      return cachedBin;
+    }
+  }
+
   try {
     const out = execFileSync("browse", ["--help"], {
       encoding: "utf8",
@@ -64,7 +90,8 @@ function resolveBrowseBinary() {
     "gstack browse binary not found. Install gstack with:\n" +
       "  git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack\n" +
       "  cd ~/.claude/skills/gstack && ./setup --team\n" +
-      "Or set GSTACK_BROWSE_BIN to an absolute path."
+      "Or reinstall kr-naver-browse so its post-install hook can bootstrap a local runtime,\n" +
+      "or set GSTACK_BROWSE_BIN to an absolute path."
   );
 }
 
@@ -82,7 +109,6 @@ function sleepSync(ms) {
       });
       return;
     } catch {
-      // fall back to busy wait; should rarely happen
       while (Date.now() < end) {
         /* spin */
       }
@@ -111,7 +137,7 @@ function runBrowse(args, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
   } catch (err) {
     const stderr = err.stderr ? err.stderr.toString("utf8") : "";
     const wrapped = new Error(
-      `browse ${args.join(" ")} failed: ${err.message}${stderr ? "\n" + stderr : ""}`
+      `browse ${args.join(" ")} failed: ${err.message}${stderr ? `\n${stderr}` : ""}`
     );
     wrapped.cause = err;
     throw wrapped;
@@ -121,7 +147,6 @@ function runBrowse(args, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
 function browseTextOnce(url, opts) {
   enforceRequestDelay();
   runBrowse(["goto", url], opts);
-  // Best-effort settle. Naver pages finish most text render on load.
   try {
     runBrowse(["wait", "--load"], { timeoutMs: 10_000 });
   } catch {
@@ -151,6 +176,38 @@ function browseText(url, opts = {}) {
   return text && text.length > 50 ? text : null;
 }
 
+function browseLinksOnce(url, opts) {
+  enforceRequestDelay();
+  runBrowse(["goto", url], opts);
+  try {
+    runBrowse(["wait", "--load"], { timeoutMs: 10_000 });
+  } catch {
+    // non-fatal
+  }
+  const raw = runBrowse(["links"], opts);
+  return raw ? raw.trim() : "";
+}
+
+function browseLinks(url, opts = {}) {
+  const normalized = normalizeNaverUrl(url);
+  let raw = "";
+  try {
+    raw = browseLinksOnce(normalized, opts);
+  } catch (err) {
+    if (opts.verbose) console.error(`[browse-naver] links first attempt failed: ${err.message}`);
+  }
+  if (raw && raw.length > 50) return raw;
+
+  sleepSync(EMPTY_RETRY_WAIT_MS);
+  try {
+    raw = browseLinksOnce(normalized, opts);
+  } catch (err) {
+    if (opts.verbose) console.error(`[browse-naver] links retry failed: ${err.message}`);
+    return null;
+  }
+  return raw && raw.length > 50 ? raw : null;
+}
+
 // ---------------------------------------------------------------------------
 // URL normalization
 // ---------------------------------------------------------------------------
@@ -159,7 +216,6 @@ function normalizeNaverUrl(url) {
   if (!url) return url;
   const trimmed = String(url).trim();
 
-  // blog.naver.com/<blogId>/<logNo>
   const pathMatch = trimmed.match(
     /^https?:\/\/(?:m\.)?blog\.naver\.com\/([A-Za-z0-9_-]+)\/(\d{6,})/
   );
@@ -168,7 +224,6 @@ function normalizeNaverUrl(url) {
     return `https://blog.naver.com/PostView.naver?blogId=${blogId}&logNo=${logNo}`;
   }
 
-  // m.blog.naver.com/PostView.naver?... → normalize to blog.naver.com
   if (/^https?:\/\/m\.blog\.naver\.com\//.test(trimmed)) {
     return trimmed.replace(/^https?:\/\/m\.blog\.naver\.com\//, "https://blog.naver.com/");
   }
@@ -180,20 +235,17 @@ function normalizeNaverUrl(url) {
 // Parsing helpers
 // ---------------------------------------------------------------------------
 
-// Parse the plain text returned by `browse text` on a Naver blog search page.
-// Naver's text extraction is ordered roughly as: title line, URL-ish line,
-// snippet, date line, repeat. We take a permissive approach — collect
-// blog.naver.com URLs and group each with the surrounding context.
 function parseNaverSearchResults(text) {
   if (!text) return [];
-  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  const urlRegex = /https?:\/\/(?:m\.)?blog\.naver\.com\/[A-Za-z0-9_?=&-]+/g;
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const urlRegex = /https?:\/\/(?:m\.)?blog\.naver\.com\/[A-Za-z0-9_?=&/-]+/g;
   const results = [];
   const seen = new Set();
 
   for (let i = 0; i < lines.length; i += 1) {
     const matches = lines[i].match(urlRegex);
     if (!matches) continue;
+
     for (const raw of matches) {
       const normalized = normalizeNaverUrl(raw);
       if (seen.has(normalized)) continue;
@@ -208,7 +260,7 @@ function parseNaverSearchResults(text) {
       for (let j = i - 1; j >= Math.max(0, i - 3); j -= 1) {
         const candidate = lines[j];
         if (!candidate) continue;
-        if (urlRegex.test(candidate)) continue;
+        if (/https?:\/\/(?:m\.)?blog\.naver\.com\//.test(candidate)) continue;
         if (candidate.length < 4) continue;
         title = candidate;
         break;
@@ -218,7 +270,7 @@ function parseNaverSearchResults(text) {
       for (let j = i + 1; j <= Math.min(lines.length - 1, i + 3); j += 1) {
         const candidate = lines[j];
         if (!candidate) continue;
-        if (urlRegex.test(candidate)) continue;
+        if (/https?:\/\/(?:m\.)?blog\.naver\.com\//.test(candidate)) continue;
         if (candidate.length < 10) continue;
         snippet = candidate;
         break;
@@ -230,17 +282,18 @@ function parseNaverSearchResults(text) {
         url: normalized,
         title,
         snippet,
-        date: dateMatch ? `${dateMatch[1]}-${dateMatch[2].padStart(2, "0")}-${dateMatch[3].padStart(2, "0")}` : null,
+        date: dateMatch
+          ? `${dateMatch[1]}-${dateMatch[2].padStart(2, "0")}-${dateMatch[3].padStart(2, "0")}`
+          : null,
       });
     }
   }
   return results;
 }
 
-// Parse a blogger's PostList page into an array of {logNo, title, date}.
 function parsePostList(text) {
   if (!text) return [];
-  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const results = [];
   const seen = new Set();
 
@@ -258,6 +311,7 @@ function parsePostList(text) {
         break;
       }
     }
+
     const ctx = lines.slice(Math.max(0, i - 2), Math.min(lines.length, i + 3)).join(" ");
     const dateMatch = ctx.match(/\b(20\d{2})[./-](\d{1,2})[./-](\d{1,2})\b/);
 
@@ -272,16 +326,46 @@ function parsePostList(text) {
   return results;
 }
 
-// Extract title/date/body from a Naver PostView page text dump.
+// Parse the `browse links` output from a blogger's PostList page.
+// Each line looks like: "Post title → https://blog.naver.com/PostView.naver?blogId=...&logNo=..."
+function parsePostListFromLinks(linksText) {
+  if (!linksText) return [];
+  const lines = linksText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const results = [];
+  const seen = new Set();
+
+  for (const line of lines) {
+    const logNoMatch = line.match(/logNo=(\d{6,})/);
+    if (!logNoMatch) continue;
+    const logNo = logNoMatch[1];
+    if (seen.has(logNo)) continue;
+    seen.add(logNo);
+
+    const arrowIdx = line.indexOf(" → ");
+    const title = arrowIdx > 0 ? line.slice(0, arrowIdx).trim() : "";
+    if (!title || title.length < 4) continue;
+
+    const dateMatch = line.match(/\b(20\d{2})[./-](\d{1,2})[./-](\d{1,2})\b/);
+
+    results.push({
+      logNo,
+      title,
+      date: dateMatch
+        ? `${dateMatch[1]}-${dateMatch[2].padStart(2, "0")}-${dateMatch[3].padStart(2, "0")}`
+        : null,
+    });
+  }
+  return results;
+}
+
 function parsePostView(text) {
   if (!text) return null;
-  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 
-  // Title heuristic: first non-URL, non-nav line that's 4+ chars.
   let title = "";
   for (const line of lines.slice(0, 30)) {
     if (/^https?:/.test(line)) continue;
-    if (/^(홈|카테고리|이웃|방문|메뉴|공유|URL|신고)/.test(line)) continue;
+    if (/^(Category|Menu|URL|Share|Copy URL|Advertisement)/i.test(line)) continue;
     if (line.length >= 4 && line.length <= 120) {
       title = line;
       break;
@@ -293,17 +377,50 @@ function parsePostView(text) {
     ? `${dateMatch[1]}-${dateMatch[2].padStart(2, "0")}-${dateMatch[3].padStart(2, "0")}`
     : null;
 
-  // Body heuristic: drop boilerplate, cap length.
-  const BOILERPLATE = /^(본문\s?기타 기능|카테고리 이동|검색|이웃|방문|구독|공유|URL 복사|신고|댓글|태그|공감|좋아요)/;
+  const boilerplate = /^(Category|Menu|Share|Copy URL|Advertisement|URL)$/i;
   const body = lines
-    .filter((l) => !/^https?:/.test(l))
-    .filter((l) => !BOILERPLATE.test(l))
+    .filter((line) => !/^https?:/.test(line))
+    .filter((line) => !boilerplate.test(line))
     .join("\n")
     .trim();
 
-  const truncated = body.length > POST_TEXT_TRUNCATE ? body.slice(0, POST_TEXT_TRUNCATE) + "…" : body;
+  const truncated =
+    body.length > POST_TEXT_TRUNCATE ? `${body.slice(0, POST_TEXT_TRUNCATE)}...` : body;
 
   return { title, date, text: truncated };
+}
+
+function parseNaverSearchLinks(linksText) {
+  if (!linksText) return [];
+  const lines = linksText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const blogUrlRegex = /https?:\/\/(?:m\.)?blog\.naver\.com\/([A-Za-z0-9_-]+)\/(\d{6,})/;
+  const results = [];
+  const seen = new Set();
+
+  for (const line of lines) {
+    const match = line.match(blogUrlRegex);
+    if (!match) continue;
+    const [, blogId, logNo] = match;
+    const normalized = `https://blog.naver.com/PostView.naver?blogId=${blogId}&logNo=${logNo}`;
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+
+    const urlIndex = line.indexOf("http");
+    const title = urlIndex > 0 ? line.slice(0, urlIndex).replace(/\s+[-–>]+$/, "").trim() : "";
+    const dateMatch = line.match(/\b(20\d{2})[./-](\d{1,2})[./-](\d{1,2})\b/);
+
+    results.push({
+      blogId,
+      logNo,
+      url: normalized,
+      title: title.length >= 4 ? title : "",
+      snippet: "",
+      date: dateMatch
+        ? `${dateMatch[1]}-${dateMatch[2].padStart(2, "0")}-${dateMatch[3].padStart(2, "0")}`
+        : null,
+    });
+  }
+  return results;
 }
 
 // ---------------------------------------------------------------------------
@@ -313,15 +430,28 @@ function parsePostView(text) {
 function searchNaverBlog(query, { max = 10 } = {}) {
   const encoded = encodeURIComponent(query);
   const url = `https://search.naver.com/search.naver?where=blog&query=${encoded}`;
+
+  const linksRaw = browseLinks(url);
+  if (linksRaw) {
+    const fromLinks = parseNaverSearchLinks(linksRaw);
+    if (fromLinks.length > 0) return fromLinks.slice(0, max);
+  }
+
   const text = browseText(url);
   if (!text) return [];
-  const parsed = parseNaverSearchResults(text);
-  return parsed.slice(0, max);
+  return parseNaverSearchResults(text).slice(0, max);
 }
 
 function readBlogPostList(blogId, { max = 20 } = {}) {
   if (!blogId) return [];
   const url = `https://blog.naver.com/PostList.naver?blogId=${encodeURIComponent(blogId)}&categoryNo=0&from=postList`;
+
+  const linksRaw = browseLinks(url);
+  if (linksRaw) {
+    const fromLinks = parsePostListFromLinks(linksRaw);
+    if (fromLinks.length > 0) return fromLinks.slice(0, max);
+  }
+
   const text = browseText(url);
   if (!text) return [];
   return parsePostList(text).slice(0, max);
@@ -350,19 +480,19 @@ function runSmokeTest() {
     process.exit(1);
   }
 
-  const query = "엘앤에프 투자";
+  const query = "현대오토에버 주가";
   console.log(`Searching Naver blogs for: ${query}`);
   const results = searchNaverBlog(query, { max: 3 });
   if (!results.length) {
     console.error("No results returned. Either Naver blocked the request or the parser needs work.");
     process.exit(1);
   }
-  for (const r of results) {
-    console.log(`- [${r.blogId || "?"}] ${r.title || "(no title)"}`);
-    console.log(`  ${r.url}`);
-    if (r.date) console.log(`  date: ${r.date}`);
+  for (const result of results) {
+    console.log(`- [${result.blogId || "?"}] ${result.title || "(no title)"}`);
+    console.log(`  ${result.url}`);
+    if (result.date) console.log(`  date: ${result.date}`);
   }
-  console.log(`OK — ${results.length} result(s).`);
+  console.log(`OK - ${results.length} result(s).`);
 }
 
 if (require.main === module) {
@@ -370,7 +500,7 @@ if (require.main === module) {
   if (args.includes("--test")) {
     runSmokeTest();
   } else {
-    console.log("browse-naver.js — Naver blog browse helpers.");
+    console.log("browse-naver.js - Naver blog browse helpers.");
     console.log("Usage: node browse-naver.js --test");
     console.log("This module is designed to be required by other skills.");
   }
@@ -379,11 +509,14 @@ if (require.main === module) {
 module.exports = {
   resolveBrowseBinary,
   browseText,
+  browseLinks,
   searchNaverBlog,
   readBlogPostList,
   readBlogPost,
   normalizeNaverUrl,
   parseNaverSearchResults,
+  parseNaverSearchLinks,
   parsePostList,
+  parsePostListFromLinks,
   parsePostView,
 };

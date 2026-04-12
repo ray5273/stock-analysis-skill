@@ -8,7 +8,7 @@ const path = require("path");
 
 const browseNaver = require("../../kr-naver-browse/scripts/browse-naver.js");
 
-const DEFAULT_MIN_POSTS = 3;
+const DEFAULT_MIN_POSTS = 1;
 const DEFAULT_MAX_CANDIDATES = 10;
 const DEFAULT_CACHE_DIR = ".tmp/naver-blog-cache";
 
@@ -86,7 +86,13 @@ function dedupeBlogIds(searchResults) {
   const byId = new Map();
   for (const r of searchResults) {
     if (!r.blogId) continue;
-    if (!byId.has(r.blogId)) byId.set(r.blogId, r);
+    if (!byId.has(r.blogId)) {
+      byId.set(r.blogId, { ...r, searchHitCount: 1, searchHits: [r] });
+    } else {
+      const existing = byId.get(r.blogId);
+      existing.searchHitCount += 1;
+      existing.searchHits.push(r);
+    }
   }
   return byId;
 }
@@ -148,38 +154,47 @@ function discover(opts) {
   }
 
   const candidateMap = dedupeBlogIds(allResults);
-  const candidates = Array.from(candidateMap.keys()).slice(0, opts.maxCandidates);
+  // Rank candidates by search-hit count first (primary signal of coverage depth).
+  const candidates = Array.from(candidateMap.values())
+    .sort((a, b) => b.searchHitCount - a.searchHitCount)
+    .slice(0, opts.maxCandidates)
+    .map((c) => c.blogId);
 
   const bloggers = [];
   let skipped = 0;
   for (const blogId of candidates) {
     if (opts.verbose) console.error(`[evaluate] ${blogId}`);
+    const entry = candidateMap.get(blogId);
+    const searchHitCount = entry ? entry.searchHitCount : 0;
+
     let posts = [];
     try {
       posts = browseNaver.readBlogPostList(blogId, { max: 20 });
     } catch (err) {
       console.error(`[postlist-failed] ${blogId}: ${err.message}`);
-      skipped += 1;
-      continue;
-    }
-    if (!posts.length) {
-      skipped += 1;
-      continue;
     }
 
-    const relevant = posts.filter((p) => mentionsCompany(p.title, opts.company, opts.ticker));
+    const relevantInPostList = posts.filter((p) =>
+      mentionsCompany(p.title, opts.company, opts.ticker)
+    );
+    // Combined signal: search-hit count + relevant posts from PostList scan.
+    // Search hits are capped at a date window and may under-represent dedicated
+    // bloggers whose posts rotate off the first page, so we take the max.
+    const relevantPostCount = Math.max(searchHitCount, relevantInPostList.length);
     const latestPostDate = posts
       .map((p) => p.date)
       .filter(Boolean)
       .sort()
-      .slice(-1)[0] || null;
+      .slice(-1)[0] || entry?.date || null;
 
     bloggers.push({
       blogId,
       displayName: null,
       blogTitle: null,
       subscriberCount: null,
-      relevantPostCount: relevant.length,
+      relevantPostCount,
+      searchHitCount,
+      postListRelevant: relevantInPostList.length,
       latestPostDate,
       categories: [],
       profileSnippet: null,
