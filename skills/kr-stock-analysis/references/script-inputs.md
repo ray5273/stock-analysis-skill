@@ -68,6 +68,43 @@ Expected input:
 }
 ```
 
+## `scripts/build-kr-universe-rs-cache.js`
+
+Run:
+
+```text
+node scripts/build-kr-universe-rs-cache.js --date 2026-04-11
+```
+
+Use this when a memo needs an integrated `KOSPI + KOSDAQ` relative-strength percentile cache for `Minervini Trend Template` or the Korean leadership score.
+
+Default output path:
+
+```text
+.tmp/kr-rs-cache/<YYYY-MM-DD>.json
+```
+
+The cache stores one entry per included ticker with `return63`, `return126`, `return252`, `rsRawScore`, and `rsPercentile`.
+
+## `scripts/kr-trend-rules.js`
+
+Run:
+
+```text
+node scripts/kr-trend-rules.js --input <path-to-chart-json> --rs-cache .tmp/kr-rs-cache/2026-04-11.json [--json-out rules.json]
+```
+
+Use this after `fetch-kr-chart.js` and `build-kr-universe-rs-cache.js` when the memo needs a `### Rule Screen` block.
+
+The markdown output includes:
+
+- `Minervini Trend Template` pass/fail or `incomplete`
+- `KRX 52주 신고가 리더십 점수`
+- a detailed rule-status table
+- a 2-3 sentence interpretation
+
+If the RS cache is missing or the input lacks enough 252-trading-day history, the script keeps Minervini as `incomplete` and the Korean score as `partial`.
+
 ## `scripts/valuation-bands.js`
 
 Run:
@@ -122,7 +159,7 @@ Run:
 node scripts/valuation-chart.js --input <path-to-json> --png-out <path-to-png> [--image-path <markdown-image-path>] [--width 1200] [--height 800]
 ```
 
-Generates time-series PNG charts for P/E, P/B, and EV/EBITDA valuation bands. Each chart shows the historical line, min/max shaded band, and median dashed line.
+Generates time-series PNG charts for P/E, P/B, and EV/EBITDA valuation bands. Each chart shows the historical line, min/max shaded band, and median dashed line. `P/E` and `P/B` now anchor the y-axis at `0` and choose a readable tick interval automatically from the data range.
 
 When `--png-out` is set, the script writes separate PNG files with suffixes `-per`, `-pbr`, and `-evEbitda` before the extension. The markdown output references all generated images.
 

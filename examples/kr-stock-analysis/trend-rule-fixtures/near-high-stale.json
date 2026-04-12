@@ -1,0 +1,9 @@
+{
+  "scenario": "near-high-stale",
+  "ticker": "222222.KS",
+  "name": "Near High Stale",
+  "expected": {
+    "minervini": "fail",
+    "leadershipGrade": "D"
+  }
+}

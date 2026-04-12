@@ -1,0 +1,9 @@
+{
+  "scenario": "rebound-from-lows",
+  "ticker": "333333.KQ",
+  "name": "Rebound From Lows",
+  "expected": {
+    "minervini": "fail",
+    "leadershipGrade": "D"
+  }
+}

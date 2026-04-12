@@ -1,0 +1,9 @@
+{
+  "scenario": "weak-breakout-no-volume",
+  "ticker": "444444.KQ",
+  "name": "Weak Breakout No Volume",
+  "expected": {
+    "minervini": "pass",
+    "leadershipGrade": "A"
+  }
+}
