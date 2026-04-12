@@ -2,6 +2,12 @@
 
 기준일: 2026-04-06
 
+## Decision Frame
+
+- 현재 판단: `좋은 회사지만 지금 가격은 보수적으로 접근`.
+- 지금 가장 중요한 질문: `backlog가 실제로 얼마나 빨리 매출과 현금으로 전환되는가`, `고객 및 지역 집중도 리스크가 얼마나 빨리 완화되는가`, `현재 주가가 옵션가치까지 얼마나 선반영했는가`.
+- 왜 아직 바로 강하게 못 가는가: 본업과 backlog는 강하지만 valuation이 이미 높은 기대를 상당 부분 반영하고 있다.
+
 ## Summary
 
 LIG넥스원은 지금도 `좋은 방산 성장주`라는 판단이 맞다. audited DART 기준 2025년 매출 `4조 3,069억원`, 영업이익 `3,194억원`, 공식 backlog `26조 2,526억원`은 질적으로 강하다. 사업부도 `PGM 47.2%`에만 기대는 구조가 아니라 `C4I 24.7%`, `AEW 13.1%`가 같이 받쳐 주는 다축 성장이다.
@@ -119,13 +125,26 @@ backlog는 `26조 2,526억원`으로 크다. 숫자 자체는 매우 좋다. 다
 - trailing PER `69.8배`, P/B `12.46배`는 기대가 꺾일 때 밸류 압축이 클 수 있다
 - 옵션 사업이 실제 이익 기여로 이어지지 않으면 멀티플 정당화가 약해질 수 있다
 
-## What Would Change My Mind
+## Uncomfortable Questions
+
+- 시장은 backlog를 거의 현금처럼 취급하고 있는데, 실제로는 working capital과 현금회수 타이밍이 더 큰 변수 아닌가?
+- 고객 A와 B 집중도가 여전히 높은데, 지금 valuation은 그 의존도를 과소평가하고 있지 않은가?
+- 해외 매출 비중이 아직 20% 내외인데, 시장은 이미 글로벌 방산 prime처럼 가격을 매기고 있지 않은가?
+- MOU와 차세대 옵션 스토리가 실제 계약과 마진으로 연결되지 않으면 지금 멀티플은 얼마나 정당화되나?
+
+## Decision-Changing Issues
+
+1. backlog의 현금화 속도와 2026년 영업현금흐름 회복 여부.
+2. 고객 및 지역 집중도 완화의 실제 진전.
+3. 높은 멀티플을 정당화할 추가 해외 수주와 옵션 사업의 현실화.
+
+## Structured Stance
 
 더 좋아지려면 `backlog -> 매출 -> 현금` 전환이 실제로 개선돼야 한다. 즉 1Q26 이후에도 두 자릿수 성장과 함께 현금흐름이 따라와야 한다. 그리고 해외 매출 비중이 구조적으로 올라가면 현재 멀티플이 더 정당화될 수 있다.
 
 더 나빠지려면 세 가지면 충분하다. 고객집중 리스크가 실적 변동성으로 드러나거나, backlog는 큰데 현금이 계속 안 돌거나, 주가가 먼저 반영한 옵션 사업이 실제 계약으로 이어지지 않는 경우다.
 
-## Additional Research Questions
+## Follow-up Research Prompts
 
 - A고객과 B고객의 실질 정체는 어느 프로그램/고객군에 대응하는가?
   why it matters: 고객집중 리스크의 성격이 정부/수출/단일 프로그램 중 무엇인지가 다르다.
@@ -140,9 +159,9 @@ backlog는 `26조 2,526억원`으로 크다. 숫자 자체는 매우 좋다. 다
 
 ## Sources
 
-- DART 사업보고서 KRX 뷰어: `https://kind.krx.co.kr/external/2026/03/23/001725/20260323007318/11011.htm`
-- 정기주주총회 결과: `https://kind.krx.co.kr/external/2026/03/31/001667/20260320001823/91482.htm`
-- 2025년 4분기 영업(잠정) 실적 IR 페이지: `https://www.ligdefenseaerospace.com/eng/ir/irReportView.do?bbs_no=7326`
-- 팔란티어 MOU 회사소식: `https://www.ligdefenseaerospace.com/news/nex1newsView.do?bbs_no=7341`
-- 녹색경제신문 기사: `https://www.greened.kr/news/articleView.html?idxno=336500`
-- Yahoo Finance chart API: `https://query1.finance.yahoo.com/v8/finance/chart/079550.KS?range=1y&interval=1d`
+- [DART 사업보고서 KRX 뷰어](https://kind.krx.co.kr/external/2026/03/23/001725/20260323007318/11011.htm)
+- [정기주주총회 결과](https://kind.krx.co.kr/external/2026/03/31/001667/20260320001823/91482.htm)
+- [2025년 4분기 영업(잠정) 실적 IR 페이지](https://www.ligdefenseaerospace.com/eng/ir/irReportView.do?bbs_no=7326)
+- [팔란티어 MOU 회사소식](https://www.ligdefenseaerospace.com/news/nex1newsView.do?bbs_no=7341)
+- [녹색경제신문 기사](https://www.greened.kr/news/articleView.html?idxno=336500)
+- [Yahoo Finance chart API](https://query1.finance.yahoo.com/v8/finance/chart/079550.KS?range=1y&interval=1d)

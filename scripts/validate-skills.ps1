@@ -108,36 +108,96 @@ foreach ($skillDir in $skillDirs) {
         }
 
         $stockOutputFormat = [System.IO.File]::ReadAllText((Join-Path $repoRoot "skills\kr-stock-analysis\references\output-format.md"))
+        if (-not $stockOutputFormat.Contains("Decision Frame")) {
+            Write-Error "Expected full memo output format to include Decision Frame."
+        }
         if (-not $stockOutputFormat.Contains("DART Recheck")) {
             Write-Error "Expected full memo output format to include DART Recheck."
         }
         if (-not $stockOutputFormat.Contains("Street / Alternative Views")) {
             Write-Error "Expected full memo output format to include Street / Alternative Views."
         }
-        if (-not $stockOutputFormat.Contains("Additional Research Questions")) {
-            Write-Error "Expected full memo output format to include Additional Research Questions."
+        if (-not $stockOutputFormat.Contains("Uncomfortable Questions")) {
+            Write-Error "Expected full memo output format to include Uncomfortable Questions."
+        }
+        if (-not $stockOutputFormat.Contains("Decision-Changing Issues")) {
+            Write-Error "Expected full memo output format to include Decision-Changing Issues."
+        }
+        if (-not $stockOutputFormat.Contains("Structured Stance")) {
+            Write-Error "Expected full memo output format to include Structured Stance."
+        }
+        if (-not $stockOutputFormat.Contains("Follow-up Research Prompts")) {
+            Write-Error "Expected full memo output format to include Follow-up Research Prompts."
         }
 
         if (-not $skillMd.Contains("## Source Roles")) {
             Write-Error "Expected kr-stock-analysis skill rules to define source roles."
         }
-        if (-not $skillMd.Contains('For a `full memo`, add `Street / Alternative Views` before valuation and end with `Additional Research Questions`')) {
-            Write-Error "Expected kr-stock-analysis skill rules to scope Street / Alternative Views and Additional Research Questions to full memos."
+        if (-not $skillMd.Contains('For a `full memo`, lead with `Decision Frame`')) {
+            Write-Error "Expected kr-stock-analysis skill rules to scope Decision Frame to full memos."
+        }
+        if (-not $skillMd.Contains('references/uncomfortable-question-rubric.md')) {
+            Write-Error "Expected kr-stock-analysis skill rules to load the uncomfortable-question rubric."
+        }
+        $questionRubric = Join-Path $repoRoot "skills\kr-stock-analysis\references\uncomfortable-question-rubric.md"
+        if (-not (Test-Path -LiteralPath $questionRubric)) {
+            Write-Error "Expected kr-stock-analysis to ship an uncomfortable-question rubric reference."
+        }
+        $questionRubricText = [System.IO.File]::ReadAllText($questionRubric)
+        if (-not $questionRubricText.Contains("Archetype: Captive IT Services / SI / Digital Transformation")) {
+            Write-Error "Expected uncomfortable-question rubric to include the captive IT services archetype."
         }
 
         $reportSamples = Get-ChildItem -Path (Join-Path $repoRoot "analysis-example\kr") -Recurse -Filter "memo.md" |
+            Where-Object {
+                [System.IO.File]::ReadAllText($_.FullName, [System.Text.Encoding]::UTF8).Contains("## Decision Frame")
+            } |
             Select-Object -First 3 -ExpandProperty FullName
         if ($reportSamples.Count -lt 3) {
             Write-Error "Expected at least three stock memo examples under analysis-example\\kr."
         }
         foreach ($reportSample in $reportSamples) {
             $reportText = [System.IO.File]::ReadAllText($reportSample, [System.Text.Encoding]::UTF8)
+            if (-not $reportText.Contains("## Decision Frame")) {
+                Write-Error "Expected stock memo example to include Decision Frame: $reportSample"
+            }
             if (-not $reportText.Contains("## Street / Alternative Views")) {
                 Write-Error "Expected stock memo example to include Street / Alternative Views: $reportSample"
             }
-            if (-not $reportText.Contains("## Additional Research Questions")) {
-                Write-Error "Expected stock memo example to include Additional Research Questions: $reportSample"
+            if (-not $reportText.Contains("## Uncomfortable Questions")) {
+                Write-Error "Expected stock memo example to include Uncomfortable Questions: $reportSample"
             }
+            if (-not $reportText.Contains("## Decision-Changing Issues")) {
+                Write-Error "Expected stock memo example to include Decision-Changing Issues: $reportSample"
+            }
+            if (-not $reportText.Contains("## Structured Stance")) {
+                Write-Error "Expected stock memo example to include Structured Stance: $reportSample"
+            }
+            if (-not $reportText.Contains("## Follow-up Research Prompts")) {
+                Write-Error "Expected stock memo example to include Follow-up Research Prompts: $reportSample"
+            }
+        }
+    }
+
+    if ($skillDir.Name -eq "kr-stock-plan") {
+        $planOutputFormat = [System.IO.File]::ReadAllText((Join-Path $skillDir.FullName "references\output-format.md"))
+        if (-not $skillMd.Contains("analysis-example/kr/<company>/memo.md")) {
+            Write-Error "Expected kr-stock-plan rules to define memo.md as the canonical artifact."
+        }
+        if (-not $skillMd.Contains("memo-only")) {
+            Write-Error "Expected kr-stock-plan rules to distinguish memo-only follow-ups."
+        }
+        if (-not $skillMd.Contains("refresh-needed")) {
+            Write-Error "Expected kr-stock-plan rules to distinguish refresh-needed follow-ups."
+        }
+        if (-not $planOutputFormat.Contains("Planning only vs execute now:")) {
+            Write-Error "Expected kr-stock-plan output format to distinguish planning-only mode."
+        }
+        if (-not $planOutputFormat.Contains("Canonical memo path:")) {
+            Write-Error "Expected kr-stock-plan output format to include the canonical memo path."
+        }
+        if (-not $planOutputFormat.Contains('Follow-up classification (`memo-only` or `refresh-needed`):')) {
+            Write-Error "Expected kr-stock-plan output format to include follow-up classification."
         }
     }
 
@@ -379,10 +439,11 @@ if ($sectorExampleCount -lt 2) {
     Write-Error "Expected at least two sector example markdown files under $sectorExampleRoot"
 }
 
-$memoFiles = Get-ChildItem -Path (Join-Path $repoRoot "analysis-example\kr") -Directory | ForEach-Object {
-    $memoFile = Join-Path $_.FullName "memo.md"
-    if (Test-Path $memoFile) { $memoFile }
-}
+$memoFiles = Get-ChildItem -Path (Join-Path $repoRoot "analysis-example\kr") -Recurse -Filter "memo.md" |
+    Where-Object {
+        [System.IO.File]::ReadAllText($_.FullName, [System.Text.Encoding]::UTF8).Contains("## Decision Frame")
+    } |
+    Select-Object -ExpandProperty FullName
 foreach ($memoFile in $memoFiles) {
     $memoCompany = Split-Path -Leaf (Split-Path -Parent $memoFile)
     Write-Host "Quality gate: $memoCompany"

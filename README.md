@@ -11,25 +11,25 @@ Included skills:
 
 Korean stock workflow shorthand: `kr-stock-plan -> kr-stock-dart-analysis -> kr-stock-data-pack -> kr-stock-analysis`
 
-`kr-stock-plan` should act as the entry-point orchestrator: if the user starts there and did not explicitly ask for `plan only`, it should ask a short needs check, build the brief, and continue through the downstream skills automatically.
+`kr-stock-plan` should act as the entry-point orchestrator: if the user starts there and did not explicitly ask for `plan only`, it should ask a short needs check, build the brief, decide whether this is a fresh memo, follow-up, or dated update, and continue through the downstream skills automatically.
 
 Suggested handoff prompt:
 
 ```text
-Use $kr-stock-plan as the entry point for Korean stock work. Have it first ask what the user actually needs, scope the request, route through $kr-stock-dart-analysis when filing precision matters, then build the dated fact base with $kr-stock-data-pack, and finish with $kr-stock-analysis unless the user explicitly asks to stop after planning.
+Use $kr-stock-plan as the entry point for Korean stock work. Have it first ask what the user actually needs, scope the request, treat my main question as the priority lens, route through $kr-stock-dart-analysis when filing precision matters, then build the dated fact base with $kr-stock-data-pack, and finish with $kr-stock-analysis unless the user explicitly asks to stop after planning.
 ```
 
 Concrete example:
 
 ```text
-Use $kr-stock-plan as the entry point for LG CNS. First ask what the user actually needs, scope it into a 12-24 month full memo, route through $kr-stock-dart-analysis if the latest filing basis, segment detail, backlog, or contract disclosures are important, then use $kr-stock-data-pack to assemble dated price, governance, valuation, chart, and outside-view inputs, and finish with $kr-stock-analysis for the final memo.
+Use $kr-stock-plan as the entry point for LG CNS. First ask what the user actually needs, scope it into a 12-24 month full decision memo, route through $kr-stock-dart-analysis if the latest filing basis, segment detail, backlog, or contract disclosures are important, then use $kr-stock-data-pack to assemble dated price, governance, valuation, chart, and outside-view inputs, and finish with $kr-stock-analysis for the final memo.
 ```
 
 - `us-stock-analysis` for U.S. stocks and U.S.-listed ETFs
-- `kr-stock-plan` for scoping Korean stock research into an execution-ready brief
+- `kr-stock-plan` for scoping Korean stock research into an execution-ready brief and acting as the default entry-point orchestrator for fresh memos, follow-up questions, and dated updates
 - `kr-stock-dart-analysis` for precise DART filing extraction before broader Korean stock interpretation
 - `kr-stock-data-pack` for gathering structured company fact packs before drafting, including optional outside-view inputs
-- `kr-stock-analysis` for Korean stock quick views, full memos, event notes, pair compares, street or alternative views in full memos, and follow-up research questions
+- `kr-stock-analysis` for Korean stock quick views, full decision memos, event notes, pair compares, archetype-specific uncomfortable questions, decision-changing issues, structured stance, and follow-up research prompts
 - `kr-stock-update` for dated follow-up updates to an existing Korean stock memo
 - `kr-portfolio-monitor` for multi-position KRX portfolio snapshots via Kiwoom REST API or Yahoo fallback
 - `kr-sector-plan` for scoping Korea sector research into an execution-ready brief
@@ -87,12 +87,13 @@ Primary instructions:
 
 Current behavior:
 
-1. `kr-stock-plan` now starts with a short user-needs check, converts a vague Korean stock request into a clear security definition, output mode, key questions, and a recommended workflow, and should continue into the downstream skills automatically unless the user asked for planning only.
+1. `kr-stock-plan` now starts with a short user-needs check, converts a vague Korean stock request into a clear security definition, output mode, key questions, and a recommended workflow, classifies the task as fresh memo versus follow-up versus dated update, and should continue into the downstream skills automatically unless the user asked for planning only.
 2. `kr-stock-dart-analysis` acts as the filing-precision stage when the work depends on exact DART-backed result, segment, customer, backlog, contract, or disclosure wording detail, and should first ask a short filing-needs check when the target slice is still unclear.
    For long annual filings, it should also keep a `dart-reference.md` digest and `dart-cache.json` coverage cache so later updates can reuse section-level verification instead of re-reading the entire filing blindly.
    When the filing supports a broader stock memo, it should also run a DART recheck loop for thesis-critical claims instead of treating deep verification as optional.
 3. `kr-stock-data-pack` collects dated price context, filings, results, governance facts, valuation inputs, chart inputs, and optional outside-view inputs before drafting, and should first confirm which pack blocks the user actually wants when that is not already defined.
 4. `kr-stock-analysis` writes the final output as a `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, or `pair compare` for KRX-listed companies, and should first confirm the final decision frame or section priorities when they are still ambiguous.
+   Full memos now behave like decision memos: they lead with `Decision Frame`, then surface `Uncomfortable Questions`, `Decision-Changing Issues`, `Structured Stance`, and `Follow-up Research Prompts` as fixed headers.
 5. `kr-stock-update` preserves the original memo date, refreshes `최근 업데이트일`, and appends or replaces dated follow-up blocks under `## Update Log`.
 6. `kr-stock-analysis` chart output now defaults to a three-chart view so price action is easier to read: one main PNG for `OHLC candlesticks + close line + MA5/20/60/120 + volume`, one overlay PNG for `Bollinger + Ichimoku + RSI14`, and one momentum PNG for `MACD + signal + histogram + ADX/DMI`.
 
@@ -100,7 +101,8 @@ Recommended pipeline:
 
 ```text
 kr-stock-plan
-  -> ask user needs, then lock security, mode, and must-answer questions
+  -> ask user needs, then lock security, mode, must-answer questions, and the user's priority question
+  -> decide fresh memo vs follow-up vs dated update
   -> if filing precision matters: kr-stock-dart-analysis
   -> kr-stock-data-pack
   -> kr-stock-analysis
@@ -108,10 +110,10 @@ kr-stock-plan
 
 Routing guide:
 
-- Start with `kr-stock-plan` when the request is still ambiguous on ticker, share class, horizon, compare mode, or deliverable shape. If the user started there for actual analysis work, continue automatically after the brief instead of waiting for another manual skill call.
+- Start with `kr-stock-plan` when the request is still ambiguous on ticker, share class, horizon, compare mode, deliverable shape, or whether the user wants a fresh memo versus a follow-up. If the user started there for actual analysis work, continue automatically after the brief instead of waiting for another manual skill call.
 - Insert `kr-stock-dart-analysis` when the conclusion depends on exact DART wording, standalone-quarter derivation, segment detail, customer concentration, backlog, or contract disclosures.
 - Use `kr-stock-data-pack` to assemble the dated fact base around price, governance, valuation, chart, and outside-view inputs.
-- Finish with `kr-stock-analysis` for the final memo, event note, quick view, or pair compare.
+- Finish with `kr-stock-analysis` for the final memo, event note, quick view, or pair compare. For full memos, keep `analysis-example/kr/<company>/memo.md` as the canonical state artifact for later follow-up work.
 
 Bundled helpers:
 
@@ -119,6 +121,8 @@ Bundled helpers:
 - `scripts/chart-basics.js` for technical reads plus three-part PNG chart output that separates the main trend view, the heavier overlays, and momentum panels for `MACD` and `ADX/DMI`
 - `scripts/chart-basics.js` now draws KR main charts with candlesticks, a close line, and a current-price guide, and uses Korean chart labels when a Hangul-capable local font is available
 - `scripts/chart-basics.js` writes the requested `--png-out` path as the main trend chart and writes sibling `*-overlay.png` and `*-momentum.png` files for the heavier indicator and momentum views
+- `scripts/build-kr-universe-rs-cache.js` for integrated `KOSPI + KOSDAQ` relative-strength percentile cache files under `.tmp/kr-rs-cache/<YYYY-MM-DD>.json`
+- `scripts/kr-trend-rules.js` for `Minervini Trend Template` pass/fail plus `KRX 52주 신고가 리더십 점수` markdown blocks that can be embedded in the memo's `Chart and Positioning` section
 - `scripts/valuation-bands.js` for 3-5 year valuation band summaries
 - `scripts/peer-valuation.js` for comparable-company valuation tables
 - `skills/kr-stock-dart-analysis/scripts/extract-dart-sections.js` for building a section index from a text export of a DART filing
@@ -239,7 +243,7 @@ Use $us-stock-analysis for NVDA and write a dated investment memo with valuation
 ```
 
 ```text
-Use $kr-stock-plan as the entry point for 064400.KS. First ask what I actually need, lock the ticker, share class, horizon, output mode, and key questions, then continue through the downstream Korean stock workflow automatically unless I ask for plan only.
+Use $kr-stock-plan as the entry point for 064400.KS. First ask what I actually need, lock the ticker, share class, horizon, output mode, and key questions, treat my main question as the priority lens, then continue through the downstream Korean stock workflow automatically unless I ask for plan only.
 ```
 
 ```text
@@ -263,7 +267,7 @@ Use $kr-stock-data-pack for LG CNS and gather a dated company fact pack with pri
 ```
 
 ```text
-Use $kr-stock-analysis for 005930.KS and write an analysis with DART-based evidence, street or alternative views, valuation, governance checks, catalysts, chart context, and follow-up research questions.
+Use $kr-stock-analysis for 005930.KS and write a decision memo with DART-based evidence, street or alternative views, valuation, governance checks, catalysts, chart context, archetype-specific uncomfortable questions, decision-changing issues, structured stance, and follow-up research prompts.
 ```
 
 ```text
@@ -305,7 +309,7 @@ Use $kr-sector-update to update analysis-example/kr-sector/국내 데이터센�
 ```
 
 ```text
-/kr-stock-plan use 064400.KS as the entry point, ask what I actually need first, lock the ticker, share class, horizon, output mode, and key questions, then continue through the downstream Korean stock workflow automatically unless I ask for plan only.
+/kr-stock-plan use 064400.KS as the entry point, ask what I actually need first, lock the ticker, share class, horizon, output mode, and key questions, treat my main question as the priority lens, then continue through the downstream Korean stock workflow automatically unless I ask for plan only.
 ```
 
 ```text
@@ -347,7 +351,7 @@ Reference files:
 ```
 
 ```text
-/kr-stock-analysis analyze 005930.KS with DART-based evidence, street or alternative views, valuation, governance checks, catalysts, chart context, and follow-up research questions.
+/kr-stock-analysis analyze 005930.KS with DART-based evidence, street or alternative views, valuation, governance checks, catalysts, chart context, archetype-specific uncomfortable questions, decision-changing issues, structured stance, and follow-up research prompts.
 ```
 
 ```text

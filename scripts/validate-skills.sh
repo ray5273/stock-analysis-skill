@@ -109,13 +109,33 @@ if (!pattern.test(text)) {
             exit 1
         fi
 
-        if ! grep -Fq 'Street / Alternative Views' "$SKILL_DIR/references/output-format.md"; then
+        if ! grep -Fq '## Decision Frame' "$SKILL_DIR/references/output-format.md"; then
+            echo "Expected full memo output format to include Decision Frame." >&2
+            exit 1
+        fi
+
+        if ! grep -Fq '## Street / Alternative Views' "$SKILL_DIR/references/output-format.md"; then
             echo "Expected full memo output format to include Street / Alternative Views." >&2
             exit 1
         fi
 
-        if ! grep -Fq 'Additional Research Questions' "$SKILL_DIR/references/output-format.md"; then
-            echo "Expected full memo output format to include Additional Research Questions." >&2
+        if ! grep -Fq '## Uncomfortable Questions' "$SKILL_DIR/references/output-format.md"; then
+            echo "Expected full memo output format to include Uncomfortable Questions." >&2
+            exit 1
+        fi
+
+        if ! grep -Fq '## Decision-Changing Issues' "$SKILL_DIR/references/output-format.md"; then
+            echo "Expected full memo output format to include Decision-Changing Issues." >&2
+            exit 1
+        fi
+
+        if ! grep -Fq '## Structured Stance' "$SKILL_DIR/references/output-format.md"; then
+            echo "Expected full memo output format to include Structured Stance." >&2
+            exit 1
+        fi
+
+        if ! grep -Fq '## Follow-up Research Prompts' "$SKILL_DIR/references/output-format.md"; then
+            echo "Expected full memo output format to include Follow-up Research Prompts." >&2
             exit 1
         fi
 
@@ -124,8 +144,23 @@ if (!pattern.test(text)) {
             exit 1
         fi
 
-        if ! grep -q 'For a `full memo`, add `Street / Alternative Views` before valuation and end with `Additional Research Questions`' "$SKILL_DIR/SKILL.md"; then
-            echo "Expected kr-stock-analysis skill rules to scope Street / Alternative Views and Additional Research Questions to full memos." >&2
+        if ! grep -Fq 'For a `full memo`, lead with `Decision Frame`' "$SKILL_DIR/SKILL.md"; then
+            echo "Expected kr-stock-analysis skill rules to scope Decision Frame to full memos." >&2
+            exit 1
+        fi
+
+        if ! grep -Fq 'Read [references/uncomfortable-question-rubric.md](references/uncomfortable-question-rubric.md)' "$SKILL_DIR/SKILL.md"; then
+            echo "Expected kr-stock-analysis skill rules to load the uncomfortable-question rubric." >&2
+            exit 1
+        fi
+
+        if [ ! -f "$SKILL_DIR/references/uncomfortable-question-rubric.md" ]; then
+            echo "Expected kr-stock-analysis to ship an uncomfortable-question rubric reference." >&2
+            exit 1
+        fi
+
+        if ! grep -Fq '## Archetype: Captive IT Services / SI / Digital Transformation' "$SKILL_DIR/references/uncomfortable-question-rubric.md"; then
+            echo "Expected uncomfortable-question rubric to include the captive IT services archetype." >&2
             exit 1
         fi
 
@@ -139,15 +174,92 @@ if (!pattern.test(text)) {
             "$REPO_ROOT/analysis-example/kr/엘앤에프/memo.md" \
             "$REPO_ROOT/analysis-example/kr/대양전기공업/memo.md"
         do
+            if [ ! -f "$REPORT_SAMPLE" ]; then
+                continue
+            fi
+            if ! grep -Fq '## Decision Frame' "$REPORT_SAMPLE"; then
+                echo "Expected stock memo example to include Decision Frame: $REPORT_SAMPLE" >&2
+                exit 1
+            fi
             if ! grep -Fq '## Street / Alternative Views' "$REPORT_SAMPLE"; then
                 echo "Expected stock memo example to include Street / Alternative Views: $REPORT_SAMPLE" >&2
                 exit 1
             fi
-            if ! grep -Fq '## Additional Research Questions' "$REPORT_SAMPLE"; then
-                echo "Expected stock memo example to include Additional Research Questions: $REPORT_SAMPLE" >&2
+            if ! grep -Fq '## Uncomfortable Questions' "$REPORT_SAMPLE"; then
+                echo "Expected stock memo example to include Uncomfortable Questions: $REPORT_SAMPLE" >&2
+                exit 1
+            fi
+            if ! grep -Fq '## Decision-Changing Issues' "$REPORT_SAMPLE"; then
+                echo "Expected stock memo example to include Decision-Changing Issues: $REPORT_SAMPLE" >&2
+                exit 1
+            fi
+            if ! grep -Fq '## Structured Stance' "$REPORT_SAMPLE"; then
+                echo "Expected stock memo example to include Structured Stance: $REPORT_SAMPLE" >&2
+                exit 1
+            fi
+            if ! grep -Fq '## Follow-up Research Prompts' "$REPORT_SAMPLE"; then
+                echo "Expected stock memo example to include Follow-up Research Prompts: $REPORT_SAMPLE" >&2
                 exit 1
             fi
         done
+
+        find "$REPO_ROOT/analysis-example/kr" -type f -name "memo.md" -print | while IFS= read -r REPORT_SAMPLE; do
+            if ! grep -Fq '## Decision Frame' "$REPORT_SAMPLE"; then
+                continue
+            fi
+            if ! grep -Fq '## Street / Alternative Views' "$REPORT_SAMPLE"; then
+                echo "Expected stock memo example to include Street / Alternative Views: $REPORT_SAMPLE" >&2
+                exit 1
+            fi
+            if ! grep -Fq '## Uncomfortable Questions' "$REPORT_SAMPLE"; then
+                echo "Expected stock memo example to include Uncomfortable Questions: $REPORT_SAMPLE" >&2
+                exit 1
+            fi
+            if ! grep -Fq '## Decision-Changing Issues' "$REPORT_SAMPLE"; then
+                echo "Expected stock memo example to include Decision-Changing Issues: $REPORT_SAMPLE" >&2
+                exit 1
+            fi
+            if ! grep -Fq '## Structured Stance' "$REPORT_SAMPLE"; then
+                echo "Expected stock memo example to include Structured Stance: $REPORT_SAMPLE" >&2
+                exit 1
+            fi
+            if ! grep -Fq '## Follow-up Research Prompts' "$REPORT_SAMPLE"; then
+                echo "Expected stock memo example to include Follow-up Research Prompts: $REPORT_SAMPLE" >&2
+                exit 1
+            fi
+        done
+    fi
+
+    if [ "$SKILL_NAME" = "kr-stock-plan" ]; then
+        if ! grep -Fq 'analysis-example/kr/<company>/memo.md' "$SKILL_DIR/SKILL.md"; then
+            echo "Expected kr-stock-plan rules to define memo.md as the canonical artifact." >&2
+            exit 1
+        fi
+
+        if ! grep -Fq 'memo-only' "$SKILL_DIR/SKILL.md"; then
+            echo "Expected kr-stock-plan rules to distinguish memo-only follow-ups." >&2
+            exit 1
+        fi
+
+        if ! grep -Fq 'refresh-needed' "$SKILL_DIR/SKILL.md"; then
+            echo "Expected kr-stock-plan rules to distinguish refresh-needed follow-ups." >&2
+            exit 1
+        fi
+
+        if ! grep -Fq 'Planning only vs execute now:' "$SKILL_DIR/references/output-format.md"; then
+            echo "Expected kr-stock-plan output format to distinguish planning-only mode." >&2
+            exit 1
+        fi
+
+        if ! grep -Fq 'Canonical memo path:' "$SKILL_DIR/references/output-format.md"; then
+            echo "Expected kr-stock-plan output format to include the canonical memo path." >&2
+            exit 1
+        fi
+
+        if ! grep -Fq 'Follow-up classification (`memo-only` or `refresh-needed`):' "$SKILL_DIR/references/output-format.md"; then
+            echo "Expected kr-stock-plan output format to include follow-up classification." >&2
+            exit 1
+        fi
     fi
 
     if [ "$SKILL_NAME" = "kr-stock-data-pack" ]; then
@@ -430,7 +542,10 @@ if [ "$SECTOR_EXAMPLE_COUNT" -lt 2 ]; then
     exit 1
 fi
 
-for MEMO in "$REPO_ROOT/analysis-example/kr"/*/memo.md; do
+find "$REPO_ROOT/analysis-example/kr" -type f -name "memo.md" -print | while IFS= read -r MEMO; do
+    if ! grep -Fq '## Decision Frame' "$MEMO"; then
+        continue
+    fi
     COMPANY=$(basename "$(dirname "$MEMO")")
     echo "Quality gate: $COMPANY"
     node "$REPO_ROOT/scripts/harness.js" --mode gate --company "$COMPANY" --memo-path "$MEMO" || exit 1

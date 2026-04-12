@@ -52,6 +52,7 @@ function validateSourcesSection(relativePath, text) {
 function validateStockMemo(relativePath, options = {}) {
   const text = readNormalized(relativePath);
   const requiredHeadings = [
+    "Decision Frame",
     "Summary",
     "Business and Thesis",
     "Revenue Mix",
@@ -63,8 +64,10 @@ function validateStockMemo(relativePath, options = {}) {
     "Governance and Structure",
     "Catalysts",
     "Risks",
-    "What Would Change My Mind",
-    "Additional Research Questions",
+    "Uncomfortable Questions",
+    "Decision-Changing Issues",
+    "Structured Stance",
+    "Follow-up Research Prompts",
   ];
 
   assert(/^기준일:\s+\d{4}-\d{2}-\d{2}$/m.test(text), `${relativePath}: missing or malformed 기준일`);
@@ -137,6 +140,7 @@ function validateSectorBrief(relativePath) {
 }
 
 validateStockMemo("analysis-example/kr/LG CNS/memo.md", { requireUpdateLog: true, requireDartSupport: true });
+validateStockMemo("analysis-example/kr/LIG넥스원/memo.md", { requireDartSupport: true });
 validateStockMemo("analysis-example/kr/대양전기공업/memo.md", { requireUpdateLog: true, requireDartSupport: false });
 validateSectorReport("analysis-example/kr-sector/국내 데이터센터.md");
 validateSectorBrief("analysis-example/kr-sector/국내 데이터센터-리서치브리프.md");

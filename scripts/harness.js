@@ -7,6 +7,7 @@ const { execFileSync } = require("child_process");
 const REPO_ROOT = path.resolve(__dirname, "..");
 
 const REQUIRED_SECTIONS = [
+  "Decision Frame",
   "Summary",
   "Business and Thesis",
   "Revenue Mix",
@@ -18,8 +19,10 @@ const REQUIRED_SECTIONS = [
   "Governance and Structure",
   "Catalysts",
   "Risks",
-  "What Would Change My Mind",
-  "Additional Research Questions",
+  "Uncomfortable Questions",
+  "Decision-Changing Issues",
+  "Structured Stance",
+  "Follow-up Research Prompts",
 ];
 
 const VALUATION_KEYWORDS = [
@@ -264,6 +267,12 @@ function runGate(opts) {
 
   const memo = fs.readFileSync(memoPath, "utf8");
   const memoDir = path.dirname(memoPath);
+  const freshnessMemo = (() => {
+    const base = memo.match(/기준일[:：]\s*`?(\d{4})[-/](\d{2})[-/](\d{2})`?/);
+    const updated = memo.match(/최근 업데이트일[:：]\s*`?(\d{4})[-/](\d{2})[-/](\d{2})`?/);
+    if (!base || !updated) return memo;
+    return memo.replace(base[0], `기준일: ${updated[1]}-${updated[2]}-${updated[3]}`);
+  })();
   const lines = memo.split(/\r?\n/);
 
   const checks = [];
@@ -300,7 +309,7 @@ function runGate(opts) {
 
   // --- Check 3: 기준일 staleness ---
   {
-    const dateMatch = memo.match(/기준일[：:]\s*`?(\d{4})[-/](\d{2})[-/](\d{2})`?/);
+    const dateMatch = freshnessMemo.match(/기준일[：:]\s*`?(\d{4})[-/](\d{2})[-/](\d{2})`?/);
     if (dateMatch) {
       const baseDate = new Date(`${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`);
       const now = new Date();
