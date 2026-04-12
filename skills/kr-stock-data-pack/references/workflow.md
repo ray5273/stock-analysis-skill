@@ -37,6 +37,7 @@ For a standard company pack, try to gather:
 - For note-driven blocks such as customer concentration, geography mix, related-party transactions, internal-group revenue, segment margin, or treasury-share detail, inherit the result from `kr-stock-dart-analysis` when annual-note evidence matters.
 - Do not fill a note-driven block from company IR alone when the relevant DART note read is still incomplete. Carry the block as `needs_review`, `partial`, or `not separately disclosed after DART check`.
 - For outside-view blocks, say whether the claim is `confirmed by filing`, `street inference`, `media report`, or `independent view`.
+- When `naver-insights.md` exists in the company output directory (`analysis-example/kr/<company>/`), read each post entry and add a row to the `## External Views` table with `Source role: independent analysis`, `Verification status: unverified (blogger)`, and the Naver post URL. Use the blogger's verbatim snippet as the takeaway instead of paraphrasing.
 - Keep interpretation light. The pack may note why a fact matters, but it should not decide the investment view.
 
 ## Failure Modes To Avoid

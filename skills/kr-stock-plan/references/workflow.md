@@ -67,6 +67,11 @@ Execution rule:
 - If the user invoked `kr-stock-plan` to solve a stock question, treat the brief as an internal control step and then run the recommended downstream path yourself.
 - Stop after the brief only when the user explicitly asks for `plan only`, `brief only`, or equivalent.
 
+- Outside-views-aware workflow: `kr-stock-plan -> kr-stock-dart-analysis (optional) -> kr-naver-blogger -> kr-naver-insight -> kr-stock-data-pack -> kr-stock-analysis`
+- Naver-first exploratory workflow: `kr-stock-plan -> kr-naver-blogger -> kr-naver-insight -> kr-stock-data-pack -> kr-stock-analysis`
+
+The Naver-first path applies when the user's ask is explicitly about what Naver bloggers or the retail community thinks, not about a filing-grounded decision memo.
+
 Prefer the filing-heavy workflow when the request depends on:
 
 - latest quarter or half-year numbers
@@ -74,6 +79,25 @@ Prefer the filing-heavy workflow when the request depends on:
 - segment, geography, or customer-concentration precision
 - backlog, contract-disclosure, or related-party detail
 - exact disclosure wording that will materially affect the conclusion
+
+## Outside Views Decision
+
+Decide whether the downstream workflow should include a Naver blog pass (`kr-naver-blogger` → `kr-naver-insight`) before `kr-stock-data-pack`.
+
+Recommend a Naver pass when **all** of these are true:
+
+- Output mode is `full memo` (not quick view, not event note, not pair compare).
+- User has not explicitly said "skip outside views", "company only", "filing only", or equivalent.
+- At least one trigger applies:
+  - User explicitly asked for independent, alternative, retail, or 네이버 블로그 views.
+  - The company is in a retail-favored sector: batteries, semiconductors, biotech, defense, space, EV, theme plays, small/mid-cap growth.
+  - The user's priority question is about market framing, sentiment, price-action rationale, or peer positioning where sell-side coverage is thin.
+
+Also recommend a Naver pass when the user's request is exploratory ("네이버 블로거들이 이 종목 어떻게 보고 있어?"). In that case the brief can route Naver-first and downgrade the filing depth.
+
+**Default stance for full memos of retail-favored names:** propose `Naver blog pass: yes` and let the user veto. For everything else, default to `no`.
+
+The `naver-insights.md` digest lands in `analysis-example/kr/<company>/` and `kr-stock-data-pack` ingests its rows into `External Views` with `Source role: independent analysis`.
 
 ## Failure Modes To Avoid
 

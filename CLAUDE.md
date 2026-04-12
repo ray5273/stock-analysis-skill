@@ -102,6 +102,8 @@ node scripts/harness.js --mode chart   --ticker 066970 --company "LG CNS"
 node scripts/harness.js --mode dart    --ticker 066970 --company "LG CNS" --dart-input export.json
 node scripts/harness.js --mode gate    --company "LG CNS"
 node scripts/harness.js --mode all     --ticker 066970 --company "LG CNS" --dart-input export.json
+node scripts/harness.js --mode all     --ticker 066970 --company "엘앤에프" --with-blog
+node scripts/harness.js --mode all     --ticker 066970 --company "엘앤에프" --with-blog --bloggers blogger1,blogger2
 node scripts/harness.js --mode blog    --ticker 066970 --company "엘앤에프"
 ```
 
@@ -111,7 +113,7 @@ node scripts/harness.js --mode blog    --ticker 066970 --company "엘앤에프"
 | `dart` | normalize → extract → verify → build-reference (full DART browser export pipeline) |
 | `gate` | 9 structural quality checks on a finished memo (required sections, 기준일, chart PNGs, DART Recheck, valuation metrics, source dates) |
 | `blog` | discover-bloggers.js → fetch-blog-posts.js → summarize-insights.js (Naver blogger discovery + insights digest) |
-| `all` | chart + dart (if `--dart-input`) + gate sequentially |
+| `all` | chart + dart (if `--dart-input`) + blog (if `--with-blog`) + gate sequentially |
 
 The quality gate runs automatically as part of `validate-skills.sh` / `.ps1` against all example memos.
 

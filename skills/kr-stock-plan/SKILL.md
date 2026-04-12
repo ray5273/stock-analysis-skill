@@ -38,9 +38,11 @@ For Korean single-name work, this is the default entry point. It should decide w
    Choose `quick view`, `full memo`, `pre-earnings note`, `post-earnings note`, or `pair compare`.
 6. State the key questions.
    List what the downstream analysis must answer and what can stay out of scope.
-7. Hand off cleanly.
+7. Decide outside-views routing.
+   Apply the outside-views decision gate from `references/workflow.md` to decide whether a Naver blog pass should run before `kr-stock-data-pack`. Record the decision in the brief as `Naver blog pass: yes / no / deferred` with a one-line reason.
+8. Hand off cleanly.
    Produce a short research brief that routes the work across `kr-stock-dart-analysis`, `kr-stock-data-pack`, and `kr-stock-analysis` as needed.
-8. Continue automatically when appropriate.
+9. Continue automatically when appropriate.
    If the user asked for analysis rather than planning-only, execute the routed downstream skills immediately in the same turn instead of requiring the user to invoke each one manually.
 
 Read [references/workflow.md](references/workflow.md) for planning rules.
@@ -54,6 +56,7 @@ Read [references/output-format.md](references/output-format.md) for the required
 - Flag where ordinary shares, preferred shares, holding companies, or operating subsidiaries could change the interpretation.
 - Avoid numeric estimates at this stage unless the user explicitly asked for a scoping estimate and provided a source.
 - When latest filing precision is likely to be thesis-critical, explicitly route the downstream workflow through `kr-stock-dart-analysis` before `kr-stock-data-pack` or `kr-stock-analysis`.
+- When independent Naver blog voices are likely to sharpen the memo, route the Naver pipeline (`kr-naver-blogger` → `kr-naver-insight`) before `kr-stock-data-pack` so the digest is ready for ingestion. See the outside-views decision gate in `references/workflow.md`.
 - Treat `kr-stock-plan` as the default orchestrator for Korean single-stock work. Unless the user explicitly requests planning only, carry the work forward yourself after the brief is locked.
 - Resolve follow-up requests against `analysis-example/kr/<company>/memo.md` first. Only ask the user to restate the ticker or company when the target memo is missing or ambiguous.
 - Keep the user question as a priority lens. If the user supplied a specific concern, the downstream memo should reorder emphasis around that concern instead of treating it as an appendix.

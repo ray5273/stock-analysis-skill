@@ -42,5 +42,6 @@ Read [../kr-stock-analysis/references/blended-source-notes.md](../kr-stock-analy
 - Keep conflicting dates visible instead of flattening them into one fake reference date.
 - Distinguish verified facts from your inference.
 - Label outside inputs by source role and keep their verification status visible.
+- When `naver-insights.md` exists in the company output directory, ingest its per-post entries into `## External Views` with `Source role: independent analysis`, `Verification status: unverified (blogger)`, and the post URL in `Source`. Do not treat blogger claims as primary-source numbers.
 - Do not convert a thin source set into a confident valuation call.
 - Ask a short user-need check before gathering broad data blocks when the must-have sections are still unclear.

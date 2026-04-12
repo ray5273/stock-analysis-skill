@@ -72,6 +72,8 @@ function parseArgs(argv) {
     } else if (arg === "--report-out") {
       result.reportOut = argv[i + 1];
       i += 1;
+    } else if (arg === "--with-blog") {
+      result.withBlog = true;
     } else if (arg === "--dry-run") {
       result.dryRun = true;
     } else if (arg === "--verbose") {
@@ -92,7 +94,7 @@ function usage() {
     "  node harness.js --mode chart   --ticker 066970 --company \"LG CNS\" [--range 1y]",
     "  node harness.js --mode dart    --ticker 066970 --company \"LG CNS\" --dart-input export.json",
     "  node harness.js --mode gate    --company \"LG CNS\" [--memo-path path/to/memo.md]",
-    "  node harness.js --mode all     --ticker 066970 --company \"LG CNS\" [--dart-input export.json]",
+    "  node harness.js --mode all     --ticker 066970 --company \"LG CNS\" [--dart-input export.json] [--with-blog]",
     "  node harness.js --mode blog    --ticker 066970 --company \"엘앤에프\" [--bloggers id1,id2]",
     "",
     "Modes:",
@@ -100,7 +102,7 @@ function usage() {
     "  dart     Run full DART browser export pipeline (normalize -> extract -> verify -> build-reference)",
     "  gate     Validate a finished memo against structural quality checks",
     "  blog     Discover Naver bloggers -> fetch posts -> summarize insights",
-    "  all      Run chart + dart (if --dart-input) + gate sequentially",
+    "  all      Run chart + dart (if --dart-input) + blog (if --with-blog) + gate sequentially",
     "",
     "Options:",
     "  --ticker       KRX ticker code (e.g. 066970)",
@@ -109,6 +111,7 @@ function usage() {
     "  --dart-input   Path to browser DART export JSON",
     "  --bloggers     Comma-separated Naver blogger IDs (skips discovery)",
     "  --max-posts    Posts per blogger for --mode blog (default 5)",
+    "  --with-blog    Include Naver blog pass in --mode all",
     "  --memo-path    Override memo path (default: analysis-example/kr/<company>/memo.md)",
     "  --output-dir   Override output directory (default: analysis-example/kr/<company>/)",
     "  --report-out   Write JSON quality gate report to this path",
@@ -649,6 +652,15 @@ function main() {
     } else {
       console.log("[dart] Skipped (no --dart-input provided)");
       console.log("");
+    }
+    if (opts.withBlog) {
+      if (opts.ticker || opts.bloggers) {
+        runBlog(opts);
+        console.log("");
+      } else {
+        console.log("[blog] Skipped (--with-blog requires --ticker or --bloggers)");
+        console.log("");
+      }
     }
     const report = runGate(opts);
     process.exit(report.passed ? 0 : 1);

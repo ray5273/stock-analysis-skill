@@ -37,6 +37,8 @@ Use this default planning shape unless the user asked for something else.
 - Optional upstream steps:
 - Why DART-first:
 - Why memo reuse is enough or not enough:
+- Naver blog pass: yes / no / deferred
+- Why Naver pass:
 
 ## Must Answer
 - ...
