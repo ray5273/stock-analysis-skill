@@ -20,6 +20,9 @@ bash ./scripts/install-skill.sh kr-stock-analysis
 bash ./scripts/install-skill.sh kr-stock-update
 bash ./scripts/install-skill.sh kr-portfolio-monitor
 bash ./scripts/install-skill.sh us-stock-analysis
+bash ./scripts/install-skill.sh kr-naver-browse
+bash ./scripts/install-skill.sh kr-naver-blogger
+bash ./scripts/install-skill.sh kr-naver-insight
 ```
 
 **Install all skills (Codex):**
@@ -33,6 +36,9 @@ bash ./scripts/install-claude-skill.sh kr-stock-analysis
 bash ./scripts/install-claude-skill.sh kr-stock-update
 bash ./scripts/install-claude-skill.sh kr-portfolio-monitor
 bash ./scripts/install-claude-skill.sh us-stock-analysis
+bash ./scripts/install-claude-skill.sh kr-naver-browse
+bash ./scripts/install-claude-skill.sh kr-naver-blogger
+bash ./scripts/install-claude-skill.sh kr-naver-insight
 ```
 
 **Install all skills (Claude Code):**
@@ -48,6 +54,10 @@ node skills/kr-stock-analysis/scripts/fetch-kr-chart.js --ticker 066970 --range 
 node skills/kr-stock-analysis/scripts/portfolio-snapshot.js --input examples/kr/portfolio-sample.json
 node skills/kr-stock-dart-analysis/scripts/normalize-browser-dart-export.js --input examples/kr-stock-dart-analysis/dart-browser-export-sample.json --output dart-text.txt
 node skills/kr-stock-analysis/scripts/valuation-chart.js --input examples/kr-stock-analysis/valuation-band-sample.json --png-out valuation.png
+node skills/kr-naver-browse/scripts/browse-naver.js --test
+node skills/kr-naver-blogger/scripts/discover-bloggers.js --company "엘앤에프" --ticker 066970 --output /tmp/bloggers.json
+node skills/kr-naver-insight/scripts/fetch-blog-posts.js --input /tmp/bloggers.json --company "엘앤에프" --output /tmp/posts.json
+node skills/kr-naver-insight/scripts/summarize-insights.js --input /tmp/posts.json --output /tmp/insights.md
 ```
 
 ## Architecture
@@ -76,6 +86,10 @@ All scripts accept JSON via `--input` and output Markdown or PNG. They use only 
 | `normalize-update-log.js` | Render or append a dated update block to an existing KR memo |
 | `portfolio-snapshot.js` | SMA20 deviation + RSI14 snapshot table across multiple KRX positions from JSON (kr only, MCP fallback) |
 | `normalize-browser-dart-export.js` | Convert a Chrome extension DART viewer export into plain text for section parsing |
+| `browse-naver.js` | Naver search + blog navigation helpers via gstack `browse` binary (required by other Naver skills) |
+| `discover-bloggers.js` | Find and rank Naver bloggers covering a KRX company |
+| `fetch-blog-posts.js` | Fetch and cache Naver blog posts filtered by company mention |
+| `summarize-insights.js` | Render a Markdown digest of Naver blog posts for the Street / Alternative Views section |
 
 Input JSON schemas are documented in `references/script-inputs.md` with sample files under `examples/<market>/`.
 
@@ -88,6 +102,7 @@ node scripts/harness.js --mode chart   --ticker 066970 --company "LG CNS"
 node scripts/harness.js --mode dart    --ticker 066970 --company "LG CNS" --dart-input export.json
 node scripts/harness.js --mode gate    --company "LG CNS"
 node scripts/harness.js --mode all     --ticker 066970 --company "LG CNS" --dart-input export.json
+node scripts/harness.js --mode blog    --ticker 066970 --company "엘앤에프"
 ```
 
 | Mode | What it does |
@@ -95,6 +110,7 @@ node scripts/harness.js --mode all     --ticker 066970 --company "LG CNS" --dart
 | `chart` | fetch-kr-chart.js → chart-basics.js (OHLCV fetch + PNG charts in one step) |
 | `dart` | normalize → extract → verify → build-reference (full DART browser export pipeline) |
 | `gate` | 9 structural quality checks on a finished memo (required sections, 기준일, chart PNGs, DART Recheck, valuation metrics, source dates) |
+| `blog` | discover-bloggers.js → fetch-blog-posts.js → summarize-insights.js (Naver blogger discovery + insights digest) |
 | `all` | chart + dart (if `--dart-input`) + gate sequentially |
 
 The quality gate runs automatically as part of `validate-skills.sh` / `.ps1` against all example memos.

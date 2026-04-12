@@ -1,0 +1,7 @@
+interface:
+  display_name: "Naver Blog Insights"
+  short_description: "Fetch, cache, and summarize Naver blog posts for a KRX memo's alternative-views section."
+  default_prompt: "Use $kr-naver-insight after $kr-naver-blogger has produced a bloggers JSON file (or when the user supplies explicit blogger IDs). It fetches the relevant posts via $kr-naver-browse, caches each post by logNo, and renders a Markdown digest grouped by blogger with verbatim snippets and source URLs. Treat the output as source material — the final thesis belongs in the memo, not the digest."
+
+policy:
+  allow_implicit_invocation: true

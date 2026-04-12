@@ -54,6 +54,7 @@ If a number matters to the conclusion, trace it back to a primary source when po
   - which claims are still not verified by filings
 - If a secondary source restates a number that already exists in filings, cite the filing for the number and use the secondary source only for interpretation.
 - Do not fill the section with repetitive newsroom summaries from the company itself.
+- For independent long-form analysis from Naver bloggers, use `kr-naver-blogger` to identify specialists who consistently cover the ticker, then `kr-naver-insight` to fetch and digest their recent posts. Treat the digest as source material — cite the specific post URL and date, and never let a blogger's framing substitute for a filing check on material numbers.
 
 ### DART Recheck
 
@@ -114,11 +115,15 @@ Use peer comparisons only if the peer set is genuinely comparable.
 ### Chart and Positioning
 
 - Prefer fetching about 1 year of daily bars before writing the chart section so MA120 and Ichimoku have enough history.
+- For `Minervini Trend Template` or `KRX 52주 신고가 리더십 점수`, prefer roughly 2 years of daily bars or otherwise confirm that a 252-trading-day window exists before forcing a full rule verdict.
 - Use `scripts/fetch-kr-chart.js` to pull current KRX bars when the user did not provide price history.
 - When the output will become PNG chart assets, always pass the explicit company name with `--name "<회사명>"`. Do not rely on ticker fallback if you want the PNG title to show `삼성SDS`, `LG전자`, or another human-readable stock name.
 - Use `scripts/chart-basics.js` to generate both the markdown technical read and the three-part PNG chart assets that can be embedded in the memo.
+- Use `scripts/build-kr-universe-rs-cache.js` to build or reuse the as-of-date integrated KOSPI+KOSDAQ RS percentile cache before writing a `Rule Screen` block.
+- Use `scripts/kr-trend-rules.js` to generate the `Rule Screen` markdown block once the chart data and RS cache are ready.
 - Gather at least 120 daily bars when possible.
 - Report latest close and date, MA5, MA20, MA60, MA120, Bollinger Bands, Ichimoku state, RSI 14, MACD, ADX/DMI, volume versus 20-day average, and nearby breakout or breakdown levels.
+- When a memo includes the `Rule Screen`, place it near the top of `Chart and Positioning`, immediately after the three PNG images and before the prose technical read.
 - The main chart should prefer OHLC candlesticks plus a close line and a visible current-price guide, while the overlay chart keeps heavier indicators separate.
 - The chart set should show readable axes, price labels, date labels, and clearly separated overlay and momentum views instead of stacking every indicator on one price panel.
 - For Korean stock memos, prefer Korean legend and panel labels when a Hangul-capable local font is available.
@@ -127,6 +132,7 @@ Use peer comparisons only if the peer set is genuinely comparable.
 - Keep chart analysis secondary to fundamentals. Use it to frame positioning, momentum, and key levels, not to override business reality.
 - End the chart section with a short chart-only conclusion that says whether the setup looks like bullish continuation, bearish continuation, a technical rebound, a pullback, or range-building.
 - If you do not have enough bars, say the chart read is limited and fall back to simple price-action context such as 1-week, 1-month, 3-month, and 52-week range behavior.
+- If the RS cache is unavailable or the chart lacks a full 252-trading-day window, mark `Minervini Trend Template` as `incomplete` and the Korean leadership score as `partial` rather than silently zeroing the missing component.
 
 ### Catalysts
 

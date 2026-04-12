@@ -1,0 +1,7 @@
+interface:
+  display_name: "Naver Blogger Discovery"
+  short_description: "Find Naver bloggers who consistently cover a KRX-listed company."
+  default_prompt: "Use $kr-naver-blogger to rank Naver bloggers that cover a given KRX stock. Provide --company and --ticker. The script searches Naver, visits candidate PostList pages, counts relevant posts, and writes a dated JSON file that $kr-naver-insight can consume. This skill requires kr-naver-browse. Never fabricate blogger metadata — leave fields null if they cannot be extracted."
+
+policy:
+  allow_implicit_invocation: true

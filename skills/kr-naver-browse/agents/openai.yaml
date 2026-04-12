@@ -1,0 +1,7 @@
+interface:
+  display_name: "Naver Blog Browser"
+  short_description: "Headless browser wrapper for Naver blog search, post list, and post content extraction."
+  default_prompt: "Use $kr-naver-browse when another skill needs to navigate Naver search or blog pages. It exposes a Node module at scripts/browse-naver.js with helpers for searching blogs, reading a blogger's recent posts, and reading a single post body. It normalizes Naver URLs, retries once on empty extraction, and enforces a 1s delay between requests. Do not call the gstack browse binary directly from other Naver skills — require this module instead."
+
+policy:
+  allow_implicit_invocation: true

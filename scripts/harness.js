@@ -57,6 +57,12 @@ function parseArgs(argv) {
     } else if (arg === "--dart-input") {
       result.dartInput = argv[i + 1];
       i += 1;
+    } else if (arg === "--bloggers") {
+      result.bloggers = argv[i + 1];
+      i += 1;
+    } else if (arg === "--max-posts") {
+      result.maxPosts = argv[i + 1];
+      i += 1;
     } else if (arg === "--memo-path") {
       result.memoPath = argv[i + 1];
       i += 1;
@@ -87,11 +93,13 @@ function usage() {
     "  node harness.js --mode dart    --ticker 066970 --company \"LG CNS\" --dart-input export.json",
     "  node harness.js --mode gate    --company \"LG CNS\" [--memo-path path/to/memo.md]",
     "  node harness.js --mode all     --ticker 066970 --company \"LG CNS\" [--dart-input export.json]",
+    "  node harness.js --mode blog    --ticker 066970 --company \"엘앤에프\" [--bloggers id1,id2]",
     "",
     "Modes:",
     "  chart    Fetch OHLCV and generate PNG charts in one step",
     "  dart     Run full DART browser export pipeline (normalize -> extract -> verify -> build-reference)",
     "  gate     Validate a finished memo against structural quality checks",
+    "  blog     Discover Naver bloggers -> fetch posts -> summarize insights",
     "  all      Run chart + dart (if --dart-input) + gate sequentially",
     "",
     "Options:",
@@ -99,6 +107,8 @@ function usage() {
     "  --company      Company name (used as directory name)",
     "  --range        Chart data range (default: 1y)",
     "  --dart-input   Path to browser DART export JSON",
+    "  --bloggers     Comma-separated Naver blogger IDs (skips discovery)",
+    "  --max-posts    Posts per blogger for --mode blog (default 5)",
     "  --memo-path    Override memo path (default: analysis-example/kr/<company>/memo.md)",
     "  --output-dir   Override output directory (default: analysis-example/kr/<company>/)",
     "  --report-out   Write JSON quality gate report to this path",
@@ -250,6 +260,73 @@ function runDart(opts) {
     buildArgs,
     opts
   );
+}
+
+// ---------------------------------------------------------------------------
+// Naver blog pipeline
+// ---------------------------------------------------------------------------
+
+function runBlog(opts) {
+  console.log("[blog] Running Naver blog pipeline...");
+  if (!opts.company) {
+    console.error("Error: --company is required for --mode blog");
+    process.exit(1);
+  }
+  const outputDir = resolveOutputDir(opts);
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const bloggersJson = path.join(outputDir, "naver-bloggers.json");
+  const postsJson = path.join(outputDir, "naver-posts.json");
+  const insightsMd = path.join(outputDir, "naver-insights.md");
+
+  const maxPosts = opts.maxPosts || "5";
+
+  if (opts.bloggers) {
+    console.log("  [blog 0/2] skip discovery (using --bloggers override)");
+  } else {
+    if (!opts.ticker) {
+      console.error("Error: --ticker is required for --mode blog unless --bloggers is provided");
+      process.exit(1);
+    }
+    const discoverScript = path.join(
+      REPO_ROOT, "skills", "kr-naver-blogger", "scripts", "discover-bloggers.js"
+    );
+    const discoverArgs = [
+      "--company", opts.company,
+      "--ticker", opts.ticker,
+      "--output", bloggersJson,
+    ];
+    runStep("[blog 1/3] discover-bloggers.js", discoverScript, discoverArgs, opts);
+  }
+
+  const fetchScript = path.join(
+    REPO_ROOT, "skills", "kr-naver-insight", "scripts", "fetch-blog-posts.js"
+  );
+  const fetchArgs = [
+    "--company", opts.company,
+    "--max-posts", String(maxPosts),
+    "--output", postsJson,
+  ];
+  if (opts.ticker) fetchArgs.push("--ticker", opts.ticker);
+  if (opts.bloggers) {
+    fetchArgs.push("--bloggers", opts.bloggers);
+  } else {
+    fetchArgs.push("--input", bloggersJson);
+  }
+  runStep("[blog 2/3] fetch-blog-posts.js", fetchScript, fetchArgs, opts);
+
+  const summarizeScript = path.join(
+    REPO_ROOT, "skills", "kr-naver-insight", "scripts", "summarize-insights.js"
+  );
+  runStep(
+    "[blog 3/3] summarize-insights.js",
+    summarizeScript,
+    ["--input", postsJson, "--output", insightsMd],
+    opts
+  );
+
+  console.log(`  Insights digest: ${path.relative(REPO_ROOT, insightsMd)}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -523,7 +600,7 @@ function main() {
   }
 
   if (!opts.mode) {
-    console.error("Error: --mode is required (chart, dart, gate, all)");
+    console.error("Error: --mode is required (chart, dart, gate, blog, all)");
     console.error(usage());
     process.exit(1);
   }
@@ -556,6 +633,8 @@ function main() {
     runChart(opts);
   } else if (opts.mode === "dart") {
     runDart(opts);
+  } else if (opts.mode === "blog") {
+    runBlog(opts);
   } else if (opts.mode === "gate") {
     const report = runGate(opts);
     process.exit(report.passed ? 0 : 1);

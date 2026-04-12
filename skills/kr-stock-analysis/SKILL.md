@@ -37,7 +37,7 @@ For `full memo` work, the target is not a generic long report. The target is a d
 4. Classify the archetype.
    Decide which business archetype best fits the company and use that choice to drive the uncomfortable-question set.
 5. Scan outside views.
-   Pull sell-side notes, specialist media, or independent long-form analysis to surface market framing, disagreements, and open questions.
+   Pull sell-side notes, specialist media, or independent long-form analysis to surface market framing, disagreements, and open questions. When independent Naver coverage is available, use `kr-naver-blogger` to identify specialists for the ticker and `kr-naver-insight` to fetch and digest their recent posts as source type 4 material.
 6. Build the memo.
    Separate verified facts from inference, keep section boundaries clean, and label what came from primary sources versus outside interpretation.
 7. Run DART recheck on key claims.
