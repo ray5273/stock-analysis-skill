@@ -1,6 +1,6 @@
 ---
 name: kr-naver-blogger
-description: Discover Naver bloggers who consistently cover a specific KRX-listed company. Use before drafting a full memo to identify independent long-form voices for the Street / Alternative Views section. Searches Naver blogs with `<company> 투자 분석`, `<company> 실적`, and the ticker, ranks candidates by post count, recency, and category relevance, and writes a dated JSON file under the cache directory. Requires `kr-naver-browse`. Do not use for general sell-side coverage or broker-list discovery.
+description: Discover Naver bloggers who consistently cover a specific KRX-listed company. Use before drafting a full memo to identify independent long-form voices for the Street / Alternative Views section. Builds dynamic search queries from Naver News trends and optional DART product keywords, ranks candidates by in-blog search hit count and coverage depth, and writes a dated JSON file under the cache directory. Requires `kr-naver-browse`. Do not use for general sell-side coverage or broker-list discovery.
 ---
 
 # Korean Naver Blogger Discovery
@@ -29,17 +29,20 @@ Do **not** use for:
 1. **Read the request.** Confirm company + ticker + optional `--min-posts`.
 2. **Check cache.** If `.tmp/naver-blog-cache/bloggers/<ticker>/<YYYY-MM-DD>.json`
    exists for today, prefer it unless `--no-cache` is set.
-3. **Search three queries** through `kr-naver-browse`:
-   - `<company> 투자 분석`
-   - `<company> 실적`
-   - `<ticker>` (bare numeric)
-4. **Collect candidate blog IDs** from all result sets.
-5. **Per-blog search** each candidate via Naver's `PostSearchList.naver`
+3. **Build dynamic queries** via `build-query-set.js`:
+   - Base: `<company> 투자 분석`, `<company> 실적`
+   - DART products (if `--dart-file`): top nouns from 사업의 내용 section
+   - News trends: top keywords from Naver News headline frequency analysis
+   - Context (if `--context-file`): terms from 핵심 논점 / 투자 포인트 sections
+   - Capped at 8 queries. Use `--no-auto-queries` for legacy 3-query mode.
+4. **Search all queries** through `kr-naver-browse` `searchNaverBlog`.
+5. **Collect candidate blog IDs** from all result sets.
+6. **Per-blog search** each candidate via Naver's `PostSearchList.naver`
    endpoint. Count posts whose **title** contains the company name or ticker
    (`relevantPostCount`). Record pagination page count as a depth signal.
-6. **Rank** by `relevantPostCount` then by `inBlogPaginationPages`.
-7. **Filter** anyone below `--min-posts` (default 2).
-8. **Write** a dated JSON file — the schema is documented in
+7. **Rank** by `relevantPostCount` then by `inBlogPaginationPages`.
+8. **Filter** anyone below `--min-posts` (default 2).
+9. **Write** a dated JSON file — the schema is documented in
    `references/workflow.md`.
 
 ## Output Contract
@@ -68,7 +71,7 @@ Do **not** use for:
       "profileSnippet": null
     }
   ],
-  "meta": { "searchQueries": 3, "candidatesFound": 16, "qualified": 4 }
+  "meta": { "searchQueries": 7, "candidatesFound": 50, "qualified": 8, "querySet": { "..." : "..." } }
 }
 ```
 
@@ -87,12 +90,26 @@ Fields that cannot be extracted are set to `null` / `[]`, never fabricated.
 6. **Fail loud** if `browse-naver.js` cannot be required or the binary is
    missing. Do not fall back to a non-Naver source.
 
-## Invocation
+## Scripts
+
+### discover-bloggers.js
 
 ```bash
 node skills/kr-naver-blogger/scripts/discover-bloggers.js \
   --company "엘앤에프" --ticker 066970 \
-  --output .tmp/naver-blog-cache/bloggers/066970/2026-04-12.json
+  --output .tmp/naver-blog-cache/bloggers/066970/2026-04-13.json
 ```
 
-Optional flags: `--min-posts N`, `--cache-dir path`, `--no-cache`, `--verbose`.
+Optional flags: `--min-posts N`, `--cache-dir path`, `--no-cache`, `--verbose`,
+`--queries-file PATH`, `--dart-file PATH`, `--context-file PATH`, `--no-auto-queries`.
+
+### build-query-set.js
+
+Build a dynamic query set independently (useful for inspection/debugging):
+
+```bash
+node skills/kr-naver-blogger/scripts/build-query-set.js \
+  --company "엘앤에프" --ticker 066970 --output /tmp/queries.json --verbose
+```
+
+Optional flags: `--dart-file PATH`, `--context-file PATH`, `--max-queries N`.

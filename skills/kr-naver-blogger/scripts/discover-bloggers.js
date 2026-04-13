@@ -7,6 +7,7 @@ const fs = require("fs");
 const path = require("path");
 
 const browseNaver = require("../../kr-naver-browse/scripts/browse-naver.js");
+const { buildQuerySet } = require("./build-query-set.js");
 
 const DEFAULT_MIN_POSTS = 2;
 const DEFAULT_MAX_CANDIDATES = 10;
@@ -19,6 +20,7 @@ function parseArgs(argv) {
     cacheDir: DEFAULT_CACHE_DIR,
     noCache: false,
     verbose: false,
+    autoQueries: true,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -31,6 +33,10 @@ function parseArgs(argv) {
     else if (arg === "--cache-dir") opts.cacheDir = next();
     else if (arg === "--no-cache") opts.noCache = true;
     else if (arg === "--verbose") opts.verbose = true;
+    else if (arg === "--queries-file") opts.queriesFile = next();
+    else if (arg === "--dart-file") opts.dartFile = next();
+    else if (arg === "--context-file") opts.contextFile = next();
+    else if (arg === "--no-auto-queries") opts.autoQueries = false;
     else if (arg === "--help" || arg === "-h") opts.help = true;
     else throw new Error(`Unknown argument: ${arg}`);
   }
@@ -43,14 +49,20 @@ function usage() {
     "  node discover-bloggers.js --company <name> --ticker <code> --output <path>",
     "",
     "Options:",
-    "  --company         Korean company name (required)",
-    "  --ticker          6-digit KRX ticker (required)",
-    "  --output          Output JSON path (required)",
-    "  --min-posts N     Minimum qualifying post count (default 3)",
-    "  --max-candidates  Max bloggers to evaluate (default 10)",
-    "  --cache-dir PATH  Cache root (default .tmp/naver-blog-cache)",
-    "  --no-cache        Skip cache lookup for today",
-    "  --verbose         Print debug output",
+    "  --company            Korean company name (required)",
+    "  --ticker             6-digit KRX ticker (required)",
+    "  --output             Output JSON path (required)",
+    "  --min-posts N        Minimum qualifying post count (default 2)",
+    "  --max-candidates N   Max bloggers to evaluate (default 10)",
+    "  --cache-dir PATH     Cache root (default .tmp/naver-blog-cache)",
+    "  --no-cache           Skip cache lookup for today",
+    "  --verbose            Print debug output",
+    "",
+    "Query options:",
+    "  --queries-file PATH  Pre-built query set JSON (skips auto-query build)",
+    "  --dart-file PATH     DART analysis markdown for product keyword extraction",
+    "  --context-file PATH  Existing memo/data-pack for keyword extraction",
+    "  --no-auto-queries    Force legacy 3-query mode (no dynamic keywords)",
   ].join("\n");
 }
 
@@ -138,11 +150,37 @@ function discover(opts) {
     }
   }
 
-  const queries = [
-    `${opts.company} 투자 분석`,
-    `${opts.company} 실적`,
-    opts.ticker,
-  ];
+  // Build query set: dynamic (default), pre-built file, or legacy fallback
+  let queries;
+  let querySetMeta = null;
+  if (opts.queriesFile) {
+    // Use a pre-built query set JSON
+    const raw = JSON.parse(fs.readFileSync(opts.queriesFile, "utf8"));
+    queries = (raw.queries || []).map((q) => q.text || q);
+    querySetMeta = raw.meta || null;
+    if (opts.verbose) console.error(`[queries] loaded ${queries.length} from ${opts.queriesFile}`);
+  } else if (opts.autoQueries) {
+    // Build dynamic queries via build-query-set
+    const qResult = buildQuerySet({
+      company: opts.company,
+      ticker: opts.ticker,
+      dartFile: opts.dartFile,
+      contextFile: opts.contextFile,
+      maxQueries: 8,
+      verbose: opts.verbose,
+    });
+    queries = qResult.queries.map((q) => q.text);
+    querySetMeta = { queries: qResult.queries, meta: qResult.meta };
+    if (opts.verbose) console.error(`[queries] built ${queries.length} dynamic queries`);
+  } else {
+    // Legacy 3-query fallback
+    queries = [
+      `${opts.company} 투자 분석`,
+      `${opts.company} 실적`,
+      opts.ticker,
+    ];
+    if (opts.verbose) console.error(`[queries] legacy mode, ${queries.length} queries`);
+  }
 
   const allResults = [];
   for (const q of queries) {
@@ -215,6 +253,7 @@ function discover(opts) {
       candidatesFound: candidateMap.size,
       qualified: ranked.length,
       skipped,
+      querySet: querySetMeta,
       generatedBy: "kr-naver-blogger/discover-bloggers.js",
     },
   };

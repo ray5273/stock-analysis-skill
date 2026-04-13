@@ -55,6 +55,7 @@ node skills/kr-stock-analysis/scripts/portfolio-snapshot.js --input examples/kr/
 node skills/kr-stock-dart-analysis/scripts/normalize-browser-dart-export.js --input examples/kr-stock-dart-analysis/dart-browser-export-sample.json --output dart-text.txt
 node skills/kr-stock-analysis/scripts/valuation-chart.js --input examples/kr-stock-analysis/valuation-band-sample.json --png-out valuation.png
 node skills/kr-naver-browse/scripts/browse-naver.js --test
+node skills/kr-naver-blogger/scripts/build-query-set.js --company "엘앤에프" --ticker 066970 --output /tmp/queries.json
 node skills/kr-naver-blogger/scripts/discover-bloggers.js --company "엘앤에프" --ticker 066970 --output /tmp/bloggers.json
 node skills/kr-naver-insight/scripts/fetch-blog-posts.js --input /tmp/bloggers.json --company "엘앤에프" --output /tmp/posts.json
 node skills/kr-naver-insight/scripts/summarize-insights.js --input /tmp/posts.json --output /tmp/insights.md
@@ -87,7 +88,8 @@ All scripts accept JSON via `--input` and output Markdown or PNG. They use only 
 | `portfolio-snapshot.js` | SMA20 deviation + RSI14 snapshot table across multiple KRX positions from JSON (kr only, MCP fallback) |
 | `normalize-browser-dart-export.js` | Convert a Chrome extension DART viewer export into plain text for section parsing |
 | `browse-naver.js` | Naver search + blog navigation helpers via gstack `browse` binary (required by other Naver skills) |
-| `discover-bloggers.js` | Find and rank Naver bloggers covering a KRX company |
+| `build-query-set.js` | Build dynamic search queries from Naver News trends and DART product keywords for blogger discovery |
+| `discover-bloggers.js` | Find and rank Naver bloggers covering a KRX company (uses dynamic queries + in-blog search) |
 | `fetch-blog-posts.js` | Fetch and cache Naver blog posts filtered by company mention |
 | `summarize-insights.js` | Render a Markdown digest of Naver blog posts for the Street / Alternative Views section |
 

@@ -523,6 +523,84 @@ function searchWithinBlog(blogId, query, { orderBy = "date" } = {}) {
   return { posts, paginationPages };
 }
 
+// Search Naver News for a query and return an array of headline/snippet strings.
+// Used by build-query-set.js to extract trending keywords for a company.
+// Returns up to `max` text fragments (default 30). Each element is a plain
+// string (headline or snippet), not a structured object — callers tokenize
+// the text downstream for keyword frequency analysis.
+function searchNaverNews(query, { max = 30, verbose = false } = {}) {
+  const encoded = encodeURIComponent(query);
+  const url = `https://search.naver.com/search.naver?where=news&query=${encoded}&sort=1`;
+
+  // browseLinks gives "snippet → publisher_url" lines, much cleaner than
+  // browseText for news pages (which dumps everything as one blob).
+  const raw = browseLinks(url);
+  if (raw) {
+    const headlines = parseNewsHeadlinesFromLinks(raw);
+    if (headlines.length > 0) return headlines.slice(0, max);
+  }
+
+  // Fallback to browseText if links failed
+  const text = browseText(url);
+  if (!text) return [];
+  return parseNewsHeadlines(text).slice(0, max);
+}
+
+// Parse news article text from the browseLinks output of a Naver news search.
+// Each line is "text → url". We keep lines whose URL points to an external
+// news publisher (not Naver internal pages) and return the text portion.
+function parseNewsHeadlinesFromLinks(linksText) {
+  if (!linksText) return [];
+  const lines = linksText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const results = [];
+  const seen = new Set();
+
+  // Naver internal URLs to exclude
+  const internalRx =
+    /search\.naver\.com|help\.naver\.com|nid\.naver\.com|section\.(blog|cafe)\.naver\.com|pay\.naver\.com|mail\.naver\.com|comic\.naver\.com|book\.naver\.com|kin\.naver\.com|stock\.naver\.com|dict\.naver\.com|calendar\.naver\.com|blog\.naver\.com|cafe\.naver\.com|news\.naver\.com$|chzzk\.naver\.com|point\.pay\.naver\.com|m\.notify\.naver\.com|talks\.naver\.com/;
+
+  for (const line of lines) {
+    const arrowIdx = line.indexOf(" → ");
+    if (arrowIdx < 0) continue;
+    const text = line.slice(0, arrowIdx).trim();
+    const url = line.slice(arrowIdx + 3).trim();
+
+    if (!url || !/^https?:/.test(url)) continue;
+    // Keep only external publisher URLs (the actual news articles)
+    if (internalRx.test(url)) continue;
+    if (!text || text.length < 10) continue;
+    if (!/[\uac00-\ud7af]/.test(text)) continue;
+    if (seen.has(text)) continue;
+    seen.add(text);
+    results.push(text);
+  }
+  return results;
+}
+
+// Fallback: extract news headlines from the browseText dump of a Naver news
+// search page. The text is one big blob, so we split on "Keep에 저장Keep에
+// 바로가기" markers which precede each article.
+function parseNewsHeadlines(text) {
+  if (!text) return [];
+  // Split on article boundary markers
+  const segments = text.split(/Keep에 저장Keep에 바로가기/);
+  const results = [];
+  const seen = new Set();
+
+  for (const seg of segments) {
+    if (!seg || seg.length < 20) continue;
+    // Take the first sentence-like portion (up to first period + space/digit)
+    const match = seg.match(/^(.{10,150}?)[.。]\s/);
+    const candidate = match ? match[1].trim() : seg.slice(0, 100).trim();
+    if (candidate.length < 10) continue;
+    if (!/[\uac00-\ud7af]/.test(candidate)) continue;
+    if (seen.has(candidate)) continue;
+    seen.add(candidate);
+    results.push(candidate);
+  }
+  return results;
+}
+
 function readBlogPost(blogId, logNo) {
   if (!blogId || !logNo) return null;
   const url = `https://blog.naver.com/PostView.naver?blogId=${encodeURIComponent(blogId)}&logNo=${encodeURIComponent(logNo)}`;
@@ -577,12 +655,15 @@ module.exports = {
   browseText,
   browseLinks,
   searchNaverBlog,
+  searchNaverNews,
   readBlogPostList,
   readBlogPost,
   searchWithinBlog,
   normalizeNaverUrl,
   parseNaverSearchResults,
   parseNaverSearchLinks,
+  parseNewsHeadlines,
+  parseNewsHeadlinesFromLinks,
   parsePostList,
   parsePostListFromLinks,
   parseBlogSearchResults,
