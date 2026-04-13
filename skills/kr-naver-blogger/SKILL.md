@@ -34,10 +34,11 @@ Do **not** use for:
    - `<company> 실적`
    - `<ticker>` (bare numeric)
 4. **Collect candidate blog IDs** from all result sets.
-5. **Visit each candidate's PostList** to count how many of the recent posts
-   mention the company name or ticker.
-6. **Rank** by `relevantPostCount` then by `latestPostDate`.
-7. **Filter** anyone below `--min-posts` (default 3) in the recent window.
+5. **Per-blog search** each candidate via Naver's `PostSearchList.naver`
+   endpoint. Count posts whose **title** contains the company name or ticker
+   (`relevantPostCount`). Record pagination page count as a depth signal.
+6. **Rank** by `relevantPostCount` then by `inBlogPaginationPages`.
+7. **Filter** anyone below `--min-posts` (default 2).
 8. **Write** a dated JSON file — the schema is documented in
    `references/workflow.md`.
 
@@ -58,13 +59,16 @@ Do **not** use for:
       "displayName": null,
       "blogTitle": null,
       "subscriberCount": null,
-      "relevantPostCount": 7,
-      "latestPostDate": "2026-04-12",
+      "relevantPostCount": 6,
+      "searchHitCount": 1,
+      "inBlogPage1Total": 10,
+      "inBlogPaginationPages": 11,
+      "latestPostDate": null,
       "categories": [],
       "profileSnippet": null
     }
   ],
-  "meta": { "searchQueries": 3, "candidatesFound": 8, "qualified": 2 }
+  "meta": { "searchQueries": 3, "candidatesFound": 16, "qualified": 4 }
 }
 ```
 
@@ -79,7 +83,7 @@ Fields that cannot be extracted are set to `null` / `[]`, never fabricated.
 3. **Cap candidates** at 10 bloggers examined per run. Quality over breadth.
 4. **Never scrape personal info** — only public post metadata.
 5. **Keep the output deterministic** given the same inputs: rank by
-   `(relevantPostCount desc, latestPostDate desc, blogId asc)`.
+   `(relevantPostCount desc, inBlogPaginationPages desc, latestPostDate desc, blogId asc)`.
 6. **Fail loud** if `browse-naver.js` cannot be required or the binary is
    missing. Do not fall back to a non-Naver source.
 

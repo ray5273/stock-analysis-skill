@@ -390,6 +390,50 @@ function parsePostView(text) {
   return { title, date, text: truncated };
 }
 
+// Parse `browse links` output from a blogger's PostSearchList page.
+// Post links there look like:
+//   "title → https://blog.naver.com/<blogId>?Redirect=Log&logNo=<logNo>&from=postView&..."
+// We filter to links where the blogId segment matches the target so unrelated
+// navigation links (e.g. profile, category) cannot inflate the count.
+function parseBlogSearchResults(linksText, blogId) {
+  if (!linksText || !blogId) return [];
+  const lines = linksText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const escId = blogId.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+  const rx = new RegExp(
+    "https?://(?:m\\.)?blog\\.naver\\.com/" + escId + "(?:\\?|/)[^\\s]*logNo=(\\d{6,})"
+  );
+  const results = [];
+  const seen = new Set();
+
+  for (const line of lines) {
+    const m = line.match(rx);
+    if (!m) continue;
+    const logNo = m[1];
+    if (seen.has(logNo)) continue;
+    seen.add(logNo);
+
+    const arrowIdx = line.indexOf(" → ");
+    const title = arrowIdx > 0 ? line.slice(0, arrowIdx).trim() : "";
+    if (!title || title.length < 2) continue;
+
+    results.push({
+      blogId,
+      logNo,
+      title,
+      url: `https://blog.naver.com/PostView.naver?blogId=${blogId}&logNo=${logNo}`,
+    });
+  }
+  return results;
+}
+
+// Count pagination links (`javascript:goPage(N)`) in a PostSearchList page.
+// Used as a depth indicator / tie-break signal for blogger coverage.
+function countBlogSearchPaginationPages(linksText) {
+  if (!linksText) return 0;
+  const matches = linksText.match(/javascript:goPage\(\d+\)/g);
+  return matches ? matches.length : 0;
+}
+
 function parseNaverSearchLinks(linksText) {
   if (!linksText) return [];
   const lines = linksText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
@@ -457,6 +501,28 @@ function readBlogPostList(blogId, { max = 20 } = {}) {
   return parsePostList(text).slice(0, max);
 }
 
+// Search a single blogger's posts for a query via Naver's PostSearchList.
+// Returns { posts: [{logNo, title, url, blogId}], paginationPages }.
+// posts are the page-1 results (up to ~10). Callers should filter by title
+// mention of the company to strip body-only matches.
+function searchWithinBlog(blogId, query, { orderBy = "date" } = {}) {
+  if (!blogId || !query) return { posts: [], paginationPages: 0 };
+  const encoded = encodeURIComponent(query);
+  const url =
+    `https://blog.naver.com/PostSearchList.naver` +
+    `?blogId=${encodeURIComponent(blogId)}` +
+    `&SearchText=${encoded}` +
+    `&orderBy=${orderBy}` +
+    `&range=all`;
+
+  const raw = browseLinks(url);
+  if (!raw) return { posts: [], paginationPages: 0 };
+
+  const posts = parseBlogSearchResults(raw, blogId);
+  const paginationPages = countBlogSearchPaginationPages(raw);
+  return { posts, paginationPages };
+}
+
 function readBlogPost(blogId, logNo) {
   if (!blogId || !logNo) return null;
   const url = `https://blog.naver.com/PostView.naver?blogId=${encodeURIComponent(blogId)}&logNo=${encodeURIComponent(logNo)}`;
@@ -513,10 +579,13 @@ module.exports = {
   searchNaverBlog,
   readBlogPostList,
   readBlogPost,
+  searchWithinBlog,
   normalizeNaverUrl,
   parseNaverSearchResults,
   parseNaverSearchLinks,
   parsePostList,
   parsePostListFromLinks,
+  parseBlogSearchResults,
+  countBlogSearchPaginationPages,
   parsePostView,
 };

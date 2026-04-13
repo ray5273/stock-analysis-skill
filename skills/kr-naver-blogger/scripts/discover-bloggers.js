@@ -8,7 +8,7 @@ const path = require("path");
 
 const browseNaver = require("../../kr-naver-browse/scripts/browse-naver.js");
 
-const DEFAULT_MIN_POSTS = 1;
+const DEFAULT_MIN_POSTS = 2;
 const DEFAULT_MAX_CANDIDATES = 10;
 const DEFAULT_CACHE_DIR = ".tmp/naver-blog-cache";
 
@@ -110,6 +110,9 @@ function rankBloggers(bloggers) {
     if (b.relevantPostCount !== a.relevantPostCount) {
       return b.relevantPostCount - a.relevantPostCount;
     }
+    const ap = a.inBlogPaginationPages || 0;
+    const bp = b.inBlogPaginationPages || 0;
+    if (bp !== ap) return bp - ap;
     const ad = a.latestPostDate || "";
     const bd = b.latestPostDate || "";
     if (bd !== ad) return bd.localeCompare(ad);
@@ -167,25 +170,22 @@ function discover(opts) {
     const entry = candidateMap.get(blogId);
     const searchHitCount = entry ? entry.searchHitCount : 0;
 
-    let posts = [];
+    // Primary signal: hit Naver's per-blog search and count posts whose
+    // TITLE contains the company name. Naver's in-blog search matches on
+    // body text, so a title filter is needed to strip one-off mentions.
+    let inBlogResult = { posts: [], paginationPages: 0 };
     try {
-      posts = browseNaver.readBlogPostList(blogId, { max: 20 });
+      inBlogResult = browseNaver.searchWithinBlog(blogId, opts.company);
     } catch (err) {
-      console.error(`[postlist-failed] ${blogId}: ${err.message}`);
+      console.error(`[inblog-search-failed] ${blogId}: ${err.message}`);
     }
 
-    const relevantInPostList = posts.filter((p) =>
+    const titleMatches = inBlogResult.posts.filter((p) =>
       mentionsCompany(p.title, opts.company, opts.ticker)
     );
-    // Combined signal: search-hit count + relevant posts from PostList scan.
-    // Search hits are capped at a date window and may under-represent dedicated
-    // bloggers whose posts rotate off the first page, so we take the max.
-    const relevantPostCount = Math.max(searchHitCount, relevantInPostList.length);
-    const latestPostDate = posts
-      .map((p) => p.date)
-      .filter(Boolean)
-      .sort()
-      .slice(-1)[0] || entry?.date || null;
+    const relevantPostCount = titleMatches.length;
+    const inBlogPage1Total = inBlogResult.posts.length;
+    const inBlogPaginationPages = inBlogResult.paginationPages;
 
     bloggers.push({
       blogId,
@@ -194,8 +194,9 @@ function discover(opts) {
       subscriberCount: null,
       relevantPostCount,
       searchHitCount,
-      postListRelevant: relevantInPostList.length,
-      latestPostDate,
+      inBlogPage1Total,
+      inBlogPaginationPages,
+      latestPostDate: null,
       categories: [],
       profileSnippet: null,
     });
