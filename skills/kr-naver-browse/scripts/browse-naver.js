@@ -471,6 +471,84 @@ function parseNaverSearchLinks(linksText) {
 // High-level helpers
 // ---------------------------------------------------------------------------
 
+// Parse Naver's 연관검색어 (related queries) block from a blog search results
+// page. Related-query links are the ones pointing back to search.naver.com
+// with `sm=tab_she` in the querystring — that's Naver's marker for
+// suggestions/related queries surfaced under the search box. Returns
+// `[{ text, nickname, wholeQuery }]` where `nickname` is the text after the
+// company prefix (or the whole text if it's attached as a suffix), and
+// `wholeQuery` is true when no separable nickname could be extracted.
+function parseRelatedQueries(linksText, company) {
+  if (!linksText || !company) return [];
+  const lines = linksText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const results = [];
+  const seen = new Set();
+
+  for (const line of lines) {
+    const arrowIdx = line.indexOf(" → ");
+    if (arrowIdx < 0) continue;
+    const text = line.slice(0, arrowIdx).trim();
+    const url = line.slice(arrowIdx + 3).trim();
+    if (!text || !url) continue;
+    // Related-search URLs carry sm=tab_she (from the suggestion box).
+    // Also require an ssc=tab.nx.all to avoid the "더보기" pagination links.
+    if (!/sm=tab_she/.test(url)) continue;
+    if (!/ssc=tab\.nx\.all/.test(url)) continue;
+    // Text must start with the company name (space-separated OR suffix-attached).
+    if (!text.startsWith(company)) continue;
+    if (seen.has(text)) continue;
+    seen.add(text);
+
+    // Strip company prefix + any whitespace to extract the tail.
+    let tail = text.slice(company.length).replace(/^[\s·]+/, "").trim();
+    const wholeQuery = tail.length === 0;
+    results.push({ text, nickname: wholeQuery ? null : tail, wholeQuery });
+    if (results.length >= 20) break;
+  }
+  return results;
+}
+
+// Fetch Naver blog-search related queries for a company name. Returns an array
+// of { text, nickname, wholeQuery } objects. May return an empty array if the
+// 연관검색어 block is absent (quiet tickers).
+function fetchRelatedQueries(company, opts = {}) {
+  if (!company) return [];
+  const url =
+    `https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(company)}`;
+  const raw = browseLinks(url, opts);
+  if (!raw) return [];
+  return parseRelatedQueries(raw, company);
+}
+
+// Scan a blog post's full page text for references to other Naver blogs.
+// Returns a deduped list of blogIds mentioned via `blog.naver.com/<blogId>`
+// links (excluding the blogId of the post being read and Naver's own reserved
+// segments like PostView / PostList). Used by discover-bloggers.js to mine
+// seed blogIds from roundup posts like "3인 3색(무영, 강비호, 문벵이)".
+const RESERVED_BLOG_PATH_SEGMENTS = new Set([
+  "PostView",
+  "PostList",
+  "PostSearchList",
+  "BuddyBlogList",
+  "PostThumbnailList",
+  "CategoryList",
+  "api",
+]);
+
+function extractBlogIdRefs(pageText, { excludeBlogId = null } = {}) {
+  if (!pageText) return [];
+  const rx = /blog\.naver\.com\/([A-Za-z0-9_-]+)/g;
+  const seen = new Set();
+  let m;
+  while ((m = rx.exec(pageText)) !== null) {
+    const id = m[1];
+    if (RESERVED_BLOG_PATH_SEGMENTS.has(id)) continue;
+    if (excludeBlogId && id === excludeBlogId) continue;
+    seen.add(id);
+  }
+  return [...seen];
+}
+
 function searchNaverBlog(query, { max = 10 } = {}) {
   const encoded = encodeURIComponent(query);
   const url = `https://search.naver.com/search.naver?where=blog&query=${encoded}`;
@@ -637,6 +715,18 @@ function runSmokeTest() {
     if (result.date) console.log(`  date: ${result.date}`);
   }
   console.log(`OK - ${results.length} result(s).`);
+
+  console.log(`\nFetching related queries for: 엘앤에프`);
+  const related = fetchRelatedQueries("엘앤에프");
+  if (!related.length) {
+    console.error("No related queries parsed. Parser may need tuning.");
+  } else {
+    for (const r of related) {
+      const tag = r.wholeQuery ? "(whole)" : `nickname=${r.nickname}`;
+      console.log(`- ${r.text}  ${tag}`);
+    }
+    console.log(`OK - ${related.length} related query/queries.`);
+  }
 }
 
 if (require.main === module) {
@@ -659,6 +749,9 @@ module.exports = {
   readBlogPostList,
   readBlogPost,
   searchWithinBlog,
+  fetchRelatedQueries,
+  parseRelatedQueries,
+  extractBlogIdRefs,
   normalizeNaverUrl,
   parseNaverSearchResults,
   parseNaverSearchLinks,

@@ -8,10 +8,14 @@ const path = require("path");
 
 const browseNaver = require("../../kr-naver-browse/scripts/browse-naver.js");
 const { buildQuerySet } = require("./build-query-set.js");
+const { isTradingTitle, isListicleTitle } = require("./lib/title-filters.js");
+const { extractNicknameQueries, isRoundupTitle } = require("./lib/nickname-extract.js");
 
 const DEFAULT_MIN_POSTS = 2;
 const DEFAULT_MAX_CANDIDATES = 10;
 const DEFAULT_CACHE_DIR = ".tmp/naver-blog-cache";
+const TRADING_BLOG_RATIO = 0.5;
+const MAX_ROUNDUP_FETCH = 3;
 
 function parseArgs(argv) {
   const opts = {
@@ -21,6 +25,7 @@ function parseArgs(argv) {
     noCache: false,
     verbose: false,
     autoQueries: true,
+    qualityFilter: true,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -37,6 +42,7 @@ function parseArgs(argv) {
     else if (arg === "--dart-file") opts.dartFile = next();
     else if (arg === "--context-file") opts.contextFile = next();
     else if (arg === "--no-auto-queries") opts.autoQueries = false;
+    else if (arg === "--no-quality-filter") opts.qualityFilter = false;
     else if (arg === "--help" || arg === "-h") opts.help = true;
     else throw new Error(`Unknown argument: ${arg}`);
   }
@@ -63,6 +69,7 @@ function usage() {
     "  --dart-file PATH     DART analysis markdown for product keyword extraction",
     "  --context-file PATH  Existing memo/data-pack for keyword extraction",
     "  --no-auto-queries    Force legacy 3-query mode (no dynamic keywords)",
+    "  --no-quality-filter  Disable trading/listicle title filters (regression mode)",
   ].join("\n");
 }
 
@@ -94,19 +101,51 @@ function writeJson(p, data) {
   fs.writeFileSync(p, JSON.stringify(data, null, 2) + "\n", "utf8");
 }
 
-function dedupeBlogIds(searchResults) {
-  const byId = new Map();
+// Accumulate search hits into a blogId→entry map. `source` tags which pass
+// the hit came from so downstream logic can tell keyword-surfaced candidates
+// apart from nickname- and roundup-surfaced ones.
+function accumulateHits(byId, searchResults, { source = "keyword", nickname = null } = {}) {
   for (const r of searchResults) {
     if (!r.blogId) continue;
     if (!byId.has(r.blogId)) {
-      byId.set(r.blogId, { ...r, searchHitCount: 1, searchHits: [r] });
-    } else {
-      const existing = byId.get(r.blogId);
+      byId.set(r.blogId, {
+        ...r,
+        searchHitCount: 0,
+        searchHits: [],
+        nicknameHitCount: 0,
+        nicknameAnchors: new Set(),
+        roundupMentioned: false,
+        roundupSources: new Set(),
+      });
+    }
+    const existing = byId.get(r.blogId);
+    existing.searchHits.push(r);
+    if (source === "keyword") {
       existing.searchHitCount += 1;
-      existing.searchHits.push(r);
+    } else if (source === "nickname") {
+      existing.nicknameHitCount += 1;
+      if (nickname) existing.nicknameAnchors.add(nickname);
     }
   }
-  return byId;
+}
+
+function markRoundupMention(byId, blogId, sourceBlogId) {
+  if (!blogId) return;
+  if (!byId.has(blogId)) {
+    byId.set(blogId, {
+      blogId,
+      searchHitCount: 0,
+      searchHits: [],
+      nicknameHitCount: 0,
+      nicknameAnchors: new Set(),
+      roundupMentioned: true,
+      roundupSources: new Set([sourceBlogId]),
+    });
+  } else {
+    const existing = byId.get(blogId);
+    existing.roundupMentioned = true;
+    existing.roundupSources.add(sourceBlogId);
+  }
 }
 
 function mentionsCompany(text, company, ticker) {
@@ -117,17 +156,29 @@ function mentionsCompany(text, company, ticker) {
   return false;
 }
 
+function isAnchored(b) {
+  return (b.nicknameHitCount || 0) > 0 || b.roundupMentioned === true;
+}
+
 function rankBloggers(bloggers) {
   return bloggers.slice().sort((a, b) => {
+    // Anchored bloggers (nickname- or roundup-surfaced) outrank keyword-only
+    // hits. The anchor IS the quality signal; depth is the tiebreaker.
+    const aa = isAnchored(a) ? 1 : 0;
+    const ba = isAnchored(b) ? 1 : 0;
+    if (ba !== aa) return ba - aa;
+    const ad = a.dedicatedPostCount ?? a.relevantPostCount;
+    const bd = b.dedicatedPostCount ?? b.relevantPostCount;
+    if (bd !== ad) return bd - ad;
     if (b.relevantPostCount !== a.relevantPostCount) {
       return b.relevantPostCount - a.relevantPostCount;
     }
     const ap = a.inBlogPaginationPages || 0;
     const bp = b.inBlogPaginationPages || 0;
     if (bp !== ap) return bp - ap;
-    const ad = a.latestPostDate || "";
-    const bd = b.latestPostDate || "";
-    if (bd !== ad) return bd.localeCompare(ad);
+    const ald = a.latestPostDate || "";
+    const bld = b.latestPostDate || "";
+    if (bld !== ald) return bld.localeCompare(ald);
     return a.blogId.localeCompare(b.blogId);
   });
 }
@@ -182,6 +233,8 @@ function discover(opts) {
     if (opts.verbose) console.error(`[queries] legacy mode, ${queries.length} queries`);
   }
 
+  // Pass 1 — keyword search. Same as Phase 2.
+  const candidateMap = new Map();
   const allResults = [];
   for (const q of queries) {
     if (opts.verbose) console.error(`[search] ${q}`);
@@ -189,17 +242,111 @@ function discover(opts) {
       const hits = browseNaver.searchNaverBlog(q, { max: 10 });
       if (opts.verbose) console.error(`  → ${hits.length} hit(s)`);
       allResults.push(...hits);
+      accumulateHits(candidateMap, hits, { source: "keyword" });
     } catch (err) {
       console.error(`[search-failed] "${q}": ${err.message}`);
     }
   }
 
-  const candidateMap = dedupeBlogIds(allResults);
-  // Rank candidates by search-hit count first (primary signal of coverage depth).
-  const candidates = Array.from(candidateMap.values())
+  // Pass 2 — related-query nickname anchor. Fetch 연관검색어 from the blog
+  // search page for the company, strip blocklisted tails, fire the rest as
+  // `<company> <nickname>` anchor queries. Each hit is tagged with the
+  // surfacing nickname so qualification can bypass min-posts for anchored
+  // bloggers.
+  let relatedQueries = [];
+  const nicknameAnchorList = [];
+  try {
+    relatedQueries = browseNaver.fetchRelatedQueries(opts.company) || [];
+    if (opts.verbose) console.error(`[related] ${relatedQueries.length} suggestion(s)`);
+  } catch (err) {
+    console.error(`[related-failed] ${err.message}`);
+  }
+  const nicknameQueries = extractNicknameQueries(relatedQueries);
+  for (const nq of nicknameQueries) {
+    if (opts.verbose) console.error(`[nickname-search] ${nq.text}`);
+    try {
+      const hits = browseNaver.searchNaverBlog(nq.text, { max: 10 });
+      if (opts.verbose) console.error(`  → ${hits.length} hit(s)`);
+      accumulateHits(candidateMap, hits, {
+        source: "nickname",
+        nickname: nq.nickname || nq.text,
+      });
+      nicknameAnchorList.push({ text: nq.text, nickname: nq.nickname, hits: hits.length });
+    } catch (err) {
+      console.error(`[nickname-search-failed] "${nq.text}": ${err.message}`);
+    }
+  }
+
+  // Pass 3 — roundup-post body mining. Scan every hit from pass 1 + pass 2
+  // for titles matching blogroll patterns. Fetch the full page text (via
+  // browseText, which is untruncated) of up to MAX_ROUNDUP_FETCH of them,
+  // extract every `blog.naver.com/<blogId>` reference, and inject those
+  // blogIds as high-trust candidates. This is how we surface depth-first
+  // coverers (like naburo for 엘앤에프) whose own titles never mention the
+  // company name — they get linked from other dedicated bloggers' roundup
+  // posts.
+  const seenRoundupKeys = new Set();
+  const roundupCandidates = [];
+  for (const r of allResults) {
+    if (!r.title || !r.blogId || !r.logNo) continue;
+    if (!isRoundupTitle(r.title, opts.company)) continue;
+    const key = `${r.blogId}:${r.logNo}`;
+    if (seenRoundupKeys.has(key)) continue;
+    seenRoundupKeys.add(key);
+    roundupCandidates.push(r);
+  }
+  // Also consider nickname-pass hits — the "3인 3색" post might only surface
+  // via a `엘앤에프 무영` query, not the primary keyword pass.
+  for (const entry of candidateMap.values()) {
+    for (const h of entry.searchHits) {
+      if (!h.title || !h.logNo) continue;
+      if (!isRoundupTitle(h.title, opts.company)) continue;
+      const key = `${h.blogId}:${h.logNo}`;
+      if (seenRoundupKeys.has(key)) continue;
+      seenRoundupKeys.add(key);
+      roundupCandidates.push(h);
+    }
+  }
+  const roundupFetched = [];
+  for (const rc of roundupCandidates.slice(0, MAX_ROUNDUP_FETCH)) {
+    if (opts.verbose) console.error(`[roundup] ${rc.blogId}/${rc.logNo} ${rc.title}`);
+    try {
+      const url = `https://blog.naver.com/PostView.naver?blogId=${encodeURIComponent(rc.blogId)}&logNo=${encodeURIComponent(rc.logNo)}`;
+      const text = browseNaver.browseText(url);
+      if (!text) continue;
+      const refIds = browseNaver.extractBlogIdRefs(text, { excludeBlogId: rc.blogId });
+      if (opts.verbose) console.error(`  → refs: ${refIds.join(", ") || "(none)"}`);
+      for (const id of refIds) {
+        markRoundupMention(candidateMap, id, rc.blogId);
+      }
+      roundupFetched.push({
+        sourceBlogId: rc.blogId,
+        logNo: rc.logNo,
+        title: rc.title,
+        refs: refIds,
+      });
+    } catch (err) {
+      console.error(`[roundup-fetch-failed] ${rc.blogId}/${rc.logNo}: ${err.message}`);
+    }
+  }
+
+  // Build the candidate list to evaluate: everything the max-candidates cap
+  // from pass 1, plus ALL anchored entries (nickname or roundup) regardless
+  // of the cap. Anchored entries are rare enough that uncapping is safe and
+  // fixes the recall problem that started Phase 3.
+  const byKeywordHit = Array.from(candidateMap.values())
+    .filter((c) => !isAnchored(c))
     .sort((a, b) => b.searchHitCount - a.searchHitCount)
-    .slice(0, opts.maxCandidates)
-    .map((c) => c.blogId);
+    .slice(0, opts.maxCandidates);
+  const anchored = Array.from(candidateMap.values()).filter(isAnchored);
+  const candidateList = [...byKeywordHit, ...anchored];
+  const seenCandidateIds = new Set();
+  const candidates = [];
+  for (const c of candidateList) {
+    if (seenCandidateIds.has(c.blogId)) continue;
+    seenCandidateIds.add(c.blogId);
+    candidates.push(c.blogId);
+  }
 
   const bloggers = [];
   let skipped = 0;
@@ -207,6 +354,10 @@ function discover(opts) {
     if (opts.verbose) console.error(`[evaluate] ${blogId}`);
     const entry = candidateMap.get(blogId);
     const searchHitCount = entry ? entry.searchHitCount : 0;
+    const nicknameHitCount = entry ? entry.nicknameHitCount : 0;
+    const nicknameAnchors = entry && entry.nicknameAnchors ? [...entry.nicknameAnchors] : [];
+    const roundupMentioned = entry ? !!entry.roundupMentioned : false;
+    const roundupSources = entry && entry.roundupSources ? [...entry.roundupSources] : [];
 
     // Primary signal: hit Naver's per-blog search and count posts whose
     // TITLE contains the company name. Naver's in-blog search matches on
@@ -225,13 +376,50 @@ function discover(opts) {
     const inBlogPage1Total = inBlogResult.posts.length;
     const inBlogPaginationPages = inBlogResult.paginationPages;
 
+    // Quality filters: classify each title-matched post as trading / listicle
+    // / dedicated. dedicatedPostCount is the primary ranking signal.
+    let tradingTitleCount = 0;
+    let listicleTitleCount = 0;
+    let dedicatedPostCount = 0;
+    for (const p of titleMatches) {
+      const trading = isTradingTitle(p.title);
+      const listicle = isListicleTitle(p.title, opts.company);
+      if (trading) tradingTitleCount += 1;
+      if (listicle) listicleTitleCount += 1;
+      if (!trading && !listicle) dedicatedPostCount += 1;
+    }
+
+    // Trading-shop detector: if half of the blog's page-1 posts are TA
+    // flavor, it's not a dedicated coverer regardless of title matches.
+    let tradingAllCount = 0;
+    for (const p of inBlogResult.posts) {
+      if (isTradingTitle(p.title)) tradingAllCount += 1;
+    }
+    const isTradingBlog =
+      inBlogPage1Total > 0 &&
+      tradingAllCount / inBlogPage1Total >= TRADING_BLOG_RATIO;
+
+    if (opts.verbose) {
+      if (isTradingBlog) console.error(`  [excluded-trading] ${blogId} (${tradingAllCount}/${inBlogPage1Total})`);
+      if (listicleTitleCount > 0) console.error(`  [listicle] ${blogId} x${listicleTitleCount}`);
+      console.error(`  [counts] rel=${relevantPostCount} ded=${dedicatedPostCount} trad=${tradingTitleCount} list=${listicleTitleCount}`);
+    }
+
     bloggers.push({
       blogId,
       displayName: null,
       blogTitle: null,
       subscriberCount: null,
       relevantPostCount,
+      dedicatedPostCount,
+      tradingTitleCount,
+      listicleTitleCount,
+      isTradingBlog,
       searchHitCount,
+      nicknameHitCount,
+      nicknameAnchors,
+      roundupMentioned,
+      roundupSources,
       inBlogPage1Total,
       inBlogPaginationPages,
       latestPostDate: null,
@@ -240,7 +428,20 @@ function discover(opts) {
     });
   }
 
-  const qualified = bloggers.filter((b) => b.relevantPostCount >= opts.minPosts);
+  // Anchored bloggers (surfaced via nickname autocomplete or roundup-post
+  // body references) bypass the min-posts floor — but still need at least
+  // one dedicated post about the company. The anchor is a trust signal, not
+  // a free pass; an anchored blogger with ded=0 (mentioned the company in
+  // one body but never wrote a titled post about it) isn't a coverer.
+  // Trading-blog exclusion still applies to everyone.
+  const qualified = opts.qualityFilter
+    ? bloggers.filter(
+        (b) =>
+          ((isAnchored(b) && b.dedicatedPostCount >= 1) ||
+            b.dedicatedPostCount >= opts.minPosts) &&
+          !b.isTradingBlog
+      )
+    : bloggers.filter((b) => b.relevantPostCount >= opts.minPosts);
   const ranked = rankBloggers(qualified);
 
   const output = {
@@ -254,6 +455,10 @@ function discover(opts) {
       qualified: ranked.length,
       skipped,
       querySet: querySetMeta,
+      relatedQueries,
+      nicknameQueries: nicknameAnchorList,
+      nicknameAnchoredCount: ranked.filter((b) => (b.nicknameHitCount || 0) > 0).length,
+      roundupFetched,
       generatedBy: "kr-naver-blogger/discover-bloggers.js",
     },
   };

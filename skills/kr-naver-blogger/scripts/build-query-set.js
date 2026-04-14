@@ -14,6 +14,7 @@ const fs = require("fs");
 const path = require("path");
 
 const browseNaver = require("../../kr-naver-browse/scripts/browse-naver.js");
+const { isListicleTitle } = require("./lib/title-filters.js");
 
 const DEFAULT_MAX_QUERIES = 8;
 
@@ -98,6 +99,13 @@ const STOPWORDS = new Set([
   // other generic
   "한국", "미국", "중국", "일본", "유럽", "분기",
   "중심", "협력", "발표", "계획", "추진", "검토", "진행",
+  // flow / supply-demand meta terms
+  "외국인", "기관", "개인", "수급", "매수세", "매도세",
+  // broad sector labels — too generic to seed a useful query.
+  // Specific products (양극재, HBM, SMR) intentionally NOT listed.
+  "광통신", "반도체", "바이오", "제약", "조선", "방산", "철강",
+  "해운", "항공", "건설", "은행", "증권사", "보험", "식품",
+  "화장품", "면세점", "엔터", "미디어", "게임", "유통",
 ]);
 
 function tokenize(text, company, ticker) {
@@ -244,6 +252,7 @@ function extractDartKeywords(dartFilePath, company) {
 // Fetch Naver News headlines for the company and extract trending keywords
 // via frequency analysis.
 function extractNewsKeywords(company, ticker, opts = {}) {
+  const mode = opts.mode || "news";
   const headlines = browseNaver.searchNaverNews(company, {
     max: 30,
     verbose: opts.verbose,
@@ -253,10 +262,24 @@ function extractNewsKeywords(company, ticker, opts = {}) {
     console.error(`[news] ${headlines.length} headline(s) fetched`);
   }
 
-  if (headlines.length === 0) return { keywords: [], headlinesScanned: 0 };
+  if (headlines.length === 0) return { keywords: [], headlinesScanned: 0, listicleDropped: 0 };
 
-  // Tokenize each headline
-  const tokenArrays = headlines.map((h) => tokenize(h, company, ticker));
+  // Drop listicle-style headlines before tokenizing. Listicle headlines
+  // ("엘앤에프 광통신 원전 반도체 급등...") contaminate the keyword set with
+  // unrelated sector tags that then pull in cross-sector bloggers.
+  const filtered = [];
+  let listicleDropped = 0;
+  for (const h of headlines) {
+    if (isListicleTitle(h, company, { mode })) {
+      listicleDropped += 1;
+      if (opts.verbose) console.error(`  [listicle-drop] ${h.slice(0, 60)}`);
+      continue;
+    }
+    filtered.push(h);
+  }
+
+  // Tokenize each filtered headline
+  const tokenArrays = filtered.map((h) => tokenize(h, company, ticker));
   const topTerms = countFrequencies(tokenArrays, { minCount: 3, maxTerms: 10 });
 
   if (opts.verbose) {
@@ -268,6 +291,7 @@ function extractNewsKeywords(company, ticker, opts = {}) {
   return {
     keywords: topTerms.map((t) => t.term),
     headlinesScanned: headlines.length,
+    listicleDropped,
   };
 }
 
@@ -346,8 +370,10 @@ function buildQuerySet(opts) {
 
   // 3. News-trend keywords
   let newsHeadlinesScanned = 0;
-  const newsResult = extractNewsKeywords(company, ticker, { verbose });
+  let newsListicleDropped = 0;
+  const newsResult = extractNewsKeywords(company, ticker, { verbose, mode: "news" });
   newsHeadlinesScanned = newsResult.headlinesScanned;
+  newsListicleDropped = newsResult.listicleDropped || 0;
   for (const kw of newsResult.keywords.slice(0, 5)) {
     addQuery(`${company} ${kw}`, "news-trend");
   }
@@ -386,6 +412,7 @@ function buildQuerySet(opts) {
     queries: finalQueries,
     meta: {
       newsHeadlinesScanned,
+      newsListicleDropped,
       dartProductsExtracted,
       contextFileUsed,
       generatedBy: "kr-naver-blogger/build-query-set.js",

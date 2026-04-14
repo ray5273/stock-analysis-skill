@@ -35,15 +35,37 @@ Do **not** use for:
    - News trends: top keywords from Naver News headline frequency analysis
    - Context (if `--context-file`): terms from 핵심 논점 / 투자 포인트 sections
    - Capped at 8 queries. Use `--no-auto-queries` for legacy 3-query mode.
-4. **Search all queries** through `kr-naver-browse` `searchNaverBlog`.
-5. **Collect candidate blog IDs** from all result sets.
-6. **Per-blog search** each candidate via Naver's `PostSearchList.naver`
-   endpoint. Count posts whose **title** contains the company name or ticker
-   (`relevantPostCount`). Record pagination page count as a depth signal.
-7. **Rank** by `relevantPostCount` then by `inBlogPaginationPages`.
-8. **Filter** anyone below `--min-posts` (default 2).
-9. **Write** a dated JSON file — the schema is documented in
-   `references/workflow.md`.
+4. **Pass 1 — Keyword search.** Run every query through
+   `kr-naver-browse.searchNaverBlog` and accumulate hits by `blogId`.
+5. **Pass 2 — Nickname anchor.** Call `fetchRelatedQueries(company)` to
+   scrape the blog search page's 연관검색어 block. Strip generic tails
+   (`주가`, `전망`, `배당`, ...) via `extractNicknameQueries`. Fire each
+   surviving suggestion as a `searchNaverBlog` call; hits are tagged with
+   the surfacing nickname (`nicknameHitCount`, `nicknameAnchors`).
+6. **Pass 3 — Roundup-post body mining.** Scan all pass 1 + pass 2 hits
+   for titles matching `isRoundupTitle` (N인 N색, bracketed nickname
+   lists). Fetch up to 3 matching posts' full page text via `browseText`
+   and call `extractBlogIdRefs` to pull every `blog.naver.com/<blogId>`
+   reference out of the body. Each referenced blogId is injected as an
+   anchored candidate with `roundupMentioned: true`.
+7. **Select candidates**: keyword-only candidates are capped at
+   `--max-candidates`; **anchored candidates (nickname OR roundup) are
+   uncapped**.
+8. **Per-blog search** each candidate via `PostSearchList.naver`. Count
+   posts whose **title** contains the company name or ticker
+   (`relevantPostCount`). Classify each match as trading / listicle /
+   dedicated via the shared title-filter lib. `dedicatedPostCount` is the
+   primary depth signal.
+9. **Detect trading-shop blogs**: if 50%+ of the blog's page-1 post titles
+   are TA-flavored, mark `isTradingBlog: true` and exclude — including
+   anchored candidates. A trading shop is a trading shop.
+10. **Rank** by anchored-status desc → `dedicatedPostCount` desc →
+    `inBlogPaginationPages` desc.
+11. **Qualify**: anchored OR `dedicatedPostCount >= --min-posts`, AND
+    `isTradingBlog === false`. Anchored candidates bypass the min-posts
+    floor because the anchor IS the quality signal.
+10. **Write** a dated JSON file — the schema is documented in
+    `references/workflow.md`.
 
 ## Output Contract
 
@@ -63,7 +85,15 @@ Do **not** use for:
       "blogTitle": null,
       "subscriberCount": null,
       "relevantPostCount": 6,
+      "dedicatedPostCount": 5,
+      "tradingTitleCount": 0,
+      "listicleTitleCount": 1,
+      "isTradingBlog": false,
       "searchHitCount": 1,
+      "nicknameHitCount": 4,
+      "nicknameAnchors": ["무영"],
+      "roundupMentioned": true,
+      "roundupSources": ["bosbos2"],
       "inBlogPage1Total": 10,
       "inBlogPaginationPages": 11,
       "latestPostDate": null,
@@ -71,7 +101,18 @@ Do **not** use for:
       "profileSnippet": null
     }
   ],
-  "meta": { "searchQueries": 7, "candidatesFound": 50, "qualified": 8, "querySet": { "..." : "..." } }
+  "meta": {
+    "searchQueries": 7,
+    "candidatesFound": 50,
+    "qualified": 8,
+    "querySet": { "..." : "..." },
+    "relatedQueries": [{ "text": "엘앤에프 무영", "nickname": "무영", "wholeQuery": false }],
+    "nicknameQueries": [{ "text": "엘앤에프 무영", "nickname": "무영", "hits": 10 }],
+    "nicknameAnchoredCount": 9,
+    "roundupFetched": [
+      { "sourceBlogId": "bosbos2", "logNo": "224125884833", "refs": ["mooyoung_2022", "naburo", "shmoon305"] }
+    ]
+  }
 }
 ```
 
@@ -83,10 +124,12 @@ Fields that cannot be extracted are set to `null` / `[]`, never fabricated.
    page didn't yield it, the field stays `null`.
 2. **Respect the 1 s delay** between browse requests (handled by
    `kr-naver-browse`).
-3. **Cap candidates** at 10 bloggers examined per run. Quality over breadth.
+3. **Cap keyword-only candidates** at `--max-candidates` (default 10).
+   Anchored candidates (nickname / roundup) are uncapped — they are rare
+   and the whole point of Phase 3 was fixing recall.
 4. **Never scrape personal info** — only public post metadata.
 5. **Keep the output deterministic** given the same inputs: rank by
-   `(relevantPostCount desc, inBlogPaginationPages desc, latestPostDate desc, blogId asc)`.
+   `(anchored desc, dedicatedPostCount desc, relevantPostCount desc, inBlogPaginationPages desc, latestPostDate desc, blogId asc)`.
 6. **Fail loud** if `browse-naver.js` cannot be required or the binary is
    missing. Do not fall back to a non-Naver source.
 
@@ -101,7 +144,8 @@ node skills/kr-naver-blogger/scripts/discover-bloggers.js \
 ```
 
 Optional flags: `--min-posts N`, `--cache-dir path`, `--no-cache`, `--verbose`,
-`--queries-file PATH`, `--dart-file PATH`, `--context-file PATH`, `--no-auto-queries`.
+`--queries-file PATH`, `--dart-file PATH`, `--context-file PATH`,
+`--no-auto-queries`, `--no-quality-filter`.
 
 ### build-query-set.js
 

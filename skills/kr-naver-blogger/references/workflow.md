@@ -46,10 +46,58 @@ Use `--no-auto-queries` to force the legacy 3-query path (base + bare ticker).
 
 ## Search (candidate discovery)
 
+Discovery runs three passes and accumulates every hit into one blogId→entry
+map before evaluation.
+
+### Pass 1 — Keyword search
+
 `kr-naver-browse`'s `searchNaverBlog` returns up to 10 results per query.
 Deduplicate by `blogId` across all result sets. Track `searchHitCount`
-per blogger for observability. Sort candidates by `searchHitCount` desc and
-slice to `--max-candidates`.
+per blogger for observability. Keyword-only candidates are sorted by
+`searchHitCount` desc and sliced to `--max-candidates`.
+
+### Pass 2 — Related-query nickname anchor
+
+Naver's blog search page surfaces "연관검색어" (related queries) for the
+company. The most famous bloggers show up there as `<company> <nickname>`
+patterns (e.g. `엘앤에프 무영`, `엘앤에프형`, `엘앤에프 문벵이`) because
+fans search `<company> <blogger>` to find the blogger's latest take.
+
+`fetchRelatedQueries(company)` scrapes that block, then
+`extractNicknameQueries` strips generic tails (`주가`, `전망`, `배당`,
+`실적`, `공시`, `차트`, ...) and keeps the rest as nickname candidates,
+including single-char suffix tails like `엘앤에프형` (these are legit —
+bloggers self-identify with the suffix). Each surviving query is fired as
+a `searchNaverBlog` call and every hit is tagged with the nickname on the
+candidate entry (`nicknameHitCount`, `nicknameAnchors`).
+
+### Pass 3 — Roundup-post body mining
+
+Some dedicated coverers never win on keyword search because their own
+titles are topic-specific (e.g. `naburo` writes Tesla-supply-chain posts,
+not posts titled "엘앤에프 분석"). They surface via **other bloggers'
+roundup posts** — "3인 3색 엘앤에프 관련 블로거 활용법(무영, 강비호,
+문벹이)" style posts that list multiple nicknames and link to each
+blogger's profile.
+
+`isRoundupTitle` detects such titles via "N인 N색" clusters, explicit
+`블로거` / `블로그 추천` references, and bracketed/quoted lists with 2+
+separators. The script fetches up to 3 roundup posts' full page text via
+`browseText` (not `readBlogPost`, which truncates) and calls
+`extractBlogIdRefs` to scan for `blog.naver.com/<blogId>` URLs. Every
+referenced blogId is injected into the candidate map with
+`roundupMentioned: true` and `roundupSources: [<sourceBlogId>]`.
+
+### Candidate selection
+
+The evaluation list is the union of:
+
+1. Keyword-only candidates ranked by `searchHitCount` desc, capped at
+   `--max-candidates`.
+2. **All** anchored candidates (nickname hit OR roundup mention),
+   uncapped. Anchored entries are rare enough (≤ ~10 per company) that
+   uncapping is safe, and the cap is what caused the Phase 2 recall
+   failure.
 
 ## Candidate Evaluation (coverage depth)
 
@@ -69,14 +117,58 @@ For each candidate `blogId`, hit Naver's per-blog search endpoint via
 Do not paginate. Page 1 plus pagination-count gives enough signal for
 top-N ranking, and one fetch per candidate keeps runtime predictable.
 
+## Title Quality Filters
+
+Not all title matches are equal. Two patterns are filtered before counting:
+
+- **Trading / chart titles** — generic TA vocabulary (`차트`, `매매`, `급등주`,
+  `관심주`, `시황`, `오늘의`, `단타`, `지지선`...). These stamp the company
+  name on TA content that isn't real coverage.
+- **Listicle titles** — multi-stock roundup posts where the target company is
+  one of many tagged names. Detected via separator density, sector-tag count,
+  and target-company position.
+
+Per-candidate fields:
+
+- `dedicatedPostCount` — title matches that are neither trading nor listicle.
+  Primary ranking signal.
+- `tradingTitleCount`, `listicleTitleCount` — observability counters.
+- `isTradingBlog` — set when 50%+ of the blog's entire page-1 post list is
+  TA-flavored. Trading-shop bloggers are excluded from the qualified list
+  regardless of dedicated count.
+
+Pass `--no-quality-filter` to disable both filters for regression testing.
+
+A related filter runs in `build-query-set.js`: news headlines with 4+ listicle
+separators are dropped before tokenization, and generic sector labels
+(`광통신`, `반도체`, `바이오`, `조선`...) are stopworded out of the frequency
+counter so they don't seed queries. Specific product terms (`양극재`, `HBM`,
+`SMR`) remain eligible.
+
+## Qualification
+
+A blogger is qualified when:
+
+- `isTradingBlog === false` — trading-shop exclusion applies to everyone,
+  including anchored candidates. A trading shop whose name happens to
+  appear in a roundup post is still a trading shop.
+- AND one of:
+  - `dedicatedPostCount >= --min-posts`, OR
+  - **anchored** — `nicknameHitCount >= 1` OR `roundupMentioned === true`.
+    Anchored bloggers bypass the min-posts floor because the anchor itself
+    is the quality signal. (They do NOT bypass the trading filter.)
+
 ## Ranking
 
-Sort qualified bloggers (`relevantPostCount >= min-posts`) by:
+Sort qualified bloggers by:
 
-1. `relevantPostCount` descending
-2. `inBlogPaginationPages` descending
-3. `latestPostDate` descending (when available)
-4. `blogId` ascending (deterministic tiebreaker)
+1. **Anchored status** descending — anchored (nickname/roundup) outranks
+   keyword-only. The anchor is the trust signal; depth is the tiebreak.
+2. `dedicatedPostCount` descending
+3. `relevantPostCount` descending (observability tiebreak)
+4. `inBlogPaginationPages` descending
+5. `latestPostDate` descending (when available)
+6. `blogId` ascending (deterministic tiebreaker)
 
 ## Output JSON
 
@@ -92,7 +184,15 @@ Sort qualified bloggers (`relevantPostCount >= min-posts`) by:
       "blogTitle": null,
       "subscriberCount": null,
       "relevantPostCount": 6,
+      "dedicatedPostCount": 5,
+      "tradingTitleCount": 0,
+      "listicleTitleCount": 1,
+      "isTradingBlog": false,
       "searchHitCount": 1,
+      "nicknameHitCount": 4,
+      "nicknameAnchors": ["무영"],
+      "roundupMentioned": true,
+      "roundupSources": ["bosbos2"],
       "inBlogPage1Total": 10,
       "inBlogPaginationPages": 11,
       "latestPostDate": null,
@@ -109,8 +209,24 @@ Sort qualified bloggers (`relevantPostCount >= min-posts`) by:
         { "text": "엘앤에프 투자 분석", "source": "base" },
         { "text": "엘앤에프 양극재", "source": "news-trend" }
       ],
-      "meta": { "newsHeadlinesScanned": 26, "dartProductsExtracted": 0 }
+      "meta": { "newsHeadlinesScanned": 26, "newsListicleDropped": 4, "dartProductsExtracted": 0 }
     },
+    "relatedQueries": [
+      { "text": "엘앤에프 무영", "nickname": "무영", "wholeQuery": false },
+      { "text": "엘앤에프형", "nickname": "형", "wholeQuery": false }
+    ],
+    "nicknameQueries": [
+      { "text": "엘앤에프 무영", "nickname": "무영", "hits": 10 }
+    ],
+    "nicknameAnchoredCount": 9,
+    "roundupFetched": [
+      {
+        "sourceBlogId": "bosbos2",
+        "logNo": "224125884833",
+        "title": "3인 3색 엘앤에프 관련 블로거 활용법(무영, 강비호, 문벵이)",
+        "refs": ["mooyoung_2022", "naburo", "shmoon305"]
+      }
+    ],
     "generatedBy": "kr-naver-blogger/discover-bloggers.js"
   }
 }

@@ -1,6 +1,6 @@
 ---
 name: kr-naver-browse
-description: Headless browser wrapper for Naver blog/search navigation. Use when another skill needs to fetch Naver search results, a blogger's post list, or a single blog post body. Wraps the gstack `browse` binary with Naver-specific URL normalization, retry on empty text extraction, and structured parsing helpers. Do not use for non-Naver sites — the URL rewriters assume Naver's PostView layout.
+description: Headless browser wrapper for Naver blog/search navigation. Use when another skill needs to fetch Naver search results, a blogger's post list, or a single blog post body. Wraps the gstack `browse` binary with Naver-specific URL normalization, retry on empty text extraction, and structured parsing helpers. Do not use for non-Naver sites because the URL rewriters assume Naver's PostView layout.
 ---
 
 # Naver Blog Browser
@@ -32,10 +32,11 @@ need a specific URL shape to return text at all.
 
 Patterns that **do not** reliably render text in headless mode:
 
-- `https://blog.naver.com/<id>` — returns an empty shell
-- `https://blog.naver.com/<id>/<logNo>` — redirects through JS; text extraction
-  often returns empty. Use `browse-naver.js`'s `normalizeNaverUrl()` to rewrite
-  it into `PostView.naver?blogId=...&logNo=...` before visiting.
+- `https://blog.naver.com/<id>` returns an empty shell
+- `https://blog.naver.com/<id>/<logNo>` redirects through JS and text
+  extraction often returns empty. Use `browse-naver.js`'s
+  `normalizeNaverUrl()` to rewrite it into
+  `PostView.naver?blogId=...&logNo=...` before visiting.
 
 ## How It Works
 
@@ -43,13 +44,25 @@ Patterns that **do not** reliably render text in headless mode:
 gstack `browse` binary in this order:
 
 1. `$GSTACK_BROWSE_BIN` environment variable, if set
-2. `~/.claude/skills/gstack/browse/dist/browse`
-3. `browse` on `$PATH` (only if it is the gstack binary, not `xdg-open`)
+2. A skill-local vendored runtime at `vendor/gstack/browse/dist/browse`
+3. `~/.codex/skills/gstack/browse/dist/browse`
+4. `~/.claude/skills/gstack/browse/dist/browse`
+5. `browse` on `$PATH` (only if it is the gstack binary, not `xdg-open`)
 
 Each helper spawns `browse` via `execFileSync` with a 30s timeout and a 5 MB
 output buffer. Korean search terms are passed through `encodeURIComponent`. On
 empty text extraction, helpers retry once after a 5 s wait before returning
 `null`.
+
+`kr-naver-browse` now ships a `scripts/post-install.(ps1|sh)` hook. When the
+skill is installed through this repo's `scripts/install-*.{ps1,sh}` helpers,
+the hook first reuses a global gstack runtime if one already exists. If not,
+it clones a pinned gstack commit into `vendor/gstack/`, runs `bun install`,
+`bun run build`, and `bunx playwright install chromium`.
+
+That removes the hard requirement for a manual global gstack install. If you
+need to bypass the bootstrap step, set `SKILL_INSTALL_SKIP_HOOKS=1` before
+running the installer.
 
 ## Helpers Exposed
 
@@ -62,23 +75,36 @@ const {
   readBlogPost,
   normalizeNaverUrl,
   parseNaverSearchResults,
+  fetchRelatedQueries,
+  extractBlogIdRefs,
 } = require("../../kr-naver-browse/scripts/browse-naver.js");
 ```
 
-- `resolveBrowseBinary()` → absolute path to the gstack browse binary, or
-  throws with a clear install hint.
-- `browseText(url, { timeoutMs })` → visits the URL, waits for the page to
-  settle, returns the extracted text or `null` on failure.
-- `searchNaverBlog(query, { max })` → returns an array of search result
-  objects `{ blogId, title, snippet, date, url }`.
-- `readBlogPostList(blogId)` → returns recent posts for a blogger as an array
-  of `{ logNo, title, date }`.
-- `readBlogPost(blogId, logNo)` → returns `{ title, date, text, url }` or
+- `resolveBrowseBinary()` returns the absolute path to the gstack browse
+  binary, or throws with a clear install hint.
+- `browseText(url, { timeoutMs })` visits the URL, waits for the page to
+  settle, and returns the extracted text or `null` on failure.
+- `searchNaverBlog(query, { max })` returns an array of search result objects
+  `{ blogId, title, snippet, date, url }`.
+- `readBlogPostList(blogId)` returns recent posts for a blogger as an array of
+  `{ logNo, title, date }`.
+- `readBlogPost(blogId, logNo)` returns `{ title, date, text, url }` or
   `null`.
-- `normalizeNaverUrl(url)` → rewrites `blog.naver.com/<id>/<logNo>` variants
+- `normalizeNaverUrl(url)` rewrites `blog.naver.com/<id>/<logNo>` variants
   into the `PostView.naver` shape.
-- `parseNaverSearchResults(text)` → pure parser over raw search text, useful
-  for testing.
+- `parseNaverSearchResults(text)` is a pure parser over raw search text,
+  useful for testing.
+- `fetchRelatedQueries(company)` scrapes the 연관검색어 block from the blog
+  search page for `company` and returns `[{ text, nickname, wholeQuery }]`
+  — the authoritative Naver-side signal for "who else is searched alongside
+  this ticker". Used by `kr-naver-blogger` to surface famous bloggers by
+  nickname. Results are deduped and capped at 20.
+- `extractBlogIdRefs(pageText, { excludeBlogId })` scans a page text dump
+  for `blog.naver.com/<blogId>` URLs and returns a deduped list of blogIds,
+  filtered against a small blocklist of reserved path segments (`PostView`,
+  `PostList`, `api`, ...) and optionally excluding a caller-supplied blogId
+  (the source post's own author). Used to mine roundup-post bodies for
+  referenced bloggers.
 
 ## Operating Rules
 
@@ -87,7 +113,7 @@ const {
 2. **Sleep 1 second between requests** to the same Naver host. The helpers do
    this automatically; if you call `browseText` directly in a loop, enforce
    the delay yourself.
-3. **Retry once on empty extraction**, then give up. Do not hammer the page —
+3. **Retry once on empty extraction**, then give up. Do not hammer the page.
    Naver is quick to rate-limit.
 4. **Never scrape personal info** (subscriber lists, contact details). Only
    public post content and public metadata (title, date, logNo).
@@ -95,8 +121,9 @@ const {
    Callers never need the full post for summarization and the truncation keeps
    downstream LLM context small.
 6. **Fail loud, not silent**. If the `browse` binary is missing, throw with
-   the install hint (`git clone ... gstack && ./setup --team`). Do not fall
-   back to `fetch` — dynamic pages will not render.
+   the install hint or rerun the skill installer so the post-install hook can
+   bootstrap a local runtime. Do not fall back to `fetch`; dynamic pages will
+   not render.
 
 ## Smoke Test
 
@@ -104,6 +131,6 @@ const {
 node skills/kr-naver-browse/scripts/browse-naver.js --test
 ```
 
-The `--test` flag runs a single search for `"엘앤에프 투자"`, prints the first
-three results, and exits non-zero if the browse binary is missing or returns
-empty text both times.
+The `--test` flag runs a single search for `현대오토에버 주가`, prints the
+first three results, and exits non-zero if the browse binary is missing or
+returns empty text both times.
