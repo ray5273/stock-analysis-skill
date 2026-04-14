@@ -8,7 +8,14 @@ const path = require("path");
 
 const browseNaver = require("../../kr-naver-browse/scripts/browse-naver.js");
 const { buildQuerySet } = require("./build-query-set.js");
-const { isTradingTitle, isListicleTitle } = require("./lib/title-filters.js");
+const {
+  isTradingTitle,
+  isListicleTitle,
+  isDeepTechTitle,
+  isStockRelatedTitle,
+  isBracketedTitle,
+  isFormulaicTitle,
+} = require("./lib/title-filters.js");
 const { extractNicknameQueries, isRoundupTitle } = require("./lib/nickname-extract.js");
 
 const DEFAULT_MIN_POSTS = 2;
@@ -16,6 +23,28 @@ const DEFAULT_MAX_CANDIDATES = 10;
 const DEFAULT_CACHE_DIR = ".tmp/naver-blog-cache";
 const TRADING_BLOG_RATIO = 0.5;
 const MAX_ROUNDUP_FETCH = 3;
+
+// Blog-level quality threshold (deep mode only).
+// stockPostRatio: fraction of blog's general timeline (last ~20 posts) that
+// is stock-related. < 0.5 means the blog is not primarily about stocks. This
+// catches two distinct failure modes:
+//   (a) career/lifestyle blogs that happened to have one stock-flavored post
+//       (e.g. dodam852 → stockRatio 0.00)
+//   (b) news aggregators that mix stock news with politics/sports/entertainment
+//       (e.g. ittimesnews → stockRatio ~0.40)
+// Real analyst blogs tend to have stockRatio >= 0.7. The 0.5 cutoff leaves
+// room for macro/crypto-adjacent writers who still cover equities seriously.
+const MIN_STOCK_POST_RATIO = 0.5;
+
+// Staleness filter. When at least MIN_DATED_POSTS of the company-matched posts
+// carry parseable dates and STALE_RATIO_THRESHOLD of those are older than
+// STALE_CUTOFF_DAYS, the blogger has stopped covering this ticker. We require
+// MIN_DATED_POSTS >= 3 because date parsing in parseBlogSearchResults fails
+// silently on some lines — a 1/1 ratio from a single dated post would produce
+// false positives against active bloggers whose date tokens didn't parse.
+const STALE_CUTOFF_DAYS = 365;
+const STALE_RATIO_THRESHOLD = 0.8;
+const MIN_DATED_POSTS = 3;
 
 function parseArgs(argv) {
   const opts = {
@@ -26,6 +55,7 @@ function parseArgs(argv) {
     verbose: false,
     autoQueries: true,
     qualityFilter: true,
+    blogFilter: true,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -43,6 +73,8 @@ function parseArgs(argv) {
     else if (arg === "--context-file") opts.contextFile = next();
     else if (arg === "--no-auto-queries") opts.autoQueries = false;
     else if (arg === "--no-quality-filter") opts.qualityFilter = false;
+    else if (arg === "--no-blog-filter") opts.blogFilter = false;
+    else if (arg === "--deep") opts.deep = true;
     else if (arg === "--help" || arg === "-h") opts.help = true;
     else throw new Error(`Unknown argument: ${arg}`);
   }
@@ -70,6 +102,8 @@ function usage() {
     "  --context-file PATH  Existing memo/data-pack for keyword extraction",
     "  --no-auto-queries    Force legacy 3-query mode (no dynamic keywords)",
     "  --no-quality-filter  Disable trading/listicle title filters (regression mode)",
+    "  --no-blog-filter     Disable blog-level quality gates (deep mode regression)",
+    "  --deep               Deep-tech mode: filter for technology/competitive analysis",
   ].join("\n");
 }
 
@@ -160,13 +194,19 @@ function isAnchored(b) {
   return (b.nicknameHitCount || 0) > 0 || b.roundupMentioned === true;
 }
 
-function rankBloggers(bloggers) {
+function rankBloggers(bloggers, { deep = false } = {}) {
   return bloggers.slice().sort((a, b) => {
-    // Anchored bloggers (nickname- or roundup-surfaced) outrank keyword-only
-    // hits. The anchor IS the quality signal; depth is the tiebreaker.
-    const aa = isAnchored(a) ? 1 : 0;
-    const ba = isAnchored(b) ? 1 : 0;
-    if (ba !== aa) return ba - aa;
+    if (deep) {
+      // Deep-tech mode: rank by tech/competitive analysis post density.
+      const al = a.deepTechPostCount || 0;
+      const bl = b.deepTechPostCount || 0;
+      if (bl !== al) return bl - al;
+    } else {
+      // Default: anchored bloggers outrank keyword-only hits.
+      const aa = isAnchored(a) ? 1 : 0;
+      const ba = isAnchored(b) ? 1 : 0;
+      if (ba !== aa) return ba - aa;
+    }
     const ad = a.dedicatedPostCount ?? a.relevantPostCount;
     const bd = b.dedicatedPostCount ?? b.relevantPostCount;
     if (bd !== ad) return bd - ad;
@@ -231,6 +271,25 @@ function discover(opts) {
       opts.ticker,
     ];
     if (opts.verbose) console.error(`[queries] legacy mode, ${queries.length} queries`);
+  }
+
+  // --deep mode: inject tech/competitive analysis queries so the candidate
+  // pool contains bloggers who write about technology and market position.
+  if (opts.deep) {
+    const deepQueries = [
+      { text: `${opts.company} 기술 분석`, source: "deep-tech" },
+      { text: `${opts.company} 경쟁력`, source: "deep-tech" },
+      { text: `${opts.company} 기술 로드맵`, source: "deep-tech" },
+    ];
+    for (const dq of deepQueries) {
+      if (!queries.includes(dq.text)) {
+        queries.push(dq.text);
+        if (querySetMeta && querySetMeta.queries) {
+          querySetMeta.queries.push(dq);
+        }
+      }
+    }
+    if (opts.verbose) console.error(`[deep] injected ${deepQueries.length} tech-analysis queries`);
   }
 
   // Pass 1 — keyword search. Same as Phase 2.
@@ -351,6 +410,14 @@ function discover(opts) {
     .slice(0, opts.maxCandidates);
   const anchored = Array.from(candidateMap.values()).filter(isAnchored);
   const candidateList = [...byKeywordHit, ...anchored];
+  // Hint for large candidate pools — suggest --deep if not already set.
+  if (candidateMap.size > 25 && !opts.deep && opts.verbose) {
+    console.error(
+      `[hint] Large candidate pool (${candidateMap.size}). ` +
+      `기술/경쟁력 분석 필터링은 --deep 으로.`
+    );
+  }
+
   const seenCandidateIds = new Set();
   const candidates = [];
   for (const c of candidateList) {
@@ -387,17 +454,60 @@ function discover(opts) {
     const inBlogPage1Total = inBlogResult.posts.length;
     const inBlogPaginationPages = inBlogResult.paginationPages;
 
+    // Staleness: among company-matched posts with parseable dates, count how
+    // many are older than STALE_CUTOFF_DAYS. latestRelevantPostDate is the
+    // newest dated post. Both feed the staleness qualification gate below.
+    const staleCutoffMs = Date.now() - STALE_CUTOFF_DAYS * 24 * 60 * 60 * 1000;
+    let datedPostCount = 0;
+    let stalePostCount = 0;
+    let latestRelevantPostDate = null;
+    for (const p of titleMatches) {
+      if (!p.date) continue;
+      const ts = Date.parse(p.date);
+      if (Number.isNaN(ts)) continue;
+      datedPostCount += 1;
+      if (ts < staleCutoffMs) stalePostCount += 1;
+      if (!latestRelevantPostDate || p.date > latestRelevantPostDate) {
+        latestRelevantPostDate = p.date;
+      }
+    }
+    const staleCoverageRatio =
+      datedPostCount > 0 ? stalePostCount / datedPostCount : null;
+
     // Quality filters: classify each title-matched post as trading / listicle
     // / dedicated. dedicatedPostCount is the primary ranking signal.
     let tradingTitleCount = 0;
     let listicleTitleCount = 0;
     let dedicatedPostCount = 0;
+    let deepTechPostCount = 0;
+    const seenLogNos = new Set();
     for (const p of titleMatches) {
       const trading = isTradingTitle(p.title);
       const listicle = isListicleTitle(p.title, opts.company);
+      const deepTech = isDeepTechTitle(p.title);
       if (trading) tradingTitleCount += 1;
       if (listicle) listicleTitleCount += 1;
       if (!trading && !listicle) dedicatedPostCount += 1;
+      if (deepTech && !trading && !listicle) deepTechPostCount += 1;
+      if (p.logNo) seenLogNos.add(p.logNo);
+    }
+
+    // In deep mode, also count tech titles from the initial search results.
+    // searchWithinBlog returns page-1 by recency, so old tech posts (the ones
+    // that made the blogger a candidate via "SK하이닉스 기술 분석" query) may
+    // not show up on page 1. The search-result titles from Pass 1 already have
+    // them — count those too, deduped by logNo.
+    if (opts.deep && entry && entry.searchHits) {
+      for (const h of entry.searchHits) {
+        if (!h.title || !h.logNo) continue;
+        if (seenLogNos.has(h.logNo)) continue;
+        if (!mentionsCompany(h.title, opts.company, opts.ticker)) continue;
+        if (isTradingTitle(h.title) || isListicleTitle(h.title, opts.company)) continue;
+        if (isDeepTechTitle(h.title)) {
+          deepTechPostCount += 1;
+          seenLogNos.add(h.logNo);
+        }
+      }
     }
 
     // Trading-shop detector: if half of the blog's page-1 posts are TA
@@ -410,10 +520,53 @@ function discover(opts) {
       inBlogPage1Total > 0 &&
       tradingAllCount / inBlogPage1Total >= TRADING_BLOG_RATIO;
 
+    // Blog-level quality signal. Fetch the blog's general recent timeline
+    // (up to 20 posts, unfiltered by any query) and measure how much of it
+    // is stock-related. Filters two failure modes with one cutoff:
+    // (a) non-stock blogs (career, lifestyle) that happened to have one
+    //     stock-flavored post; (b) news aggregators that mix tickers with
+    //     politics/sports/entertainment content.
+    let generalPosts = [];
+    try {
+      generalPosts = browseNaver.readBlogPostList(blogId, { max: 20 }) || [];
+    } catch (err) {
+      console.error(`[general-list-failed] ${blogId}: ${err.message}`);
+    }
+    const generalPostCount = generalPosts.length;
+    let stockRelatedCount = 0;
+    let bracketedCount = 0;
+    let formulaicCount = 0;
+    for (const p of generalPosts) {
+      if (isStockRelatedTitle(p.title)) stockRelatedCount += 1;
+      if (isBracketedTitle(p.title)) bracketedCount += 1;
+      if (isFormulaicTitle(p.title)) formulaicCount += 1;
+    }
+    const stockPostRatio =
+      generalPostCount > 0 ? stockRelatedCount / generalPostCount : 0;
+    const bracketedTitleRatio =
+      generalPostCount > 0 ? bracketedCount / generalPostCount : 0;
+    // AI content farm signal. Canary: dkdlvkr3 scores 1.00 (every title
+    // matches a templated clickbait phrase like "지금 사면 늦을까", "왜 오를까"),
+    // while real analyst gunyoung88 scores 0.00. Threshold decision deferred —
+    // reported for observability first.
+    const formulaicTitleRatio =
+      generalPostCount > 0 ? formulaicCount / generalPostCount : 0;
+
     if (opts.verbose) {
       if (isTradingBlog) console.error(`  [excluded-trading] ${blogId} (${tradingAllCount}/${inBlogPage1Total})`);
       if (listicleTitleCount > 0) console.error(`  [listicle] ${blogId} x${listicleTitleCount}`);
-      console.error(`  [counts] rel=${relevantPostCount} ded=${dedicatedPostCount} trad=${tradingTitleCount} list=${listicleTitleCount}`);
+      console.error(`  [counts] rel=${relevantPostCount} ded=${dedicatedPostCount} deep=${deepTechPostCount} trad=${tradingTitleCount} list=${listicleTitleCount}`);
+      console.error(
+        `  [blog] general=${generalPostCount} stock=${stockRelatedCount} ` +
+        `stockRatio=${stockPostRatio.toFixed(2)} ` +
+        `bracketRatio=${bracketedTitleRatio.toFixed(2)} ` +
+        `formulaicRatio=${formulaicTitleRatio.toFixed(2)}`
+      );
+      const staleStr = staleCoverageRatio === null ? "n/a" : staleCoverageRatio.toFixed(2);
+      console.error(
+        `  [stale] dated=${datedPostCount}/${relevantPostCount} ` +
+        `staleRatio=${staleStr} latest=${latestRelevantPostDate || "n/a"}`
+      );
     }
 
     bloggers.push({
@@ -423,6 +576,7 @@ function discover(opts) {
       subscriberCount: null,
       relevantPostCount,
       dedicatedPostCount,
+      deepTechPostCount,
       tradingTitleCount,
       listicleTitleCount,
       isTradingBlog,
@@ -433,7 +587,14 @@ function discover(opts) {
       roundupSources,
       inBlogPage1Total,
       inBlogPaginationPages,
-      latestPostDate: null,
+      generalPostCount,
+      stockPostRatio,
+      bracketedTitleRatio,
+      formulaicTitleRatio,
+      datedPostCount,
+      staleCoverageRatio,
+      latestRelevantPostDate,
+      latestPostDate: latestRelevantPostDate,
       categories: [],
       profileSnippet: null,
     });
@@ -445,15 +606,49 @@ function discover(opts) {
   // a free pass; an anchored blogger with ded=0 (mentioned the company in
   // one body but never wrote a titled post about it) isn't a coverer.
   // Trading-blog exclusion still applies to everyone.
+  //
+  // --deep mode: only bloggers with at least one deep-tech titled post
+  // qualify. Anchor bypass is skipped (large caps rarely have nickname
+  // anchors). Trading-blog exclusion still applies.
+  const isStaleCoverer = (b) =>
+    opts.blogFilter &&
+    b.datedPostCount >= MIN_DATED_POSTS &&
+    b.staleCoverageRatio !== null &&
+    b.staleCoverageRatio >= STALE_RATIO_THRESHOLD;
+
   const qualified = opts.qualityFilter
-    ? bloggers.filter(
-        (b) =>
-          ((isAnchored(b) && b.dedicatedPostCount >= 1) ||
-            b.dedicatedPostCount >= opts.minPosts) &&
-          !b.isTradingBlog
-      )
+    ? bloggers.filter((b) => {
+        if (b.isTradingBlog) return false;
+        if (isStaleCoverer(b)) {
+          if (opts.verbose) {
+            console.error(
+              `  [excluded-stale] ${b.blogId} ` +
+              `staleRatio=${b.staleCoverageRatio.toFixed(2)} ` +
+              `dated=${b.datedPostCount} latest=${b.latestRelevantPostDate || "n/a"}`
+            );
+          }
+          return false;
+        }
+        if (opts.deep) {
+          if (b.deepTechPostCount < 1) return false;
+          // Blog-level gates (deep mode only). A blog that has one tech-flavored
+          // title but is mostly non-stock content (career blog) or covers every
+          // ticker under the sun (news aggregator) is not a coverer.
+          if (opts.blogFilter) {
+            if (b.generalPostCount > 0 && b.stockPostRatio < MIN_STOCK_POST_RATIO) {
+              if (opts.verbose) console.error(`  [excluded-non-stock-blog] ${b.blogId} stockRatio=${b.stockPostRatio.toFixed(2)}`);
+              return false;
+            }
+          }
+          return true;
+        }
+        return (
+          (isAnchored(b) && b.dedicatedPostCount >= 1) ||
+          b.dedicatedPostCount >= opts.minPosts
+        );
+      })
     : bloggers.filter((b) => b.relevantPostCount >= opts.minPosts);
-  const ranked = rankBloggers(qualified);
+  const ranked = rankBloggers(qualified, { deep: opts.deep });
 
   const output = {
     company: opts.company,
@@ -471,6 +666,8 @@ function discover(opts) {
       eventQueries: eventQueryList,
       nicknameAnchoredCount: ranked.filter((b) => (b.nicknameHitCount || 0) > 0).length,
       roundupFetched,
+      deepMode: opts.deep || false,
+      blogFilterApplied: !!(opts.deep && opts.blogFilter),
       generatedBy: "kr-naver-blogger/discover-bloggers.js",
     },
   };

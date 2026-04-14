@@ -154,6 +154,62 @@ Per-candidate fields:
 
 Pass `--no-quality-filter` to disable both filters for regression testing.
 
+## Blog-Level Quality Filter (deep mode)
+
+Post-level title filters are not enough for `--deep` mode. A career blog or
+news aggregator can still slip in with one or two tech-flavored titles. To
+catch these, deep mode fetches each candidate's general recent timeline via
+`readBlogPostList(blogId, {max: 20})` (unfiltered by any query) and measures:
+
+- `stockPostRatio` — fraction of recent posts whose titles match any
+  stock/investing vocabulary (`isStockRelatedTitle`). Real analyst blogs sit
+  at 0.7+; news aggregators that mix tickers with politics/entertainment sit
+  around 0.4; career/lifestyle blogs sit near 0. Deep-mode cutoff is `0.5` —
+  below that the blog is excluded regardless of its `deepTechPostCount`.
+
+This is the only blog-level gate. An earlier draft added `companyFocusRatio`
+(fraction of recent posts mentioning the target company) but recent-20 posts
+don't reliably include historical coverage: a bona-fide coverer who wrote
+about the company last month scores 0 today. The signal is also fragile for
+long company names (bloggers rarely type `삼성바이오로직스` in full).
+
+Pass `--no-blog-filter` to disable the gate for regression testing.
+`stockPostRatio` and `generalPostCount` are written to the output JSON
+regardless of mode for observability.
+
+## Staleness Filter
+
+A blog may have dozens of title-matched posts about the target company and
+still be useless — if all of them are more than a year old, the blogger has
+stopped covering this ticker. The staleness filter catches dormant coverers
+regardless of mode (normal or `--deep`).
+
+`searchWithinBlog` returns a `date` field per post in `YYYY-MM-DD` form.
+Dates are not present in Naver's anchor-list output; the function does a
+second `browse text` fetch against the same PostSearchList URL and merges
+dates parsed from the text rendering (title line followed by a
+`YYYY/MM/DD HH:MM` line) into the posts by title match, with a prefix
+fallback for titles containing the ` → ` arrow the anchor parser uses as a
+delimiter.
+
+For each candidate we compute on the **company-matched** posts
+(`titleMatches`):
+
+- `datedPostCount` — posts whose `date` parsed successfully.
+- `staleCoverageRatio` — fraction of dated posts older than 365 days.
+- `latestRelevantPostDate` — most recent `date` among title-matched posts.
+
+A blogger is excluded when `datedPostCount >= 3` AND
+`staleCoverageRatio >= 0.8`. The `>= 3` floor is a guardrail against false
+positives from bloggers whose date tokens failed to parse — we don't want a
+single dated post to decide a blogger's fate. The 0.8 cutoff leaves room
+for active bloggers who occasionally re-share old analysis.
+
+`--no-blog-filter` disables this gate alongside `stockPostRatio`.
+`staleCoverageRatio`, `datedPostCount`, and `latestRelevantPostDate` are
+always written to the output JSON for observability. `latestPostDate` is an
+alias for `latestRelevantPostDate` kept for schema compatibility.
+
 A related filter runs in `build-query-set.js`: news headlines with 4+ listicle
 separators are dropped before tokenization, and generic sector labels
 (`광통신`, `반도체`, `바이오`, `조선`...) are stopworded out of the frequency

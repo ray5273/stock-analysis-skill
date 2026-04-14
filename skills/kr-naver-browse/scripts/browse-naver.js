@@ -579,10 +579,42 @@ function readBlogPostList(blogId, { max = 20 } = {}) {
   return parsePostList(text).slice(0, max);
 }
 
+// Parse post dates from the `browse text` rendering of a PostSearchList
+// page. The text layout shows each result as two adjacent lines:
+//   "<title>|<category>"
+//   "YYYY/MM/DD HH:MM"
+// followed by the snippet. `browse links` drops the date line because it
+// isn't part of any anchor, so we have to scan the text dump. Returns a
+// Map keyed by the trimmed title for merging into `parseBlogSearchResults`
+// output (which has authoritative logNo/url but no date).
+function parseBlogSearchDatesFromText(text) {
+  const map = new Map();
+  if (!text) return map;
+  const lines = text.split(/\r?\n/).map((l) => l.trim());
+  const dateRx = /^(20\d{2})[./-](\d{1,2})[./-](\d{1,2})\b/;
+  for (let i = 0; i < lines.length - 1; i += 1) {
+    const titleLine = lines[i];
+    const dateLine = lines[i + 1];
+    if (!titleLine || !dateLine) continue;
+    const m = dateLine.match(dateRx);
+    if (!m) continue;
+    // Title line looks like "<title>|<category>" — drop the trailing category
+    // tag when present. Also strip it if the whole line is the title.
+    const pipeIdx = titleLine.lastIndexOf("|");
+    const title = (pipeIdx > 0 ? titleLine.slice(0, pipeIdx) : titleLine).trim();
+    if (!title || title.length < 2) continue;
+    const iso = `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+    if (!map.has(title)) map.set(title, iso);
+  }
+  return map;
+}
+
 // Search a single blogger's posts for a query via Naver's PostSearchList.
-// Returns { posts: [{logNo, title, url, blogId}], paginationPages }.
+// Returns { posts: [{logNo, title, url, blogId, date}], paginationPages }.
 // posts are the page-1 results (up to ~10). Callers should filter by title
-// mention of the company to strip body-only matches.
+// mention of the company to strip body-only matches. `date` is a "YYYY-MM-DD"
+// string pulled from the text rendering (second fetch) or null if the date
+// token could not be parsed.
 function searchWithinBlog(blogId, query, { orderBy = "date" } = {}) {
   if (!blogId || !query) return { posts: [], paginationPages: 0 };
   const encoded = encodeURIComponent(query);
@@ -598,6 +630,29 @@ function searchWithinBlog(blogId, query, { orderBy = "date" } = {}) {
 
   const posts = parseBlogSearchResults(raw, blogId);
   const paginationPages = countBlogSearchPaginationPages(raw);
+
+  // Merge dates from the text rendering. browseLinks output does not include
+  // the date tokens, so this is a second fetch against the same URL.
+  // parseBlogSearchResults truncates titles at the first " → " separator
+  // (it's the anchor-text delimiter), so when merging we also try a prefix
+  // match against the full text-rendering title for posts whose real title
+  // happens to contain ` → `.
+  const text = browseText(url);
+  const dateByTitle = parseBlogSearchDatesFromText(text);
+  const textTitles = Array.from(dateByTitle.keys());
+  for (const p of posts) {
+    if (!p.title) {
+      p.date = null;
+      continue;
+    }
+    let date = dateByTitle.get(p.title) || null;
+    if (!date) {
+      const prefixHit = textTitles.find((t) => t.startsWith(p.title));
+      if (prefixHit) date = dateByTitle.get(prefixHit);
+    }
+    p.date = date || null;
+  }
+
   return { posts, paginationPages };
 }
 
@@ -760,6 +815,7 @@ module.exports = {
   parsePostList,
   parsePostListFromLinks,
   parseBlogSearchResults,
+  parseBlogSearchDatesFromText,
   countBlogSearchPaginationPages,
   parsePostView,
 };
