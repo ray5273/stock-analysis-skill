@@ -262,18 +262,29 @@ function discover(opts) {
     console.error(`[related-failed] ${err.message}`);
   }
   const nicknameQueries = extractNicknameQueries(relatedQueries);
+  const eventQueryList = [];
   for (const nq of nicknameQueries) {
-    if (opts.verbose) console.error(`[nickname-search] ${nq.text}`);
+    // source: "event" = corporate-action tail (주주총회, 무상증자, ...).
+    // Fire the search for recall but route hits into the keyword pool so
+    // they do NOT get nickname-anchor status. They must still qualify via
+    // the dedicatedPostCount floor like any other keyword hit.
+    const isEvent = nq.source === "event";
+    const label = isEvent ? "event-search" : "nickname-search";
+    if (opts.verbose) console.error(`[${label}] ${nq.text}`);
     try {
       const hits = browseNaver.searchNaverBlog(nq.text, { max: 10 });
       if (opts.verbose) console.error(`  → ${hits.length} hit(s)`);
       accumulateHits(candidateMap, hits, {
-        source: "nickname",
-        nickname: nq.nickname || nq.text,
+        source: isEvent ? "keyword" : "nickname",
+        nickname: isEvent ? null : nq.nickname || nq.text,
       });
-      nicknameAnchorList.push({ text: nq.text, nickname: nq.nickname, hits: hits.length });
+      if (isEvent) {
+        eventQueryList.push({ text: nq.text, hits: hits.length });
+      } else {
+        nicknameAnchorList.push({ text: nq.text, nickname: nq.nickname, hits: hits.length });
+      }
     } catch (err) {
-      console.error(`[nickname-search-failed] "${nq.text}": ${err.message}`);
+      console.error(`[${label}-failed] "${nq.text}": ${err.message}`);
     }
   }
 
@@ -457,6 +468,7 @@ function discover(opts) {
       querySet: querySetMeta,
       relatedQueries,
       nicknameQueries: nicknameAnchorList,
+      eventQueries: eventQueryList,
       nicknameAnchoredCount: ranked.filter((b) => (b.nicknameHitCount || 0) > 0).length,
       roundupFetched,
       generatedBy: "kr-naver-blogger/discover-bloggers.js",

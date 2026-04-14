@@ -64,12 +64,27 @@ patterns (e.g. `엘앤에프 무영`, `엘앤에프형`, `엘앤에프 문벵이
 fans search `<company> <blogger>` to find the blogger's latest take.
 
 `fetchRelatedQueries(company)` scrapes that block, then
-`extractNicknameQueries` strips generic tails (`주가`, `전망`, `배당`,
-`실적`, `공시`, `차트`, ...) and keeps the rest as nickname candidates,
-including single-char suffix tails like `엘앤에프형` (these are legit —
-bloggers self-identify with the suffix). Each surviving query is fired as
-a `searchNaverBlog` call and every hit is tagged with the nickname on the
-candidate entry (`nicknameHitCount`, `nicknameAnchors`).
+`extractNicknameQueries` routes each tail into one of three buckets:
+
+1. **Drop** — tails in `NICKNAME_BLOCKLIST` (generic stock-watching words
+   like `주가`, `전망`, `배당`, `실적`, `차트`, `시세`, ...). These are
+   "what people search ABOUT the company" and carry zero blogger signal;
+   firing them as searches would bring in unrelated noise.
+2. **Event-query** — tails in `EVENT_VOCABULARY` (corporate-action words
+   like `주주총회`, `주총`, `무상증자`, `코스피 이전`, `상장`, `합병`, ...).
+   The query is still fired as a `searchNaverBlog` call because real
+   dedicated coverers write event-driven posts ("알테오젠 주주총회 참관기"),
+   but hits are tagged `source: "keyword"` and land in the keyword pool.
+   **Event hits do NOT get `nicknameHitCount`, `nicknameAnchors`, or
+   anchor-bypass status.** Without this split, 알테오젠 surfaced 17 false
+   anchors because 4 of its 10 related queries were event words.
+3. **Nickname** — everything else (real blogger aliases like `무영`,
+   `문벵이`, and single-char suffix tails like `엘앤에프형` where bloggers
+   self-identify). Fired as `searchNaverBlog`; hits bump
+   `nicknameHitCount` and push the nickname onto `nicknameAnchors`.
+
+Sibling-ticker tails (`한화 오션`, `SK 하이닉스`, ...) are dropped before
+bucket assignment to prevent cross-ticker contamination.
 
 ### Pass 3 — Roundup-post body mining
 

@@ -54,6 +54,44 @@ const NICKNAME_BLOCKLIST = new Set([
   "하한가",
 ]);
 
+// Corporate-action vocabulary — "what's happening to the company" words.
+// Different from NICKNAME_BLOCKLIST in that we STILL want to fire these as
+// searches (they surface real dedicated coverers who write about the event,
+// e.g. "알테오젠 주주총회 참관기"), but the hits must NOT get anchor status.
+// 알테오젠 exposed this: during 주총 season + 무상증자 + 코스피 이전 news,
+// 17 bloggers got false-anchor tags because the extractor treated these as
+// nicknames. Dropping them entirely killed recall (jylhappy20, subi1214
+// etc. disappeared from the pool). Routing them as event-queries preserves
+// recall while stripping the false precision signal.
+const EVENT_VOCABULARY = new Set([
+  "주주총회",
+  "주총",
+  "무상증자",
+  "유상증자",
+  "증자",
+  "감자",
+  "배당락",
+  "자사주",
+  "소각",
+  "상장",
+  "상장폐지",
+  "상폐",
+  "이전상장",
+  "코스피이전",
+  "코스피",
+  "코스닥",
+  "공모",
+  "공모주",
+  "컨콜",
+  "컨센서스",
+  "주식분할",
+  "액면분할",
+  "합병",
+  "분할",
+  "인적분할",
+  "물적분할",
+]);
+
 // Sibling-ticker tails. Parent-company autocompletes fill with these and the
 // nickname extractor would otherwise treat them as "nicknames" and fire a
 // search that surfaces bloggers covering a DIFFERENT ticker. E.g. `한화` →
@@ -187,6 +225,14 @@ function extractNicknameQueries(related) {
     if (SIBLING_TICKER_TAILS.has(firstWord)) continue;
     if (SIBLING_TICKER_TAILS.has(rawFirst)) continue;
 
+    // Event-vocabulary guard: fire the search (for recall — real dedicated
+    // coverers write about events) but emit as source:"event" so the caller
+    // can route hits into the keyword pool without granting anchor status.
+    if (EVENT_VOCABULARY.has(firstWord) || EVENT_VOCABULARY.has(rawFirst)) {
+      out.push({ text: r.text, nickname: null, source: "event" });
+      continue;
+    }
+
     out.push({ text: r.text, nickname: firstWord, source: "related" });
   }
   return out;
@@ -218,6 +264,7 @@ function isRoundupTitle(title, company) {
 
 module.exports = {
   NICKNAME_BLOCKLIST,
+  EVENT_VOCABULARY,
   extractNicknameQueries,
   isRoundupTitle,
 };
