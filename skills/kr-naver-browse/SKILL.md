@@ -1,6 +1,6 @@
 ---
 name: kr-naver-browse
-description: Headless browser wrapper for Naver blog/search navigation. Use when another skill needs to fetch Naver search results, a blogger's post list, or a single blog post body. Wraps the gstack `browse` binary with Naver-specific URL normalization, retry on empty text extraction, and structured parsing helpers. Do not use for non-Naver sites because the URL rewriters assume Naver's PostView layout.
+description: Headless browser wrapper for Naver blog/search navigation. Use when another skill needs to fetch Naver search results, a blogger's post list, or a single blog post body. Wraps the skill-local gstack `browse` binary with Naver-specific URL normalization, retry on empty text extraction, and structured parsing helpers. Do not use for non-Naver sites because the URL rewriters assume Naver's PostView layout.
 ---
 
 # Naver Blog Browser
@@ -40,29 +40,38 @@ Patterns that **do not** reliably render text in headless mode:
 
 ## How It Works
 
-`scripts/browse-naver.js` is a Node module (no external deps) that resolves the
+`scripts/browse-naver.js` is a Node module (no external deps) that resolves a
 gstack `browse` binary in this order:
 
 1. `$GSTACK_BROWSE_BIN` environment variable, if set
-2. A skill-local vendored runtime at `vendor/gstack/browse/dist/browse`
-3. `~/.codex/skills/gstack/browse/dist/browse`
-4. `~/.claude/skills/gstack/browse/dist/browse`
-5. `browse` on `$PATH` (only if it is the gstack binary, not `xdg-open`)
+2. A skill-local vendored binary at `vendor/gstack/browse/dist/browse`
+3. (Mac/Linux only) The binary installed under the Claude Code skill location:
+   `$CLAUDE_HOME/skills/kr-naver-browse/vendor/gstack/browse/dist/browse`
+   (default `~/.claude/skills/kr-naver-browse/vendor/gstack/browse/dist/browse`)
+4. (Mac/Linux only) A gstack Claude skill installation:
+   `$CLAUDE_HOME/skills/gstack/browse/dist/browse`
 
-Each helper spawns `browse` via `execFileSync` with a 30s timeout and a 5 MB
-output buffer. Korean search terms are passed through `encodeURIComponent`. On
+Steps 3–4 allow running scripts directly from the source repo when the skill
+has been installed into Claude Code via `install-claude-skill.sh` but the repo's
+own `vendor/` directory has not been built.
+Each helper spawns the resolved binary via `execFileSync` with a 30s timeout
+and a 5 MB output buffer. Korean search terms are passed through
+`encodeURIComponent`. On
 empty text extraction, helpers retry once after a 5 s wait before returning
 `null`.
 
-`kr-naver-browse` now ships a `scripts/post-install.(ps1|sh)` hook. When the
-skill is installed through this repo's `scripts/install-*.{ps1,sh}` helpers,
-the hook first reuses a global gstack runtime if one already exists. If not,
-it clones a pinned gstack commit into `vendor/gstack/`, runs `bun install`,
-`bun run build`, and `bunx playwright install chromium`.
-
-That removes the hard requirement for a manual global gstack install. If you
-need to bypass the bootstrap step, set `SKILL_INSTALL_SKIP_HOOKS=1` before
-running the installer.
+`kr-naver-browse` ships a `scripts/post-install.(sh|ps1)` hook. When the skill
+is installed through this repo's `scripts/install-*.{sh,ps1}` helpers, the hook
+builds or refreshes gstack under the installed skill's `vendor/gstack/`, ensures
+`bun` can produce runnable compiled executables (trying Homebrew, npm, then the
+official Bun installer pinned by `BUN_VERSION_TAG`, default `bun-v1.3.10`), runs
+`bun install`, `bun run build`, and `bunx playwright install chromium`, strips
+vendored `SKILL.md` files so Codex does not recursively load gstack's own skill
+pack, and verifies that `vendor/gstack/browse/dist/browse` can launch and
+navigate to `https://example.com`. Set
+`SKILL_INSTALL_SKIP_HOOKS=1` to skip this bootstrap, set
+`SKILL_INSTALL_AUTO_BUN=0` to avoid automatic `bun` installation, or set
+`GSTACK_BROWSE_BIN` to an absolute existing gstack `browse` binary path.
 
 ## Helpers Exposed
 
@@ -80,7 +89,7 @@ const {
 } = require("../../kr-naver-browse/scripts/browse-naver.js");
 ```
 
-- `resolveBrowseBinary()` returns the absolute path to the gstack browse
+- `resolveBrowseBinary()` returns the absolute path to the gstack `browse`
   binary, or throws with a clear install hint.
 - `browseText(url, { timeoutMs })` visits the URL, waits for the page to
   settle, and returns the extracted text or `null` on failure.
@@ -120,9 +129,9 @@ const {
 5. **Truncate text to 3000 chars** before returning post bodies up the stack.
    Callers never need the full post for summarization and the truncation keeps
    downstream LLM context small.
-6. **Fail loud, not silent**. If the `browse` binary is missing, throw with
+6. **Fail loud, not silent**. If the browse binary is missing or invalid, throw with
    the install hint or rerun the skill installer so the post-install hook can
-   bootstrap a local runtime. Do not fall back to `fetch`; dynamic pages will
+   bootstrap a local binary. Do not fall back to `fetch`; dynamic pages will
    not render.
 
 ## Smoke Test
@@ -131,6 +140,6 @@ const {
 node skills/kr-naver-browse/scripts/browse-naver.js --test
 ```
 
-The `--test` flag runs a single search for `현대오토에버 주가`, prints the
+The `--test` flag runs a single search for `엘앤에프 주가`, prints the
 first three results, and exits non-zero if the browse binary is missing or
 returns empty text both times.

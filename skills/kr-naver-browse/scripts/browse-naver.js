@@ -3,11 +3,10 @@
 // Reusable Naver browse helpers. Node stdlib only.
 //
 // Other KR Naver skills (kr-naver-blogger, kr-naver-insight) require this
-// module. It wraps the gstack browse binary and encodes Naver-specific URL
+// module. It wraps the skill-local gstack browse binary and encodes Naver-specific URL
 // patterns that are known to render text in headless mode.
 
 const fs = require("fs");
-const os = require("os");
 const path = require("path");
 const { execFileSync } = require("child_process");
 
@@ -47,51 +46,81 @@ function firstExecutableInDir(dirPath, baseName) {
   return null;
 }
 
+function assertGstackBrowseBinary(binPath) {
+  if (!binPath || !fs.existsSync(binPath)) return false;
+  if (process.platform !== "win32") {
+    try {
+      fs.accessSync(binPath, fs.constants.X_OK);
+    } catch {
+      return false;
+    }
+  }
+  try {
+    const out = execFileSync(binPath, ["--help"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: 5_000,
+      maxBuffer: MAX_BUFFER,
+    });
+    return /gstack browse|Usage:\s*browse/i.test(out);
+  } catch {
+    return false;
+  }
+}
+
 function resolveBrowseBinary() {
   if (cachedBin) return cachedBin;
 
   if (process.env.GSTACK_BROWSE_BIN) {
     const explicit = path.resolve(process.env.GSTACK_BROWSE_BIN);
-    if (fs.existsSync(explicit)) {
+    if (assertGstackBrowseBinary(explicit)) {
       cachedBin = explicit;
       return cachedBin;
     }
+    throw new Error(`GSTACK_BROWSE_BIN is not a usable gstack browse binary: ${explicit}`);
   }
 
-  const candidateDirs = [
+  const localBin = firstExecutableInDir(
     path.join(__dirname, "..", "vendor", "gstack", "browse", "dist"),
-    path.join(os.homedir(), ".codex", "skills", "gstack", "browse", "dist"),
-    path.join(os.homedir(), ".claude", "skills", "gstack", "browse", "dist"),
-  ];
+    "browse"
+  );
+  if (assertGstackBrowseBinary(localBin)) {
+    cachedBin = localBin;
+    return cachedBin;
+  }
 
-  for (const candidateDir of candidateDirs) {
-    const candidate = firstExecutableInDir(candidateDir, "browse");
-    if (candidate) {
-      cachedBin = candidate;
-      return cachedBin;
+  // Mac + Claude Code fallback: look for browse binary in the installed Claude
+  // skill location (~/.claude/skills/kr-naver-browse/vendor/gstack/browse/dist/)
+  // and in a gstack Claude skill installation (~/.claude/skills/gstack/browse/dist/).
+  // This allows running scripts from the source repo when the skill is installed
+  // under Claude Code but vendor/ has not been built in the repo itself.
+  if (process.platform === "darwin" || process.platform === "linux") {
+    const claudeHome = process.env.CLAUDE_HOME || path.join(process.env.HOME || "", ".claude");
+    const claudeFallbacks = [
+      path.join(claudeHome, "skills", "kr-naver-browse", "vendor", "gstack", "browse", "dist"),
+      path.join(claudeHome, "skills", "gstack", "browse", "dist"),
+    ];
+    for (const dir of claudeFallbacks) {
+      const candidate = firstExecutableInDir(dir, "browse");
+      if (assertGstackBrowseBinary(candidate)) {
+        cachedBin = candidate;
+        return cachedBin;
+      }
     }
   }
 
-  try {
-    const out = execFileSync("browse", ["--help"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-      timeout: 3_000,
-    });
-    if (/gstack browse/i.test(out)) {
-      cachedBin = "browse";
-      return cachedBin;
-    }
-  } catch {
-    // ignore
-  }
-
+  const claudeHome = process.env.CLAUDE_HOME || path.join(process.env.HOME || "", ".claude");
   throw new Error(
-    "gstack browse binary not found. Install gstack with:\n" +
-      "  git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack\n" +
-      "  cd ~/.claude/skills/gstack && ./setup --team\n" +
-      "Or reinstall kr-naver-browse so its post-install hook can bootstrap a local runtime,\n" +
-      "or set GSTACK_BROWSE_BIN to an absolute path."
+    "gstack browse binary not found or not executable.\n" +
+      "Searched:\n" +
+      `  1. $GSTACK_BROWSE_BIN (not set or invalid)\n` +
+      `  2. ${path.join(__dirname, "..", "vendor", "gstack", "browse", "dist", "browse")}\n` +
+      (process.platform === "darwin" || process.platform === "linux"
+        ? `  3. ${path.join(claudeHome, "skills", "kr-naver-browse", "vendor", "gstack", "browse", "dist", "browse")}\n` +
+          `  4. ${path.join(claudeHome, "skills", "gstack", "browse", "dist", "browse")}\n`
+        : "") +
+      "Fix: run  bash scripts/install-claude-skill.sh kr-naver-browse  to build the binary,\n" +
+      "or set GSTACK_BROWSE_BIN to an existing gstack browse binary path."
   );
 }
 
@@ -137,7 +166,7 @@ function runBrowse(args, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
   } catch (err) {
     const stderr = err.stderr ? err.stderr.toString("utf8") : "";
     const wrapped = new Error(
-      `browse ${args.join(" ")} failed: ${err.message}${stderr ? `\n${stderr}` : ""}`
+      `${bin} ${args.join(" ")} failed: ${err.message}${stderr ? `\n${stderr}` : ""}`
     );
     wrapped.cause = err;
     throw wrapped;
@@ -162,6 +191,7 @@ function browseText(url, opts = {}) {
   try {
     text = browseTextOnce(normalized, opts);
   } catch (err) {
+    if (isFatalBrowseError(err)) throw err;
     if (opts.verbose) console.error(`[browse-naver] first attempt failed: ${err.message}`);
   }
   if (text && text.length > 50) return text;
@@ -170,6 +200,7 @@ function browseText(url, opts = {}) {
   try {
     text = browseTextOnce(normalized, opts);
   } catch (err) {
+    if (isFatalBrowseError(err)) throw err;
     if (opts.verbose) console.error(`[browse-naver] retry failed: ${err.message}`);
     return null;
   }
@@ -194,6 +225,7 @@ function browseLinks(url, opts = {}) {
   try {
     raw = browseLinksOnce(normalized, opts);
   } catch (err) {
+    if (isFatalBrowseError(err)) throw err;
     if (opts.verbose) console.error(`[browse-naver] links first attempt failed: ${err.message}`);
   }
   if (raw && raw.length > 50) return raw;
@@ -202,10 +234,16 @@ function browseLinks(url, opts = {}) {
   try {
     raw = browseLinksOnce(normalized, opts);
   } catch (err) {
+    if (isFatalBrowseError(err)) throw err;
     if (opts.verbose) console.error(`[browse-naver] links retry failed: ${err.message}`);
     return null;
   }
   return raw && raw.length > 50 ? raw : null;
+}
+
+function isFatalBrowseError(err) {
+  const message = err && err.message ? err.message : "";
+  return /gstack browse (?:binary|runtime) not found|GSTACK_BROWSE_BIN|not a usable gstack browse binary|ENOENT/.test(message);
 }
 
 // ---------------------------------------------------------------------------
@@ -554,7 +592,8 @@ function parseNaverSearchLinks(linksText) {
     seen.add(normalized);
 
     const urlIndex = line.indexOf("http");
-    const title = urlIndex > 0 ? line.slice(0, urlIndex).replace(/\s+[-–>]+$/, "").trim() : "";
+    const title =
+      urlIndex > 0 ? line.slice(0, urlIndex).trim().replace(/\s*[-–>→]+$/, "").trim() : "";
     const dateMatch = line.match(/\b(20\d{2})[./-](\d{1,2})[./-](\d{1,2})\b/);
 
     results.push({
@@ -864,7 +903,7 @@ function runSmokeTest() {
     process.exit(1);
   }
 
-  const query = "현대오토에버 주가";
+  const query = "엘앤에프 주가";
   console.log(`Searching Naver blogs for: ${query}`);
   const results = searchNaverBlog(query, { max: 3 });
   if (!results.length) {
