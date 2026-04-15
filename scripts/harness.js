@@ -74,6 +74,8 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === "--with-blog") {
       result.withBlog = true;
+    } else if (arg === "--no-cache") {
+      result.noCache = true;
     } else if (arg === "--dry-run") {
       result.dryRun = true;
     } else if (arg === "--verbose") {
@@ -112,6 +114,7 @@ function usage() {
     "  --bloggers     Comma-separated Naver blogger IDs (skips discovery)",
     "  --max-posts    Posts per blogger for --mode blog (default 5)",
     "  --with-blog    Include Naver blog pass in --mode all",
+    "  --no-cache     Bypass Naver blog cache (forces fresh discovery + post fetches)",
     "  --memo-path    Override memo path (default: analysis-example/kr/<company>/memo.md)",
     "  --output-dir   Override output directory (default: analysis-example/kr/<company>/)",
     "  --report-out   Write JSON quality gate report to this path",
@@ -278,6 +281,14 @@ function runBlog(opts) {
   const outputDir = resolveOutputDir(opts);
   fs.mkdirSync(outputDir, { recursive: true });
 
+  if (opts.noCache) {
+    const cacheDir = path.join(REPO_ROOT, ".tmp", "naver-blog-cache");
+    if (fs.existsSync(cacheDir)) {
+      fs.rmSync(cacheDir, { recursive: true, force: true });
+      console.log(`  [blog] Cleared cache: ${path.relative(REPO_ROOT, cacheDir)}`);
+    }
+  }
+
   const today = new Date().toISOString().slice(0, 10);
   const bloggersJson = path.join(outputDir, "naver-bloggers.json");
   const postsJson = path.join(outputDir, "naver-posts.json");
@@ -300,6 +311,7 @@ function runBlog(opts) {
       "--ticker", opts.ticker,
       "--output", bloggersJson,
     ];
+    if (opts.noCache) discoverArgs.push("--no-cache");
     runStep("[blog 1/3] discover-bloggers.js", discoverScript, discoverArgs, opts);
   }
 
@@ -317,6 +329,7 @@ function runBlog(opts) {
   } else {
     fetchArgs.push("--input", bloggersJson);
   }
+  if (opts.noCache) fetchArgs.push("--no-cache");
   runStep("[blog 2/3] fetch-blog-posts.js", fetchScript, fetchArgs, opts);
 
   const summarizeScript = path.join(

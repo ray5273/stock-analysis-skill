@@ -216,16 +216,23 @@ function normalizeNaverUrl(url) {
   if (!url) return url;
   const trimmed = String(url).trim();
 
+  // Desktop blog post URLs render the body inside #mainFrame, which `browse
+  // text` cannot reach. Rewrite every blog-post variant to the mobile form,
+  // which serves the body inline.
   const pathMatch = trimmed.match(
     /^https?:\/\/(?:m\.)?blog\.naver\.com\/([A-Za-z0-9_-]+)\/(\d{6,})/
   );
   if (pathMatch) {
     const [, blogId, logNo] = pathMatch;
-    return `https://blog.naver.com/PostView.naver?blogId=${blogId}&logNo=${logNo}`;
+    return `https://m.blog.naver.com/${blogId}/${logNo}`;
   }
 
-  if (/^https?:\/\/m\.blog\.naver\.com\//.test(trimmed)) {
-    return trimmed.replace(/^https?:\/\/m\.blog\.naver\.com\//, "https://blog.naver.com/");
+  const postViewMatch = trimmed.match(
+    /^https?:\/\/(?:m\.)?blog\.naver\.com\/PostView\.naver\?[^#]*\bblogId=([A-Za-z0-9_-]+)[^#]*\blogNo=(\d{6,})/
+  );
+  if (postViewMatch) {
+    const [, blogId, logNo] = postViewMatch;
+    return `https://m.blog.naver.com/${blogId}/${logNo}`;
   }
 
   return trimmed;
@@ -358,29 +365,126 @@ function parsePostListFromLinks(linksText) {
   return results;
 }
 
+// Mobile Naver blog chrome lines and our own browse-tool wrappers that should
+// never count as the post title or body.
+const POST_VIEW_CHROME = new Set([
+  "본문 바로가기",
+  "블로그",
+  "카테고리 이동",
+  "카테고리",
+  "검색",
+  "MY메뉴 열기",
+  "이웃추가",
+  "이웃",
+  "URL복사",
+  "신고하기",
+  "공유하기",
+  "본문 기타 기능",
+  "본문 폰트 크기 조정",
+  "본문 폰트 크기 작게 보기",
+  "본문 폰트 크기 크게 보기",
+  "가",
+  "닫기",
+  "취소",
+  "확인",
+  // Login-wall / hamburger sidebar chrome that some posts return ahead of the body.
+  "로그인이 필요합니다.",
+  "로그인이 필요합니다",
+  "내소식",
+  "이웃목록",
+  "통계",
+  "클립만들기",
+  "글쓰기",
+  "My Menu 닫기",
+  "내 체크인",
+  "최근 본 글",
+  "내 동영상",
+  "내 클립",
+  "내 상품 관리",
+  "NEW",
+  "마켓 플레이스",
+  "장바구니",
+  "마켓 구매내역",
+  "블로그팀 공식블로그",
+  "이달의 블로그",
+  "공식 블로그",
+  "블로그 앱",
+  "로그인",
+  "PC버전으로 보기",
+  "블로그 고객센터",
+  "ⓒ NAVER Corp.",
+  "Category",
+  "Menu",
+  "URL",
+  "Share",
+  "Copy URL",
+  "Advertisement",
+]);
+
+function isPostViewChrome(line) {
+  if (!line) return true;
+  if (POST_VIEW_CHROME.has(line)) return true;
+  if (/^---\s*(BEGIN|END)\s+UNTRUSTED\b/i.test(line)) return true;
+  if (/^https?:/.test(line)) return true;
+  return false;
+}
+
 function parsePostView(text) {
   if (!text) return null;
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 
+  // Title detection: on mobile Naver, the post body is preceded by a
+  //   <blog name> -> <category> -> <title> -> <author> -> <date>
+  // header band. The title is the line immediately above the author line,
+  // which itself sits one line above the publish date `YYYY. M. D. HH:MM`.
+  const datePattern = /^\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\./;
   let title = "";
-  for (const line of lines.slice(0, 30)) {
-    if (/^https?:/.test(line)) continue;
-    if (/^(Category|Menu|URL|Share|Copy URL|Advertisement)/i.test(line)) continue;
-    if (line.length >= 4 && line.length <= 120) {
-      title = line;
+  let dateLineIdx = -1;
+  for (let i = 0; i < Math.min(lines.length, 60); i += 1) {
+    if (datePattern.test(lines[i])) {
+      dateLineIdx = i;
       break;
     }
   }
+  if (dateLineIdx > 1) {
+    // Walk backwards from the date line, skip chrome, the first non-chrome
+    // line is the author. The next non-chrome line above is the title.
+    let nonChromeSeen = 0;
+    for (let i = dateLineIdx - 1; i >= 0 && nonChromeSeen < 2; i -= 1) {
+      const candidate = lines[i];
+      if (isPostViewChrome(candidate)) continue;
+      if (candidate.length < 2 || candidate.length > 200) continue;
+      nonChromeSeen += 1;
+      if (nonChromeSeen === 2) {
+        title = candidate;
+        break;
+      }
+    }
+  }
+  if (!title) {
+    // Fallback: longest non-chrome line in the first 8 non-chrome lines.
+    const candidates = [];
+    for (const line of lines) {
+      if (candidates.length >= 8) break;
+      if (isPostViewChrome(line)) continue;
+      if (line.length < 2 || line.length > 200) continue;
+      if (datePattern.test(line)) continue;
+      candidates.push(line);
+    }
+    for (const cand of candidates) {
+      if (cand.length > title.length) title = cand;
+    }
+  }
 
-  const dateMatch = text.match(/\b(20\d{2})[./-](\d{1,2})[./-](\d{1,2})\b/);
+  const dateMatch = text.match(
+    /\b(20\d{2})[.\/-]\s*(\d{1,2})[.\/-]\s*(\d{1,2})\b/
+  );
   const date = dateMatch
     ? `${dateMatch[1]}-${dateMatch[2].padStart(2, "0")}-${dateMatch[3].padStart(2, "0")}`
     : null;
 
-  const boilerplate = /^(Category|Menu|Share|Copy URL|Advertisement|URL)$/i;
   const body = lines
-    .filter((line) => !/^https?:/.test(line))
-    .filter((line) => !boilerplate.test(line))
+    .filter((line) => !isPostViewChrome(line))
     .join("\n")
     .trim();
 
@@ -736,7 +840,10 @@ function parseNewsHeadlines(text) {
 
 function readBlogPost(blogId, logNo) {
   if (!blogId || !logNo) return null;
-  const url = `https://blog.naver.com/PostView.naver?blogId=${encodeURIComponent(blogId)}&logNo=${encodeURIComponent(logNo)}`;
+  // Naver desktop PostView.naver renders the body inside an iframe (#mainFrame),
+  // and `browse text` only captures the outer document — we get chrome only.
+  // The mobile URL has no iframe, so the body is reachable in a single text dump.
+  const url = `https://m.blog.naver.com/${encodeURIComponent(blogId)}/${encodeURIComponent(logNo)}`;
   const text = browseText(url);
   if (!text) return null;
   const parsed = parsePostView(text);
