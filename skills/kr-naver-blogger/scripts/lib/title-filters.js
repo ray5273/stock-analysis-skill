@@ -113,6 +113,18 @@ const FORMULAIC_PATTERNS = [
   /반드시\s*알아야/,
   /미래를?\s*(보다|엿보다|바꿀)/,
   /상승세\s*탈까/,
+  // AI-farm template suffixes (2026-04 wave: oeollo, mmustory, itcar098)
+  /체크\s*포인트/,
+  /체크포인트/,
+  /핵심\s*(분석|체크|비교)/,
+  /가능성\s*체크/,
+  /투자\s*전\s*체크/,
+  /투자\s*핵심/,
+  /관찰\s*포인트/,
+  /예상\s*지급일/,
+  /!\s*$/,
+  /상승\s*확률\s*(얼마|몇)/,
+  /비교\s*시점/,
 ];
 
 // Stopwords for the company-token extractor. These are generic stock/news

@@ -48,14 +48,16 @@ const MIN_GENERAL_POSTS_FOR_BLOG_GATE = 5;
 
 // Dedicated-post trust floor. A blogger with this many dedicated
 // (non-trading, non-listicle) posts *about this specific company* bypasses
-// the non-stock-blog filter. Rationale: isStockRelatedTitle is narrow and
-// misclassifies macro/sector essays, so a real covering blogger can score
-// stockRatio=0.00 on general titles while still having 4–9 in-depth posts
-// on the target. But 3+ dedicated posts is strong enough self-evidence that
-// the blog-timeline classifier isn't needed. SEO spam blogs (enddltm7) and
-// orphan-post lifestyle blogs (gunyoung88) top out at ded=2, so a floor of
-// 3 cleanly separates them. Content-farm filter still applies regardless —
-// an AI farm with 3 dedicated posts is still a farm.
+// the non-stock-blog filter. Real covering bloggers (acejji81, lowclass,
+// investryu) often score stockRatio=0.00 because isStockRelatedTitle is
+// narrow and misses titles like "GRT (42) – GRT 필름 엔비디아 서버 테스트".
+// The dedicated count itself is the trust signal — a stockRatio floor
+// caused regressions on all three core GRT bloggers.
+//
+// Minor false-positive risk: non-stock blogs (gnccei, ded=4) with company
+// mentions in partnership/program titles may bypass. Accepted tradeoff —
+// isDedicatedFarm catches the bigger AI-farm problem, and non-stock posts
+// produce obviously non-analytical summaries downstream.
 const DEDICATED_TRUST_FLOOR = 3;
 
 // Staleness filter. When at least MIN_DATED_POSTS of the company-matched posts
@@ -502,6 +504,7 @@ function discover(opts) {
     let listicleTitleCount = 0;
     let dedicatedPostCount = 0;
     let deepTechPostCount = 0;
+    let dedicatedFormulaicCount = 0;
     const seenLogNos = new Set();
     for (const p of titleMatches) {
       const trading = isTradingTitle(p.title);
@@ -509,10 +512,19 @@ function discover(opts) {
       const deepTech = isDeepTechTitle(p.title);
       if (trading) tradingTitleCount += 1;
       if (listicle) listicleTitleCount += 1;
-      if (!trading && !listicle) dedicatedPostCount += 1;
+      if (!trading && !listicle) {
+        dedicatedPostCount += 1;
+        if (isFormulaicTitle(p.title)) dedicatedFormulaicCount += 1;
+      }
       if (deepTech && !trading && !listicle) deepTechPostCount += 1;
       if (p.logNo) seenLogNos.add(p.logNo);
     }
+    // Ratio of formulaic titles among this blogger's dedicated posts about
+    // the target company. A high ratio means the blogger writes the same
+    // SEO template for every ticker (oeollo: "X 목표주가 전망, 2026년 핵심
+    // 체크포인트", mmustory: "X 배당금액, 2026년 시나리오 정리").
+    const dedicatedFormulaicRatio =
+      dedicatedPostCount > 0 ? dedicatedFormulaicCount / dedicatedPostCount : 0;
 
     // In deep mode, also count tech titles from the initial search results.
     // searchWithinBlog returns page-1 by recency, so old tech posts (the ones
@@ -577,7 +589,7 @@ function discover(opts) {
     if (opts.verbose) {
       if (isTradingBlog) console.error(`  [excluded-trading] ${blogId} (${tradingAllCount}/${inBlogPage1Total})`);
       if (listicleTitleCount > 0) console.error(`  [listicle] ${blogId} x${listicleTitleCount}`);
-      console.error(`  [counts] rel=${relevantPostCount} ded=${dedicatedPostCount} deep=${deepTechPostCount} trad=${tradingTitleCount} list=${listicleTitleCount}`);
+      console.error(`  [counts] rel=${relevantPostCount} ded=${dedicatedPostCount} deep=${deepTechPostCount} trad=${tradingTitleCount} list=${listicleTitleCount} dedFormulaic=${dedicatedFormulaicCount}/${dedicatedPostCount}`);
       console.error(
         `  [blog] general=${generalPostCount} stock=${stockRelatedCount} ` +
         `stockRatio=${stockPostRatio.toFixed(2)} ` +
@@ -613,6 +625,7 @@ function discover(opts) {
       stockPostRatio,
       bracketedTitleRatio,
       formulaicTitleRatio,
+      dedicatedFormulaicRatio,
       datedPostCount,
       staleCoverageRatio,
       latestRelevantPostDate,
@@ -654,6 +667,13 @@ function discover(opts) {
   const isContentFarm = (b) =>
     b.generalPostCount >= MIN_GENERAL_POSTS_FOR_BLOG_GATE &&
     b.formulaicTitleRatio >= MAX_FORMULAIC_TITLE_RATIO;
+  // Dedicated-post farm: even if the blog's general timeline looks clean,
+  // if most of its posts *about this specific company* are templated, it's
+  // a multi-ticker AI farm that writes the same SEO template per ticker.
+  // Requires at least 2 dedicated posts to avoid single-post false positives.
+  const isDedicatedFarm = (b) =>
+    b.dedicatedPostCount >= 2 &&
+    b.dedicatedFormulaicRatio >= MAX_FORMULAIC_TITLE_RATIO;
 
   const qualified = opts.qualityFilter
     ? bloggers.filter((b) => {
@@ -684,6 +704,16 @@ function discover(opts) {
               `  [excluded-content-farm] ${b.blogId} ` +
               `formulaicRatio=${b.formulaicTitleRatio.toFixed(2)} ` +
               `general=${b.generalPostCount}`
+            );
+          }
+          return false;
+        }
+        if (isDedicatedFarm(b)) {
+          if (opts.verbose) {
+            console.error(
+              `  [excluded-dedicated-farm] ${b.blogId} ` +
+              `dedFormulaicRatio=${b.dedicatedFormulaicRatio.toFixed(2)} ` +
+              `ded=${b.dedicatedPostCount}`
             );
           }
           return false;

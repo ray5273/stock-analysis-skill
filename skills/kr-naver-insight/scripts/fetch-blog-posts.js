@@ -163,12 +163,43 @@ function fetch(opts) {
   for (const blogId of bloggerIds) {
     if (opts.verbose) console.error(`[postlist] ${blogId}`);
     let list = [];
+    let listError = null;
     try {
       list = browseNaver.readBlogPostList(blogId, { max: 20 });
     } catch (err) {
-      errors.push({ blogId, logNo: null, message: err.message });
-      continue;
+      listError = err;
+      errors.push({ blogId, logNo: null, message: `readBlogPostList: ${err.message}` });
     }
+
+    // Targeted in-blog search for company-specific posts. Multi-ticker
+    // bloggers (covering 20+ stocks) often have the target company's posts
+    // outside their recent-20 window — searchWithinBlog finds them directly.
+    let searchResults = [];
+    try {
+      const inBlog = browseNaver.searchWithinBlog(blogId, company);
+      searchResults = inBlog.posts || [];
+    } catch (err) {
+      if (opts.verbose) console.error(`  [inblog-search] ${blogId}: ${err.message}`);
+    }
+
+    // Both sources failed → skip blogger
+    if (!list.length && !searchResults.length) continue;
+
+    // Merge: searchWithinBlog first (targeted), then readBlogPostList
+    // (supplementary for body-only mentions). Deduplicate by logNo.
+    const seenLogNos = new Set();
+    const merged = [];
+    for (const p of searchResults) {
+      if (!p.logNo || seenLogNos.has(p.logNo)) continue;
+      seenLogNos.add(p.logNo);
+      merged.push(p);
+    }
+    for (const p of list) {
+      if (!p.logNo || seenLogNos.has(p.logNo)) continue;
+      seenLogNos.add(p.logNo);
+      merged.push(p);
+    }
+    list = merged;
 
     const relevantFromTitle = list.filter((p) => mentionsCompany(p.title, company, ticker));
     // If titles don't match, we still consider the top-5 most recent for body match.
