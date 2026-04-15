@@ -1,0 +1,273 @@
+{
+  "company": "알테오젠",
+  "ticker": "196170",
+  "discoveredAt": "2026-04-15",
+  "bloggers": [
+    {
+      "blogId": "jylhappy20",
+      "displayName": null,
+      "blogTitle": null,
+      "subscriberCount": null,
+      "relevantPostCount": 10,
+      "dedicatedPostCount": 10,
+      "deepTechPostCount": 1,
+      "tradingTitleCount": 0,
+      "listicleTitleCount": 0,
+      "isTradingBlog": false,
+      "searchHitCount": 2,
+      "nicknameHitCount": 0,
+      "nicknameAnchors": [],
+      "roundupMentioned": false,
+      "roundupSources": [],
+      "inBlogPage1Total": 10,
+      "inBlogPaginationPages": 11,
+      "generalPostCount": 5,
+      "stockPostRatio": 0,
+      "bracketedTitleRatio": 0,
+      "formulaicTitleRatio": 0,
+      "datedPostCount": 10,
+      "staleCoverageRatio": 0,
+      "latestRelevantPostDate": "2026-04-14",
+      "latestPostDate": "2026-04-14",
+      "categories": [],
+      "profileSnippet": null
+    },
+    {
+      "blogId": "goodinvest4",
+      "displayName": null,
+      "blogTitle": null,
+      "subscriberCount": null,
+      "relevantPostCount": 5,
+      "dedicatedPostCount": 5,
+      "deepTechPostCount": 0,
+      "tradingTitleCount": 0,
+      "listicleTitleCount": 0,
+      "isTradingBlog": false,
+      "searchHitCount": 2,
+      "nicknameHitCount": 0,
+      "nicknameAnchors": [],
+      "roundupMentioned": false,
+      "roundupSources": [],
+      "inBlogPage1Total": 10,
+      "inBlogPaginationPages": 11,
+      "generalPostCount": 14,
+      "stockPostRatio": 0.7857142857142857,
+      "bracketedTitleRatio": 0,
+      "formulaicTitleRatio": 0.07142857142857142,
+      "datedPostCount": 5,
+      "staleCoverageRatio": 0,
+      "latestRelevantPostDate": "2026-04-02",
+      "latestPostDate": "2026-04-02",
+      "categories": [],
+      "profileSnippet": null
+    },
+    {
+      "blogId": "yonnr",
+      "displayName": null,
+      "blogTitle": null,
+      "subscriberCount": null,
+      "relevantPostCount": 6,
+      "dedicatedPostCount": 4,
+      "deepTechPostCount": 2,
+      "tradingTitleCount": 2,
+      "listicleTitleCount": 0,
+      "isTradingBlog": false,
+      "searchHitCount": 2,
+      "nicknameHitCount": 0,
+      "nicknameAnchors": [],
+      "roundupMentioned": false,
+      "roundupSources": [],
+      "inBlogPage1Total": 10,
+      "inBlogPaginationPages": 2,
+      "generalPostCount": 5,
+      "stockPostRatio": 0.2,
+      "bracketedTitleRatio": 0,
+      "formulaicTitleRatio": 0.4,
+      "datedPostCount": 6,
+      "staleCoverageRatio": 0,
+      "latestRelevantPostDate": "2026-03-31",
+      "latestPostDate": "2026-03-31",
+      "categories": [],
+      "profileSnippet": null
+    },
+    {
+      "blogId": "antlemans",
+      "displayName": null,
+      "blogTitle": null,
+      "subscriberCount": null,
+      "relevantPostCount": 3,
+      "dedicatedPostCount": 3,
+      "deepTechPostCount": 1,
+      "tradingTitleCount": 0,
+      "listicleTitleCount": 0,
+      "isTradingBlog": false,
+      "searchHitCount": 1,
+      "nicknameHitCount": 0,
+      "nicknameAnchors": [],
+      "roundupMentioned": false,
+      "roundupSources": [],
+      "inBlogPage1Total": 5,
+      "inBlogPaginationPages": 1,
+      "generalPostCount": 1,
+      "stockPostRatio": 0,
+      "bracketedTitleRatio": 0,
+      "formulaicTitleRatio": 1,
+      "datedPostCount": 3,
+      "staleCoverageRatio": 0.3333333333333333,
+      "latestRelevantPostDate": "2026-03-26",
+      "latestPostDate": "2026-03-26",
+      "categories": [],
+      "profileSnippet": null
+    },
+    {
+      "blogId": "vanderrohe",
+      "displayName": null,
+      "blogTitle": null,
+      "subscriberCount": null,
+      "relevantPostCount": 2,
+      "dedicatedPostCount": 2,
+      "deepTechPostCount": 0,
+      "tradingTitleCount": 0,
+      "listicleTitleCount": 0,
+      "isTradingBlog": false,
+      "searchHitCount": 1,
+      "nicknameHitCount": 0,
+      "nicknameAnchors": [],
+      "roundupMentioned": false,
+      "roundupSources": [],
+      "inBlogPage1Total": 10,
+      "inBlogPaginationPages": 2,
+      "generalPostCount": 1,
+      "stockPostRatio": 0,
+      "bracketedTitleRatio": 0,
+      "formulaicTitleRatio": 0,
+      "datedPostCount": 2,
+      "staleCoverageRatio": 0,
+      "latestRelevantPostDate": "2026-01-23",
+      "latestPostDate": "2026-01-23",
+      "categories": [],
+      "profileSnippet": null
+    }
+  ],
+  "meta": {
+    "searchQueries": 7,
+    "candidatesFound": 35,
+    "qualified": 5,
+    "skipped": 0,
+    "querySet": {
+      "queries": [
+        {
+          "text": "알테오젠 투자 분석",
+          "source": "base"
+        },
+        {
+          "text": "알테오젠 실적",
+          "source": "base"
+        },
+        {
+          "text": "알테오젠 6000선",
+          "source": "news-trend"
+        },
+        {
+          "text": "알테오젠 협상",
+          "source": "news-trend"
+        },
+        {
+          "text": "알테오젠 이란",
+          "source": "news-trend"
+        },
+        {
+          "text": "알테오젠 기대",
+          "source": "news-trend"
+        },
+        {
+          "text": "알테오젠 회복",
+          "source": "news-trend"
+        }
+      ],
+      "meta": {
+        "newsHeadlinesScanned": 26,
+        "newsListicleDropped": 8,
+        "dartProductsExtracted": 0,
+        "contextFileUsed": null,
+        "generatedBy": "kr-naver-blogger/build-query-set.js"
+      }
+    },
+    "relatedQueries": [
+      {
+        "text": "알테오젠 주가",
+        "nickname": "주가",
+        "wholeQuery": false
+      },
+      {
+        "text": "알테오젠 주가전망",
+        "nickname": "주가전망",
+        "wholeQuery": false
+      },
+      {
+        "text": "알테오젠 목표주가",
+        "nickname": "목표주가",
+        "wholeQuery": false
+      },
+      {
+        "text": "알테오젠 코스피 이전",
+        "nickname": "코스피 이전",
+        "wholeQuery": false
+      },
+      {
+        "text": "알테오젠 주주총회",
+        "nickname": "주주총회",
+        "wholeQuery": false
+      },
+      {
+        "text": "알테오젠 무상증자",
+        "nickname": "무상증자",
+        "wholeQuery": false
+      },
+      {
+        "text": "알테오젠 전망",
+        "nickname": "전망",
+        "wholeQuery": false
+      },
+      {
+        "text": "알테오젠주식",
+        "nickname": "주식",
+        "wholeQuery": false
+      },
+      {
+        "text": "알테오젠 주총",
+        "nickname": "주총",
+        "wholeQuery": false
+      },
+      {
+        "text": "알테오젠 배당금",
+        "nickname": "배당금",
+        "wholeQuery": false
+      }
+    ],
+    "nicknameQueries": [],
+    "eventQueries": [
+      {
+        "text": "알테오젠 코스피 이전",
+        "hits": 5
+      },
+      {
+        "text": "알테오젠 주주총회",
+        "hits": 7
+      },
+      {
+        "text": "알테오젠 무상증자",
+        "hits": 5
+      },
+      {
+        "text": "알테오젠 주총",
+        "hits": 0
+      }
+    ],
+    "nicknameAnchoredCount": 0,
+    "roundupFetched": [],
+    "deepMode": false,
+    "blogFilterApplied": false,
+    "generatedBy": "kr-naver-blogger/discover-bloggers.js"
+  }
+}

@@ -36,6 +36,28 @@ const MAX_ROUNDUP_FETCH = 3;
 // room for macro/crypto-adjacent writers who still cover equities seriously.
 const MIN_STOCK_POST_RATIO = 0.5;
 
+// Content-farm filter. isFormulaicTitle catches clickbait templates like
+// "X 주식 주가 전망 지금 매수 타이밍일까", "왜 오를까", etc. Real analysts score
+// 0.00; AI/SEO farms score ~1.00 (canary: dkdlvkr3, enddltm7). The 0.7 cutoff
+// requires a clear majority of a blog's general timeline to fit the template
+// before excluding, so bloggers with one occasional formulaic title pass.
+// Requires MIN_GENERAL_POSTS_FOR_BLOG_GATE general posts sampled to avoid
+// false positives on very new blogs.
+const MAX_FORMULAIC_TITLE_RATIO = 0.7;
+const MIN_GENERAL_POSTS_FOR_BLOG_GATE = 5;
+
+// Dedicated-post trust floor. A blogger with this many dedicated
+// (non-trading, non-listicle) posts *about this specific company* bypasses
+// the non-stock-blog filter. Rationale: isStockRelatedTitle is narrow and
+// misclassifies macro/sector essays, so a real covering blogger can score
+// stockRatio=0.00 on general titles while still having 4–9 in-depth posts
+// on the target. But 3+ dedicated posts is strong enough self-evidence that
+// the blog-timeline classifier isn't needed. SEO spam blogs (enddltm7) and
+// orphan-post lifestyle blogs (gunyoung88) top out at ded=2, so a floor of
+// 3 cleanly separates them. Content-farm filter still applies regardless —
+// an AI farm with 3 dedicated posts is still a farm.
+const DEDICATED_TRUST_FLOOR = 3;
+
 // Staleness filter. When at least MIN_DATED_POSTS of the company-matched posts
 // carry parseable dates and STALE_RATIO_THRESHOLD of those are older than
 // STALE_CUTOFF_DAYS, the blogger has stopped covering this ticker. We require
@@ -616,6 +638,23 @@ function discover(opts) {
     b.staleCoverageRatio !== null &&
     b.staleCoverageRatio >= STALE_RATIO_THRESHOLD;
 
+  // Blog-timeline gates that apply in all modes (not just --deep). Catches
+  // two failure modes the ticker-level filters miss:
+  //   (1) lifestyle/career blogs with zero stock content in the general
+  //       timeline but one orphan stock post that title-matched the query
+  //       (e.g. gunyoung88, itcar098 — timelines full of 기후동행퀴즈, 도시락);
+  //   (2) SEO/AI content farms whose general timeline is 80%+ templated
+  //       clickbait (e.g. enddltm7 — "X 주식 주가 전망 지금 사면 될까").
+  // Both require MIN_GENERAL_POSTS_FOR_BLOG_GATE samples before firing so new
+  // bloggers with thin timelines aren't falsely excluded.
+  const isNonStockBlog = (b) =>
+    b.dedicatedPostCount < DEDICATED_TRUST_FLOOR &&
+    b.generalPostCount >= MIN_GENERAL_POSTS_FOR_BLOG_GATE &&
+    b.stockPostRatio < MIN_STOCK_POST_RATIO;
+  const isContentFarm = (b) =>
+    b.generalPostCount >= MIN_GENERAL_POSTS_FOR_BLOG_GATE &&
+    b.formulaicTitleRatio >= MAX_FORMULAIC_TITLE_RATIO;
+
   const qualified = opts.qualityFilter
     ? bloggers.filter((b) => {
         if (b.isTradingBlog) return false;
@@ -629,17 +668,28 @@ function discover(opts) {
           }
           return false;
         }
+        if (isNonStockBlog(b)) {
+          if (opts.verbose) {
+            console.error(
+              `  [excluded-non-stock-blog] ${b.blogId} ` +
+              `stockRatio=${b.stockPostRatio.toFixed(2)} ` +
+              `general=${b.generalPostCount}`
+            );
+          }
+          return false;
+        }
+        if (isContentFarm(b)) {
+          if (opts.verbose) {
+            console.error(
+              `  [excluded-content-farm] ${b.blogId} ` +
+              `formulaicRatio=${b.formulaicTitleRatio.toFixed(2)} ` +
+              `general=${b.generalPostCount}`
+            );
+          }
+          return false;
+        }
         if (opts.deep) {
           if (b.deepTechPostCount < 1) return false;
-          // Blog-level gates (deep mode only). A blog that has one tech-flavored
-          // title but is mostly non-stock content (career blog) or covers every
-          // ticker under the sun (news aggregator) is not a coverer.
-          if (opts.blogFilter) {
-            if (b.generalPostCount > 0 && b.stockPostRatio < MIN_STOCK_POST_RATIO) {
-              if (opts.verbose) console.error(`  [excluded-non-stock-blog] ${b.blogId} stockRatio=${b.stockPostRatio.toFixed(2)}`);
-              return false;
-            }
-          }
           return true;
         }
         return (

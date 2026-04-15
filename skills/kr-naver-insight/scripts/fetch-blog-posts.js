@@ -131,8 +131,28 @@ function fetch(opts) {
     process.exit(1);
   }
   if (!bloggerIds.length) {
-    console.error("Error: no bloggers to fetch (pass --input or --bloggers)");
-    process.exit(1);
+    // Empty blogger list is a valid outcome when discover-bloggers filtered
+    // everyone out (e.g. ticker covered only by SEO spam blogs). Write an
+    // empty posts file so downstream summarize-insights can still render
+    // "No qualifying posts found" instead of the harness hard-failing.
+    if (!opts.input) {
+      console.error("Error: no bloggers to fetch (pass --input or --bloggers)");
+      process.exit(1);
+    }
+    console.error("[fetch-blog-posts] input had zero bloggers; writing empty posts file");
+    writeJson(opts.output, {
+      company: company || "",
+      ticker: ticker || "",
+      fetchedAt: todayYmd(),
+      posts: [],
+      meta: {
+        totalFetched: 0,
+        fromCache: 0,
+        errors: [],
+        generatedBy: "kr-naver-insight/fetch-blog-posts.js",
+      },
+    });
+    return;
   }
 
   const fetchedAt = todayYmd();
