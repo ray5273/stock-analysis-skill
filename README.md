@@ -190,18 +190,34 @@ Example full report:
 
 Install target: `$CODEX_HOME/skills/<skill-name>` (default: `~/.codex/skills/`)
 
-Windows:
+Open Codex anywhere and paste this. Codex should do the rest.
 
-```powershell
-.\scripts\install-skill.ps1 us-stock-analysis
-.\scripts\install-all-skills.ps1
-```
+> Install the Codex skills from `https://github.com/ray5273/stock-analysis-skill`. Use the local repo path `~/.codex/src/stock-analysis-skill`. If `~/.codex/src/stock-analysis-skill/.git` does not exist, create `~/.codex/src` and clone the repository there. If the repo already exists, update it with `git -C ~/.codex/src/stock-analysis-skill pull --ff-only`. Then run `cd ~/.codex/src/stock-analysis-skill && bash ./scripts/install-all-skills.sh`. If this is macOS and the Naver stack needs the Codex-specific fallback path, run `cd ~/.codex/src/stock-analysis-skill && bash ./scripts/install-codex-mac-naver.sh` instead. After install, confirm the skills were copied under `${CODEX_HOME:-~/.codex}/skills/` and continue using the installed skills.
 
-Linux or macOS:
+If you want to run the commands yourself instead of pasting the prompt:
 
 ```bash
-bash ./scripts/install-skill.sh us-stock-analysis
+mkdir -p ~/.codex/src
+if [ -d ~/.codex/src/stock-analysis-skill/.git ]; then
+  git -C ~/.codex/src/stock-analysis-skill pull --ff-only
+else
+  git clone --single-branch --depth 1 https://github.com/ray5273/stock-analysis-skill ~/.codex/src/stock-analysis-skill
+fi
+cd ~/.codex/src/stock-analysis-skill
 bash ./scripts/install-all-skills.sh
+```
+
+macOS Naver-only recovery path:
+
+```bash
+mkdir -p ~/.codex/src
+if [ -d ~/.codex/src/stock-analysis-skill/.git ]; then
+  git -C ~/.codex/src/stock-analysis-skill pull --ff-only
+else
+  git clone --single-branch --depth 1 https://github.com/ray5273/stock-analysis-skill ~/.codex/src/stock-analysis-skill
+fi
+cd ~/.codex/src/stock-analysis-skill
+bash ./scripts/install-codex-mac-naver.sh
 ```
 
 Custom target:
@@ -212,27 +228,7 @@ CODEX_HOME=/tmp/codex-home bash ./scripts/install-all-skills.sh
 
 ### Claude Code
 
-Install target: `$CLAUDE_HOME/skills/<skill-name>` (default: `~/.claude/skills/`)
-
-Windows:
-
-```powershell
-.\scripts\install-claude-skill.ps1 us-stock-analysis
-.\scripts\install-all-claude-skills.ps1
-```
-
-Linux or macOS:
-
-```bash
-bash ./scripts/install-claude-skill.sh us-stock-analysis
-bash ./scripts/install-all-claude-skills.sh
-```
-
-Custom target:
-
-```bash
-CLAUDE_HOME=/tmp/claude-home bash ./scripts/install-all-claude-skills.sh
-```
+Install method placeholder. Ask Claude Code for the exact paste-ready install prompt you want to keep here.
 
 ## Usage
 
@@ -400,6 +396,10 @@ The list below is kept to audited golden examples and reusable fixtures so the l
 Additional recent example:
 
 - [KR - LIG넥스원 Memo](<analysis-example/kr/LIG넥스원/memo.md>)
+- [KR - 삼성SDS Memo](<analysis-example/kr/삼성SDS/memo.md>)
+- [KR - 삼성SDS Naver Insights](<analysis-example/kr/삼성SDS/naver-insights.md>)
+- [KR - 삼성SDS Naver Blogger Candidates](<analysis-example/kr/삼성SDS/naver-bloggers.json>)
+- [KR - 삼성SDS Naver Posts](<analysis-example/kr/삼성SDS/naver-posts.json>)
 
 ## Validation
 

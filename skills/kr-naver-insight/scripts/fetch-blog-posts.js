@@ -97,6 +97,11 @@ function mentionsCompany(text, company, ticker) {
   return false;
 }
 
+function isFatalBrowseError(err) {
+  const message = err && err.message ? err.message : "";
+  return /gstack browse (?:binary|runtime) not found|GSTACK_BROWSE_BIN|ENOENT/.test(message);
+}
+
 function resolveBloggersFromInput(opts) {
   const bloggerIds = new Set();
   let company = opts.company;
@@ -167,6 +172,7 @@ function fetch(opts) {
     try {
       list = browseNaver.readBlogPostList(blogId, { max: 20 });
     } catch (err) {
+      if (isFatalBrowseError(err)) throw err;
       listError = err;
       errors.push({ blogId, logNo: null, message: `readBlogPostList: ${err.message}` });
     }
@@ -179,6 +185,7 @@ function fetch(opts) {
       const inBlog = browseNaver.searchWithinBlog(blogId, company);
       searchResults = inBlog.posts || [];
     } catch (err) {
+      if (isFatalBrowseError(err)) throw err;
       if (opts.verbose) console.error(`  [inblog-search] ${blogId}: ${err.message}`);
     }
 
@@ -228,6 +235,7 @@ function fetch(opts) {
       try {
         post = browseNaver.readBlogPost(blogId, entry.logNo);
       } catch (err) {
+        if (isFatalBrowseError(err)) throw err;
         errors.push({ blogId, logNo: entry.logNo, message: err.message });
         continue;
       }

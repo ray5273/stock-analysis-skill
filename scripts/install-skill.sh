@@ -22,4 +22,15 @@ fi
 mkdir -p "$TARGET_PATH"
 cp -R "$SOURCE_PATH"/. "$TARGET_PATH"/
 
+if [ "${SKILL_INSTALL_SKIP_HOOKS:-0}" != "1" ]; then
+    HOOK="$TARGET_PATH/scripts/post-install.sh"
+    if [ -f "$HOOK" ]; then
+        printf 'Running post-install hook for %s...\n' "$SKILL_NAME"
+        SKILL_INSTALL_SOURCE="$SOURCE_PATH" \
+            SKILL_INSTALL_TARGET="$TARGET_PATH" \
+            CODEX_HOME="$CODEX_HOME_DIR" \
+            sh "$HOOK" "$TARGET_PATH"
+    fi
+fi
+
 printf 'Installed %s to %s\n' "$SKILL_NAME" "$TARGET_PATH"

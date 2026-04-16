@@ -45,15 +45,20 @@ gstack `browse` binary in this order:
 
 1. `$GSTACK_BROWSE_BIN` environment variable, if set
 2. A skill-local vendored binary at `vendor/gstack/browse/dist/browse`
-3. (Mac/Linux only) The binary installed under the Claude Code skill location:
+3. (Mac/Linux only) The binary installed under the Codex skill location:
+   `$CODEX_HOME/skills/kr-naver-browse/vendor/gstack/browse/dist/browse`
+   (default `~/.codex/skills/kr-naver-browse/vendor/gstack/browse/dist/browse`)
+4. (Mac/Linux only) A gstack Codex skill installation:
+   `$CODEX_HOME/skills/gstack/browse/dist/browse`
+5. (Mac/Linux only) The binary installed under the Claude Code skill location:
    `$CLAUDE_HOME/skills/kr-naver-browse/vendor/gstack/browse/dist/browse`
    (default `~/.claude/skills/kr-naver-browse/vendor/gstack/browse/dist/browse`)
-4. (Mac/Linux only) A gstack Claude skill installation:
+6. (Mac/Linux only) A gstack Claude skill installation:
    `$CLAUDE_HOME/skills/gstack/browse/dist/browse`
 
-Steps 3–4 allow running scripts directly from the source repo when the skill
-has been installed into Claude Code via `install-claude-skill.sh` but the repo's
-own `vendor/` directory has not been built.
+Steps 3–6 allow running scripts directly from the source repo when the skill
+has been installed into Codex or Claude Code but the repo's own `vendor/`
+directory has not been built.
 Each helper spawns the resolved binary via `execFileSync` with a 30s timeout
 and a 5 MB output buffer. Korean search terms are passed through
 `encodeURIComponent`. On
@@ -68,10 +73,24 @@ official Bun installer pinned by `BUN_VERSION_TAG`, default `bun-v1.3.10`), runs
 `bun install`, `bun run build`, and `bunx playwright install chromium`, strips
 vendored `SKILL.md` files so Codex does not recursively load gstack's own skill
 pack, and verifies that `vendor/gstack/browse/dist/browse` can launch and
-navigate to `https://example.com`. Set
-`SKILL_INSTALL_SKIP_HOOKS=1` to skip this bootstrap, set
-`SKILL_INSTALL_AUTO_BUN=0` to avoid automatic `bun` installation, or set
-`GSTACK_BROWSE_BIN` to an absolute existing gstack `browse` binary path.
+navigate to `https://example.com`.
+
+Install paths:
+
+- Default Codex install: `bash ./scripts/install-all-skills.sh`
+- macOS Codex recovery path: `bash ./scripts/install-codex-mac-naver.sh`
+
+On macOS Codex installs under `$CODEX_HOME/skills/` (default
+`~/.codex/skills/`), if the compiled binary build finishes but the smoke test
+still fails, the hook automatically falls back to a Bun source wrapper at the
+same final path: `vendor/gstack/browse/dist/browse`. The higher-level Naver
+skills keep calling the same path either way.
+
+Set `SKILL_INSTALL_SKIP_HOOKS=1` to skip this bootstrap, set
+`SKILL_INSTALL_AUTO_BUN=0` to avoid automatic `bun` installation, set
+`SKILL_INSTALL_FORCE_CODEX_MAC=1` to force the macOS Codex fallback path during
+install, or set `GSTACK_BROWSE_BIN` to an absolute existing gstack `browse`
+binary path.
 
 ## Helpers Exposed
 

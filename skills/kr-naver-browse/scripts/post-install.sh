@@ -5,6 +5,9 @@ SKILL_DIR=${1:-${SKILL_INSTALL_TARGET:-}}
 if [ -z "$SKILL_DIR" ]; then
     SKILL_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 fi
+CODEX_HOME_DIR=${CODEX_HOME:-$HOME/.codex}
+BROWSE_DIST_DIR="$SKILL_DIR/vendor/gstack/browse/dist"
+BROWSE_BIN="$BROWSE_DIST_DIR/browse"
 
 find_bun() {
     export PATH="$HOME/.bun/bin:$PATH"
@@ -57,6 +60,73 @@ run_binary_smoke() {
     return 1
 }
 
+is_codex_mac_target() {
+    case "$(uname -s)" in
+        Darwin) ;;
+        *)
+            return 1
+            ;;
+    esac
+
+    if [ "${SKILL_INSTALL_FORCE_CODEX_MAC:-0}" = "1" ]; then
+        return 0
+    fi
+
+    case "$SKILL_DIR" in
+        "$CODEX_HOME_DIR"/skills/*) return 0 ;;
+    esac
+
+    return 1
+}
+
+should_force_codex_mac_wrapper() {
+    case "$(uname -s)" in
+        Darwin) ;;
+        *)
+            return 1
+            ;;
+    esac
+
+    [ "${SKILL_INSTALL_FORCE_CODEX_MAC:-0}" = "1" ]
+}
+
+install_codex_mac_wrapper() {
+    bun_bin=$(find_bun)
+    if [ -z "$bun_bin" ] || [ ! -x "$bun_bin" ]; then
+        echo "Cannot create Codex macOS browse wrapper: bun executable not found." >&2
+        return 1
+    fi
+
+    gstack_root="$SKILL_DIR/vendor/gstack"
+    cli_path="$gstack_root/browse/src/cli.ts"
+    if [ ! -f "$cli_path" ]; then
+        echo "Cannot create Codex macOS browse wrapper: missing $cli_path" >&2
+        return 1
+    fi
+
+    mkdir -p "$BROWSE_DIST_DIR"
+    cat >"$BROWSE_BIN" <<EOF
+#!/usr/bin/env sh
+set -eu
+
+BUN_BIN="$bun_bin"
+CLI_PATH="$cli_path"
+
+if [ ! -x "\$BUN_BIN" ]; then
+    echo "gstack browse wrapper could not find Bun at \$BUN_BIN" >&2
+    exit 1
+fi
+
+if [ ! -f "\$CLI_PATH" ]; then
+    echo "gstack browse wrapper could not find CLI source at \$CLI_PATH" >&2
+    exit 1
+fi
+
+exec "\$BUN_BIN" run "\$CLI_PATH" "\$@"
+EOF
+    chmod +x "$BROWSE_BIN"
+}
+
 prune_vendored_skill_docs() {
     root=$1
     if [ -z "$root" ] || [ ! -d "$root" ]; then
@@ -77,6 +147,10 @@ find_existing_browse() {
     if [ -n "${GSTACK_BROWSE_BIN:-}" ] && is_binary_runtime "$GSTACK_BROWSE_BIN" && run_binary_smoke "$GSTACK_BROWSE_BIN"; then
         printf '%s\n' "$GSTACK_BROWSE_BIN"
         return 0
+    fi
+
+    if should_force_codex_mac_wrapper; then
+        return 1
     fi
 
     candidate="$SKILL_DIR/vendor/gstack/browse/dist/browse"
@@ -156,13 +230,45 @@ ensure_bun
 # of reusing a stale artifact whose mtime still looks current.
 rm -f "$GSTACK_DIR/browse/dist/browse" "$GSTACK_DIR/browse/dist/find-browse"
 
-(cd "$GSTACK_DIR" && bun install && bun run build && bunx playwright install chromium)
+setup_ok=0
+if (cd "$GSTACK_DIR" && bun install); then
+    setup_ok=1
+else
+    echo "gstack bun install failed." >&2
+fi
+
+if [ "$setup_ok" -eq 1 ]; then
+    if ! (cd "$GSTACK_DIR" && bun run build); then
+        setup_ok=0
+        echo "gstack compiled browse build failed." >&2
+    fi
+fi
+
+if ! (cd "$GSTACK_DIR" && bunx playwright install chromium); then
+    setup_ok=0
+    echo "gstack playwright chromium install failed." >&2
+fi
+
 prune_vendored_skill_docs "$GSTACK_DIR"
 
-if existing=$(find_existing_browse); then
-    printf 'Installed gstack browse binary: %s\n' "$existing"
-else
-    echo "gstack browse install finished, but no usable browse binary was found." >&2
-    echo "Expected: $SKILL_DIR/vendor/gstack/browse/dist/browse or GSTACK_BROWSE_BIN." >&2
-    exit 1
+if should_force_codex_mac_wrapper; then
+    echo "Forcing Codex macOS wrapper fallback..."
+elif [ "$setup_ok" -eq 1 ] && is_binary_runtime "$BROWSE_BIN" && run_binary_smoke "$BROWSE_BIN"; then
+    printf 'Installed gstack browse binary: %s\n' "$BROWSE_BIN"
+    exit 0
 fi
+
+if is_codex_mac_target; then
+    if ! should_force_codex_mac_wrapper; then
+        echo "Compiled gstack browse smoke failed; trying Codex macOS wrapper fallback..."
+    fi
+    install_codex_mac_wrapper
+    if is_binary_runtime "$BROWSE_BIN" && run_binary_smoke "$BROWSE_BIN"; then
+        printf 'Installed gstack browse wrapper for Codex macOS: %s\n' "$BROWSE_BIN"
+        exit 0
+    fi
+fi
+
+echo "gstack browse install finished, but no usable browse binary was found." >&2
+echo "Expected: $SKILL_DIR/vendor/gstack/browse/dist/browse or GSTACK_BROWSE_BIN." >&2
+exit 1

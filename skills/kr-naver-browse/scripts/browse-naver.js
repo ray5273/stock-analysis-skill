@@ -89,18 +89,19 @@ function resolveBrowseBinary() {
     return cachedBin;
   }
 
-  // Mac + Claude Code fallback: look for browse binary in the installed Claude
-  // skill location (~/.claude/skills/kr-naver-browse/vendor/gstack/browse/dist/)
-  // and in a gstack Claude skill installation (~/.claude/skills/gstack/browse/dist/).
-  // This allows running scripts from the source repo when the skill is installed
-  // under Claude Code but vendor/ has not been built in the repo itself.
+  // Mac/Linux skill-install fallback: look for browse binary in installed Codex
+  // or Claude skill locations so source-repo scripts still work when vendor/
+  // has not been built in the repo itself.
   if (process.platform === "darwin" || process.platform === "linux") {
+    const codexHome = process.env.CODEX_HOME || path.join(process.env.HOME || "", ".codex");
     const claudeHome = process.env.CLAUDE_HOME || path.join(process.env.HOME || "", ".claude");
-    const claudeFallbacks = [
+    const installFallbacks = [
+      path.join(codexHome, "skills", "kr-naver-browse", "vendor", "gstack", "browse", "dist"),
+      path.join(codexHome, "skills", "gstack", "browse", "dist"),
       path.join(claudeHome, "skills", "kr-naver-browse", "vendor", "gstack", "browse", "dist"),
       path.join(claudeHome, "skills", "gstack", "browse", "dist"),
     ];
-    for (const dir of claudeFallbacks) {
+    for (const dir of installFallbacks) {
       const candidate = firstExecutableInDir(dir, "browse");
       if (assertGstackBrowseBinary(candidate)) {
         cachedBin = candidate;
@@ -109,6 +110,7 @@ function resolveBrowseBinary() {
     }
   }
 
+  const codexHome = process.env.CODEX_HOME || path.join(process.env.HOME || "", ".codex");
   const claudeHome = process.env.CLAUDE_HOME || path.join(process.env.HOME || "", ".claude");
   throw new Error(
     "gstack browse binary not found or not executable.\n" +
@@ -116,10 +118,12 @@ function resolveBrowseBinary() {
       `  1. $GSTACK_BROWSE_BIN (not set or invalid)\n` +
       `  2. ${path.join(__dirname, "..", "vendor", "gstack", "browse", "dist", "browse")}\n` +
       (process.platform === "darwin" || process.platform === "linux"
-        ? `  3. ${path.join(claudeHome, "skills", "kr-naver-browse", "vendor", "gstack", "browse", "dist", "browse")}\n` +
-          `  4. ${path.join(claudeHome, "skills", "gstack", "browse", "dist", "browse")}\n`
+        ? `  3. ${path.join(codexHome, "skills", "kr-naver-browse", "vendor", "gstack", "browse", "dist", "browse")}\n` +
+          `  4. ${path.join(codexHome, "skills", "gstack", "browse", "dist", "browse")}\n` +
+          `  5. ${path.join(claudeHome, "skills", "kr-naver-browse", "vendor", "gstack", "browse", "dist", "browse")}\n` +
+          `  6. ${path.join(claudeHome, "skills", "gstack", "browse", "dist", "browse")}\n`
         : "") +
-      "Fix: run  bash scripts/install-claude-skill.sh kr-naver-browse  to build the binary,\n" +
+      "Fix: run  bash scripts/install-skill.sh kr-naver-browse  or  bash scripts/install-claude-skill.sh kr-naver-browse  to build the binary,\n" +
       "or set GSTACK_BROWSE_BIN to an existing gstack browse binary path."
   );
 }

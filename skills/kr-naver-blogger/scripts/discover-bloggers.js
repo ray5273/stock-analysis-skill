@@ -218,6 +218,11 @@ function isAnchored(b) {
   return (b.nicknameHitCount || 0) > 0 || b.roundupMentioned === true;
 }
 
+function isFatalBrowseError(err) {
+  const message = err && err.message ? err.message : "";
+  return /gstack browse (?:binary|runtime) not found|GSTACK_BROWSE_BIN|ENOENT/.test(message);
+}
+
 function rankBloggers(bloggers, { deep = false } = {}) {
   return bloggers.slice().sort((a, b) => {
     if (deep) {
@@ -327,6 +332,7 @@ function discover(opts) {
       allResults.push(...hits);
       accumulateHits(candidateMap, hits, { source: "keyword" });
     } catch (err) {
+      if (isFatalBrowseError(err)) throw err;
       console.error(`[search-failed] "${q}": ${err.message}`);
     }
   }
@@ -342,6 +348,7 @@ function discover(opts) {
     relatedQueries = browseNaver.fetchRelatedQueries(opts.company) || [];
     if (opts.verbose) console.error(`[related] ${relatedQueries.length} suggestion(s)`);
   } catch (err) {
+    if (isFatalBrowseError(err)) throw err;
     console.error(`[related-failed] ${err.message}`);
   }
   const nicknameQueries = extractNicknameQueries(relatedQueries);
@@ -367,6 +374,7 @@ function discover(opts) {
         nicknameAnchorList.push({ text: nq.text, nickname: nq.nickname, hits: hits.length });
       }
     } catch (err) {
+      if (isFatalBrowseError(err)) throw err;
       console.error(`[${label}-failed] "${nq.text}": ${err.message}`);
     }
   }
@@ -420,6 +428,7 @@ function discover(opts) {
         refs: refIds,
       });
     } catch (err) {
+      if (isFatalBrowseError(err)) throw err;
       console.error(`[roundup-fetch-failed] ${rc.blogId}/${rc.logNo}: ${err.message}`);
     }
   }
@@ -468,6 +477,7 @@ function discover(opts) {
     try {
       inBlogResult = browseNaver.searchWithinBlog(blogId, opts.company);
     } catch (err) {
+      if (isFatalBrowseError(err)) throw err;
       console.error(`[inblog-search-failed] ${blogId}: ${err.message}`);
     }
 
@@ -564,6 +574,7 @@ function discover(opts) {
     try {
       generalPosts = browseNaver.readBlogPostList(blogId, { max: 20 }) || [];
     } catch (err) {
+      if (isFatalBrowseError(err)) throw err;
       console.error(`[general-list-failed] ${blogId}: ${err.message}`);
     }
     const generalPostCount = generalPosts.length;
