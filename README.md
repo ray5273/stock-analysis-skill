@@ -228,7 +228,30 @@ CODEX_HOME=/tmp/codex-home bash ./scripts/install-all-skills.sh
 
 ### Claude Code
 
-Install method placeholder. Ask Claude Code for the exact paste-ready install prompt you want to keep here.
+Install target: `$CLAUDE_HOME/skills/<skill-name>` (default: `~/.claude/skills/`)
+
+Open Claude Code anywhere and paste this prompt. Claude Code will do the rest.
+
+> Install the Claude Code skills from `https://github.com/ray5273/stock-analysis-skill`. Use the local repo path `~/.claude/src/stock-analysis-skill`. If `~/.claude/src/stock-analysis-skill/.git` does not exist, create `~/.claude/src` and clone the repository there. If the repo already exists, update it with `git -C ~/.claude/src/stock-analysis-skill pull --ff-only`. Then run `cd ~/.claude/src/stock-analysis-skill && bash ./scripts/install-all-claude-skills.sh`. After install, confirm the skills were copied under `${CLAUDE_HOME:-~/.claude}/skills/` and continue using the installed skills.
+
+If you want to run the commands yourself instead of pasting the prompt:
+
+```bash
+mkdir -p ~/.claude/src
+if [ -d ~/.claude/src/stock-analysis-skill/.git ]; then
+  git -C ~/.claude/src/stock-analysis-skill pull --ff-only
+else
+  git clone --single-branch --depth 1 https://github.com/ray5273/stock-analysis-skill ~/.claude/src/stock-analysis-skill
+fi
+cd ~/.claude/src/stock-analysis-skill
+bash ./scripts/install-all-claude-skills.sh
+```
+
+Custom target:
+
+```bash
+CLAUDE_HOME=/tmp/claude-home bash ./scripts/install-all-claude-skills.sh
+```
 
 ## Usage
 

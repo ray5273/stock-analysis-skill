@@ -1,0 +1,51 @@
+{
+  "company": "삼성SDS",
+  "ticker": "018260",
+  "discoveredAt": "2026-04-15",
+  "bloggers": [],
+  "meta": {
+    "searchQueries": 5,
+    "candidatesFound": 0,
+    "qualified": 0,
+    "skipped": 0,
+    "querySet": {
+      "queries": [
+        {
+          "text": "삼성SDS 투자 분석",
+          "source": "base"
+        },
+        {
+          "text": "삼성SDS 실적",
+          "source": "base"
+        },
+        {
+          "text": "삼성SDS 연결",
+          "source": "dart-product"
+        },
+        {
+          "text": "삼성SDS 연간",
+          "source": "dart-product"
+        },
+        {
+          "text": "삼성SDS 주석",
+          "source": "dart-product"
+        }
+      ],
+      "meta": {
+        "newsHeadlinesScanned": 0,
+        "newsListicleDropped": 0,
+        "dartProductsExtracted": 5,
+        "contextFileUsed": null,
+        "generatedBy": "kr-naver-blogger/build-query-set.js"
+      }
+    },
+    "relatedQueries": [],
+    "nicknameQueries": [],
+    "eventQueries": [],
+    "nicknameAnchoredCount": 0,
+    "roundupFetched": [],
+    "deepMode": false,
+    "blogFilterApplied": false,
+    "generatedBy": "kr-naver-blogger/discover-bloggers.js"
+  }
+}

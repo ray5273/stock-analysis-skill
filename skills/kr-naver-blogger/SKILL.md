@@ -130,7 +130,7 @@ Fields that cannot be extracted are set to `null` / `[]`, never fabricated.
 4. **Never scrape personal info** — only public post metadata.
 5. **Keep the output deterministic** given the same inputs: rank by
    `(anchored desc, dedicatedPostCount desc, relevantPostCount desc, inBlogPaginationPages desc, latestPostDate desc, blogId asc)`.
-6. **Fail loud** if `browse-naver.js` cannot be required or the binary is
+6. **Fail loud** if `browse-naver.js` cannot be required or the browse binary is
    missing. Do not fall back to a non-Naver source.
 
 ## Scripts

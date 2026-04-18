@@ -19,4 +19,15 @@ if (-not (Test-Path $sourcePath)) {
 New-Item -ItemType Directory -Force $targetPath | Out-Null
 Get-ChildItem -Path $sourcePath -Force | Copy-Item -Destination $targetPath -Recurse -Force
 
+if ($env:SKILL_INSTALL_SKIP_HOOKS -ne "1") {
+    $hook = Join-Path $targetPath "scripts\post-install.ps1"
+    if (Test-Path $hook) {
+        Write-Host "Running post-install hook for $SkillName..."
+        $env:SKILL_INSTALL_SOURCE = $sourcePath
+        $env:SKILL_INSTALL_TARGET = $targetPath
+        $env:CODEX_HOME = $codexHome
+        & $hook $targetPath
+    }
+}
+
 Write-Host "Installed $SkillName to $targetPath"

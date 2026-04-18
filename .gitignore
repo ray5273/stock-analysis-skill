@@ -8,3 +8,4 @@ Thumbs.db
 node_modules/
 .mcp.json
 .env.kiwoom
+.gstack/
