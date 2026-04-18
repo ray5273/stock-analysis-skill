@@ -17,6 +17,7 @@ function parseArgs(argv) {
     cacheDir: DEFAULT_CACHE_DIR,
     noCache: false,
     bloggers: [],
+    aliases: [],
     verbose: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -24,6 +25,7 @@ function parseArgs(argv) {
     const next = () => argv[++i];
     if (arg === "--input") opts.input = next();
     else if (arg === "--company") opts.company = next();
+    else if (arg === "--aliases") opts.aliases = next().split(",").map((s) => s.trim()).filter(Boolean);
     else if (arg === "--ticker") opts.ticker = next();
     else if (arg === "--bloggers") opts.bloggers = next().split(",").map((s) => s.trim()).filter(Boolean);
     else if (arg === "--max-posts") opts.maxPosts = parseInt(next(), 10) || DEFAULT_MAX_POSTS;
@@ -46,6 +48,7 @@ function usage() {
     "Options:",
     "  --input PATH      bloggers JSON from discover-bloggers.js",
     "  --company NAME    company name (required; overrides input if present)",
+    "  --aliases LIST    comma-separated company aliases for renamed tickers",
     "  --ticker CODE     6-digit ticker (required unless in --input)",
     "  --bloggers LIST   comma-separated blogger IDs (if no --input)",
     "  --max-posts N     posts per blogger (default 5)",
@@ -89,10 +92,24 @@ function loadCachedPost(cacheDir, blogId, logNo) {
   }
 }
 
-function mentionsCompany(text, company, ticker) {
+function buildCompanyTerms(company, aliases = []) {
+  const seen = new Set();
+  const ordered = [];
+  for (const term of [company, ...aliases]) {
+    const normalized = String(term || "").trim();
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    ordered.push(normalized);
+  }
+  return ordered;
+}
+
+function mentionsCompany(text, companyTerms, ticker) {
   if (!text) return false;
   const haystack = text.toLowerCase();
-  if (company && haystack.includes(company.toLowerCase())) return true;
+  for (const term of companyTerms || []) {
+    if (haystack.includes(term.toLowerCase())) return true;
+  }
   if (ticker && haystack.includes(ticker.toLowerCase())) return true;
   return false;
 }
@@ -106,11 +123,15 @@ function resolveBloggersFromInput(opts) {
   const bloggerIds = new Set();
   let company = opts.company;
   let ticker = opts.ticker;
+  const aliases = new Set(opts.aliases || []);
 
   if (opts.input) {
     const data = readJson(opts.input);
     company = company || data.company;
     ticker = ticker || data.ticker;
+    for (const alias of data.aliases || data.companyAliases || []) {
+      if (alias) aliases.add(alias);
+    }
     if (Array.isArray(data.bloggers)) {
       for (const b of data.bloggers) {
         if (b.blogId) bloggerIds.add(b.blogId);
@@ -119,7 +140,7 @@ function resolveBloggersFromInput(opts) {
   }
   for (const id of opts.bloggers) bloggerIds.add(id);
 
-  return { bloggerIds: Array.from(bloggerIds), company, ticker };
+  return { bloggerIds: Array.from(bloggerIds), company, ticker, aliases: Array.from(aliases) };
 }
 
 function fetch(opts) {
@@ -129,7 +150,8 @@ function fetch(opts) {
     process.exit(1);
   }
 
-  const { bloggerIds, company, ticker } = resolveBloggersFromInput(opts);
+  const { bloggerIds, company, ticker, aliases } = resolveBloggersFromInput(opts);
+  const companyTerms = buildCompanyTerms(company, aliases);
 
   if (!company) {
     console.error("Error: --company is required (or pass --input with a company field)");
@@ -147,6 +169,7 @@ function fetch(opts) {
     console.error("[fetch-blog-posts] input had zero bloggers; writing empty posts file");
     writeJson(opts.output, {
       company: company || "",
+      aliases,
       ticker: ticker || "",
       fetchedAt: todayYmd(),
       posts: [],
@@ -154,6 +177,7 @@ function fetch(opts) {
         totalFetched: 0,
         fromCache: 0,
         errors: [],
+        companyTerms,
         generatedBy: "kr-naver-insight/fetch-blog-posts.js",
       },
     });
@@ -181,16 +205,27 @@ function fetch(opts) {
     // bloggers (covering 20+ stocks) often have the target company's posts
     // outside their recent-20 window — searchWithinBlog finds them directly.
     let searchResults = [];
-    try {
-      const inBlog = browseNaver.searchWithinBlog(blogId, company);
-      searchResults = inBlog.posts || [];
-    } catch (err) {
-      if (isFatalBrowseError(err)) throw err;
-      if (opts.verbose) console.error(`  [inblog-search] ${blogId}: ${err.message}`);
+    for (const term of companyTerms) {
+      try {
+        const inBlog = browseNaver.searchWithinBlog(blogId, term);
+        searchResults.push(...(inBlog.posts || []));
+      } catch (err) {
+        if (isFatalBrowseError(err)) throw err;
+        errors.push({ blogId, logNo: null, message: `searchWithinBlog(${term}): ${err.message}` });
+        if (opts.verbose) console.error(`  [inblog-search] ${blogId}/${term}: ${err.message}`);
+      }
     }
 
     // Both sources failed → skip blogger
-    if (!list.length && !searchResults.length) continue;
+    if (!list.length && !searchResults.length) {
+      if (listError) continue;
+      errors.push({
+        blogId,
+        logNo: null,
+        message: `no posts found via PostList or in-blog search for company terms: ${companyTerms.join(", ")}`,
+      });
+      continue;
+    }
 
     // Merge: searchWithinBlog first (targeted), then readBlogPostList
     // (supplementary for body-only mentions). Deduplicate by logNo.
@@ -208,7 +243,7 @@ function fetch(opts) {
     }
     list = merged;
 
-    const relevantFromTitle = list.filter((p) => mentionsCompany(p.title, company, ticker));
+    const relevantFromTitle = list.filter((p) => mentionsCompany(p.title, companyTerms, ticker));
     // If titles don't match, we still consider the top-5 most recent for body match.
     const toInspect = relevantFromTitle.length >= opts.maxPosts
       ? relevantFromTitle.slice(0, opts.maxPosts)
@@ -225,7 +260,7 @@ function fetch(opts) {
       if (cached) {
         if (opts.verbose) console.error(`  [cache] ${blogId}/${entry.logNo}`);
         fromCache += 1;
-        if (mentionsCompany(cached.title + "\n" + (cached.text || "").slice(0, 500), company, ticker)) {
+        if (mentionsCompany(cached.title + "\n" + (cached.text || "").slice(0, 500), companyTerms, ticker)) {
           picked.push(cached);
         }
         continue;
@@ -260,7 +295,7 @@ function fetch(opts) {
       }
 
       const head = (record.title || "") + "\n" + (record.text || "").slice(0, 500);
-      if (mentionsCompany(head, company, ticker)) {
+      if (mentionsCompany(head, companyTerms, ticker)) {
         picked.push(record);
       }
     }
@@ -276,6 +311,7 @@ function fetch(opts) {
 
   const output = {
     company,
+    aliases,
     ticker: ticker || null,
     fetchedAt,
     posts,
@@ -283,6 +319,7 @@ function fetch(opts) {
       totalFetched: posts.length,
       fromCache,
       errors,
+      companyTerms,
       generatedBy: "kr-naver-insight/fetch-blog-posts.js",
     },
   };

@@ -411,6 +411,7 @@ The list below is kept to audited golden examples and reusable fixtures so the l
 
 **Full decision memos:**
 
+- [KR - 리가켐바이오 Memo](<analysis-example/kr/리가켐바이오/memo.md>)
 - [KR - LG CNS Memo](<analysis-example/kr/LG CNS/memo.md>)
 - [KR - 대양전기공업 Memo](<analysis-example/kr/대양전기공업/memo.md>)
 - [KR - LIG넥스원 Memo](<analysis-example/kr/LIG넥스원/memo.md>)
@@ -418,8 +419,12 @@ The list below is kept to audited golden examples and reusable fixtures so the l
 - [KR - 엘앤에프 Memo](<analysis-example/kr/엘앤에프/memo.md>)
 - [KR - 현대오토에버 Memo](<analysis-example/kr/현대오토에버/memo.md>)
 
-**Research briefs and DART references:**
+**Research briefs, data packs, and DART references:**
 
+- [KR - 리가켐바이오 리서치 브리프](<analysis-example/kr/리가켐바이오/리서치브리프.md>)
+- [KR - 리가켐바이오 DART 분석](<analysis-example/kr/리가켐바이오/dart-analysis.md>)
+- [KR - 리가켐바이오 DART Reference](<analysis-example/kr/리가켐바이오/dart-reference.md>)
+- [KR - 리가켐바이오 Data Pack](<analysis-example/kr/리가켐바이오/data-pack.md>)
 - [KR - LG CNS DART Reference](<analysis-example/kr/LG CNS/dart-reference.md>)
 - [KR - LIG넥스원 리서치 브리프](<analysis-example/kr/LIG넥스원/리서치브리프.md>)
 
@@ -435,7 +440,22 @@ The list below is kept to audited golden examples and reusable fixtures so the l
 - [KR - 엘앤에프 Naver Insights](<analysis-example/kr/엘앤에프/naver-insights.md>)
 - [KR - 알테오젠 Naver Insights](<analysis-example/kr/알테오젠/naver-insights.md>)
 - [KR - GRT Naver Insights](<analysis-example/kr/GRT/naver-insights.md>)
+- [KR - 리가켐바이오 Naver Insights](<analysis-example/kr/리가켐바이오/naver-insights.md>)
+- [KR - 리가켐바이오 Naver Posts](<analysis-example/kr/리가켐바이오/naver-posts.json>)
+- [KR - 리가켐바이오 Naver Blogger Candidates](<analysis-example/kr/리가켐바이오/naver-bloggers.json>)
 - [KR - 삼성SDS Naver Blogger Candidates](<analysis-example/kr/삼성SDS/naver-bloggers.json>)
+
+**Known issue: Naver browse in sandbox**
+
+- `kr-naver-browse`, `kr-naver-blogger`, and `kr-naver-insight` depend on a
+  local gstack `browse` server that binds to `127.0.0.1`.
+- In some Codex sandbox environments, local listen is blocked with `EPERM`.
+  When that happens, Naver workflows can fail with messages like
+  `No available port after 5 attempts` or
+  `listen EPERM: operation not permitted 127.0.0.1:<port>`.
+- In that case, rerun the Naver fetch step outside the sandbox or with
+  elevated execution. Do not assume `0 posts` means the bloggers or posts do
+  not exist until the runtime issue is excluded.
 
 **Sector research:**
 

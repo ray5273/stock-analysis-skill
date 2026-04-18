@@ -192,9 +192,11 @@ function browseTextOnce(url, opts) {
 function browseText(url, opts = {}) {
   const normalized = normalizeNaverUrl(url);
   let text = "";
+  let lastErr = null;
   try {
     text = browseTextOnce(normalized, opts);
   } catch (err) {
+    lastErr = err;
     if (isFatalBrowseError(err)) throw err;
     if (opts.verbose) console.error(`[browse-naver] first attempt failed: ${err.message}`);
   }
@@ -204,9 +206,14 @@ function browseText(url, opts = {}) {
   try {
     text = browseTextOnce(normalized, opts);
   } catch (err) {
+    lastErr = err;
     if (isFatalBrowseError(err)) throw err;
     if (opts.verbose) console.error(`[browse-naver] retry failed: ${err.message}`);
+    if (isRuntimeBrowseFailure(err)) throw err;
     return null;
+  }
+  if ((!text || text.length <= 50) && lastErr && isRuntimeBrowseFailure(lastErr)) {
+    throw lastErr;
   }
   return text && text.length > 50 ? text : null;
 }
@@ -226,9 +233,11 @@ function browseLinksOnce(url, opts) {
 function browseLinks(url, opts = {}) {
   const normalized = normalizeNaverUrl(url);
   let raw = "";
+  let lastErr = null;
   try {
     raw = browseLinksOnce(normalized, opts);
   } catch (err) {
+    lastErr = err;
     if (isFatalBrowseError(err)) throw err;
     if (opts.verbose) console.error(`[browse-naver] links first attempt failed: ${err.message}`);
   }
@@ -238,9 +247,14 @@ function browseLinks(url, opts = {}) {
   try {
     raw = browseLinksOnce(normalized, opts);
   } catch (err) {
+    lastErr = err;
     if (isFatalBrowseError(err)) throw err;
     if (opts.verbose) console.error(`[browse-naver] links retry failed: ${err.message}`);
+    if (isRuntimeBrowseFailure(err)) throw err;
     return null;
+  }
+  if ((!raw || raw.length <= 50) && lastErr && isRuntimeBrowseFailure(lastErr)) {
+    throw lastErr;
   }
   return raw && raw.length > 50 ? raw : null;
 }
@@ -248,6 +262,16 @@ function browseLinks(url, opts = {}) {
 function isFatalBrowseError(err) {
   const message = err && err.message ? err.message : "";
   return /gstack browse (?:binary|runtime) not found|GSTACK_BROWSE_BIN|not a usable gstack browse binary|ENOENT/.test(message);
+}
+
+function isRuntimeBrowseFailure(err) {
+  const message = err && err.message ? err.message : "";
+  return (
+    isFatalBrowseError(err) ||
+    /No available port after \d+ attempts|Server failed to start|Failed to start: \[browse\]|EADDRINUSE|ECONNREFUSED|timed out/i.test(
+      message
+    )
+  );
 }
 
 // ---------------------------------------------------------------------------

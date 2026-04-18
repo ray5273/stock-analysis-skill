@@ -162,3 +162,17 @@ node skills/kr-naver-browse/scripts/browse-naver.js --test
 The `--test` flag runs a single search for `엘앤에프 주가`, prints the
 first three results, and exits non-zero if the browse binary is missing or
 returns empty text both times.
+
+## Known Issue
+
+- **Sandbox runtime bug**: some Codex sandbox environments block local
+  `127.0.0.1` listen calls with `EPERM`. When that happens, the underlying
+  gstack `browse` server cannot start, and Naver fetches fail before any page
+  is read.
+- **Typical symptoms**: `Server failed to start`, `No available port after 5
+  attempts`, or direct `listen EPERM: operation not permitted 127.0.0.1:<port>`.
+- **Impact**: `kr-naver-browse`, `kr-naver-blogger`, and `kr-naver-insight`
+  may appear to return empty results even though the target posts exist.
+- **Current workaround**: rerun the browse-backed command outside the sandbox
+  or with elevated execution so the local server can bind to a port. This is
+  an environment/runtime issue, not a Naver-only parsing issue.

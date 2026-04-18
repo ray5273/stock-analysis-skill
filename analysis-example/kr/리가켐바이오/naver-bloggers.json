@@ -1,0 +1,43 @@
+{
+  "company": "리가켐바이오",
+  "ticker": "141080",
+  "discoveredAt": "2026-04-18",
+  "bloggers": [],
+  "meta": {
+    "searchQueries": 3,
+    "candidatesFound": 0,
+    "qualified": 0,
+    "skipped": 0,
+    "querySet": {
+      "queries": [
+        {
+          "text": "리가켐바이오 투자 분석",
+          "source": "base"
+        },
+        {
+          "text": "리가켐바이오 실적",
+          "source": "base"
+        },
+        {
+          "text": "리가켐바이오 주요 제품",
+          "source": "fallback"
+        }
+      ],
+      "meta": {
+        "newsHeadlinesScanned": 0,
+        "newsListicleDropped": 0,
+        "dartProductsExtracted": 0,
+        "contextFileUsed": null,
+        "generatedBy": "kr-naver-blogger/build-query-set.js"
+      }
+    },
+    "relatedQueries": [],
+    "nicknameQueries": [],
+    "eventQueries": [],
+    "nicknameAnchoredCount": 0,
+    "roundupFetched": [],
+    "deepMode": false,
+    "blogFilterApplied": false,
+    "generatedBy": "kr-naver-blogger/discover-bloggers.js"
+  }
+}

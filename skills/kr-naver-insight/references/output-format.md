@@ -7,6 +7,7 @@ The two scripts produce two artifacts:
 ```json
 {
   "company": "엘앤에프",
+  "aliases": [],
   "ticker": "066970",
   "fetchedAt": "2026-04-12",
   "posts": [
@@ -24,6 +25,7 @@ The two scripts produce two artifacts:
   "meta": {
     "totalFetched": 5,
     "fromCache": 3,
+    "companyTerms": ["엘앤에프"],
     "errors": [],
     "generatedBy": "kr-naver-insight/fetch-blog-posts.js"
   }
@@ -37,8 +39,13 @@ Rules:
 - `bloggerName` stays `null` unless the fetch step found a display name.
 - `cachedAt` is the date the post entered the cache. On cache hits the value
   is preserved from the original fetch.
+- `aliases` is optional and carries alternate company names used for renamed
+  tickers or legacy coverage lookups.
+- `meta.companyTerms` is the deduped ordered list of company names actually
+  used for title/body matching and in-blog search.
 - `meta.errors` is an array of `{ blogId, logNo, message }` for any fetch
-  that failed.
+  that failed. Runtime failures from `kr-naver-browse` should appear here
+  instead of being silently flattened into `posts: []`.
 
 ## summarize-insights.js → Markdown digest
 

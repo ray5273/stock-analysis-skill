@@ -1,0 +1,54 @@
+{
+  "company": "리가켐바이오",
+  "ticker": "141080.KQ",
+  "referenceDate": "2026-04-18",
+  "baseFiling": {
+    "title": "사업보고서 (2025.12)",
+    "rcpNo": "20260323001538",
+    "filingDate": "2026-03-23"
+  },
+  "sections": [
+    {
+      "name": "4. 주식의 총수 등",
+      "status": "parsed",
+      "source": "https://dart.fss.or.kr/report/viewer.do?rcpNo=20260323001538&dcmNo=11168406&eleId=7&offset=33480&length=65648&dtd=dart4.xsd"
+    },
+    {
+      "name": "4. 매출 및 수주상황",
+      "status": "parsed",
+      "source": "https://dart.fss.or.kr/report/viewer.do?rcpNo=20260323001538&dcmNo=11168406&eleId=13&offset=158354&length=18266&dtd=dart4.xsd"
+    },
+    {
+      "name": "6. 주요계약 및 연구개발활동",
+      "status": "parsed",
+      "source": "https://dart.fss.or.kr/report/viewer.do?rcpNo=20260323001538&dcmNo=11168406&eleId=15&offset=181567&length=100238&dtd=dart4.xsd"
+    },
+    {
+      "name": "2-2. 연결 손익계산서",
+      "status": "parsed",
+      "source": "https://dart.fss.or.kr/report/viewer.do?rcpNo=20260323001538&dcmNo=11168406&eleId=19&offset=322170&length=285567&dtd=dart4.xsd"
+    },
+    {
+      "name": "1. 임원 및 직원 등의 현황",
+      "status": "parsed",
+      "source": "https://dart.fss.or.kr/report/viewer.do?rcpNo=20260323001538&dcmNo=11168406&eleId=135&offset=5316316&length=43274&dtd=dart4.xsd"
+    }
+  ],
+  "verifiedClaims": [
+    {
+      "claim": "2025 매출의 대부분은 기술이전 매출이다",
+      "status": "confirmed",
+      "evidence": "기술이전 매출 121,160,797천원 / 총 영업수익 141,553,069천원"
+    },
+    {
+      "claim": "2025 손익은 적자 확대다",
+      "status": "confirmed",
+      "evidence": "영업손실 106,485,862천원, 당기순손실 91,552,141천원"
+    },
+    {
+      "claim": "LCB02A는 2025말 기준 전임상 단계였다",
+      "status": "confirmed",
+      "evidence": "사업보고서 6. 주요계약 및 연구개발활동"
+    }
+  ]
+}

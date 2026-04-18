@@ -89,7 +89,28 @@ node skills/kr-naver-insight/scripts/fetch-blog-posts.js \
   --company "엘앤에프" --ticker 066970 \
   --bloggers mooyoung_2022 --max-posts 5 --output /tmp/posts.json
 
+# renamed tickers can pass legacy names too
+node skills/kr-naver-insight/scripts/fetch-blog-posts.js \
+  --company "리가켐바이오" --aliases "레고켐바이오,리가켐바이오사이언스" \
+  --ticker 141080 --bloggers foreconomy --max-posts 5 --output /tmp/posts.json
+
 # Step 2: summarize
 node skills/kr-naver-insight/scripts/summarize-insights.js \
   --input /tmp/posts.json --output /tmp/insights.md
 ```
+
+## Known Issue
+
+- **Sandbox runtime bug**: this skill depends on `kr-naver-browse`, which
+  starts a local gstack `browse` server. In some Codex sandbox environments,
+  local `127.0.0.1` listen is blocked with `EPERM`, so the fetch step cannot
+  run inside the sandbox.
+- **What it looks like**: `fetch-blog-posts.js` may report browse startup
+  failures such as `No available port after 5 attempts` or
+  `listen EPERM: operation not permitted`.
+- **How to interpret it**: treat this as an environment bug first, not as
+  proof that the blogger has no relevant posts.
+- **Workaround**: rerun `fetch-blog-posts.js` outside the sandbox or with
+  elevated execution. After the recent fix, these failures should also be
+  recorded in `posts.json.meta.errors` instead of being silently flattened into
+  `posts: []`.
