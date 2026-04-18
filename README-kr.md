@@ -7,7 +7,94 @@
 - 영어: [README.md](README.md)
 - 한국어: [README-kr.md](README-kr.md)
 
-포함된 스킬:
+## 설치
+
+### Codex
+
+설치 경로: `$CODEX_HOME/skills/<skill-name>` 기본값은 `~/.codex/skills/`
+
+Codex에서 아래 프롬프트를 그대로 붙여넣으면 나머지는 Codex가 처리합니다.
+
+> `https://github.com/ray5273/stock-analysis-skill`의 Codex 스킬을 설치해줘. 로컬 저장소 경로는 `~/.codex/src/stock-analysis-skill`을 사용해줘. `~/.codex/src/stock-analysis-skill/.git`이 없으면 `~/.codex/src`를 만들고 해당 위치에 clone해줘. 이미 있으면 `git -C ~/.codex/src/stock-analysis-skill pull --ff-only`로 업데이트해줘. 그 후 `cd ~/.codex/src/stock-analysis-skill && bash ./scripts/install-all-skills.sh`를 실행해줘. macOS에서 Naver 스택이 Codex용 fallback 경로가 필요하면 대신 `cd ~/.codex/src/stock-analysis-skill && bash ./scripts/install-codex-mac-naver.sh`를 실행해줘. 설치 후 `${CODEX_HOME:-~/.codex}/skills/` 아래에 스킬이 복사됐는지 확인하고 이어서 사용해줘.
+
+프롬프트를 붙여넣는 대신 직접 실행하고 싶다면:
+
+Windows:
+
+```powershell
+.\scripts\install-skill.ps1 us-stock-analysis
+.\scripts\install-all-skills.ps1
+```
+
+Linux 또는 macOS:
+
+```bash
+mkdir -p ~/.codex/src
+if [ -d ~/.codex/src/stock-analysis-skill/.git ]; then
+  git -C ~/.codex/src/stock-analysis-skill pull --ff-only
+else
+  git clone --single-branch --depth 1 https://github.com/ray5273/stock-analysis-skill ~/.codex/src/stock-analysis-skill
+fi
+cd ~/.codex/src/stock-analysis-skill
+bash ./scripts/install-all-skills.sh
+```
+
+macOS Naver 전용 복구 경로:
+
+```bash
+mkdir -p ~/.codex/src
+if [ -d ~/.codex/src/stock-analysis-skill/.git ]; then
+  git -C ~/.codex/src/stock-analysis-skill pull --ff-only
+else
+  git clone --single-branch --depth 1 https://github.com/ray5273/stock-analysis-skill ~/.codex/src/stock-analysis-skill
+fi
+cd ~/.codex/src/stock-analysis-skill
+bash ./scripts/install-codex-mac-naver.sh
+```
+
+커스텀 경로:
+
+```bash
+CODEX_HOME=/tmp/codex-home bash ./scripts/install-all-skills.sh
+```
+
+### Claude Code
+
+설치 경로: `$CLAUDE_HOME/skills/<skill-name>` 기본값은 `~/.claude/skills/`
+
+Claude Code에서 아래 프롬프트를 그대로 붙여넣으면 나머지는 Claude Code가 처리합니다.
+
+> `https://github.com/ray5273/stock-analysis-skill`의 Claude Code 스킬을 설치해줘. 로컬 저장소 경로는 `~/.claude/src/stock-analysis-skill`을 사용해줘. `~/.claude/src/stock-analysis-skill/.git`이 없으면 `~/.claude/src`를 만들고 해당 위치에 clone해줘. 이미 있으면 `git -C ~/.claude/src/stock-analysis-skill pull --ff-only`로 업데이트해줘. 그 후 `cd ~/.claude/src/stock-analysis-skill && bash ./scripts/install-all-claude-skills.sh`를 실행해줘. 설치 후 `${CLAUDE_HOME:-~/.claude}/skills/` 아래에 스킬이 복사됐는지 확인하고 이어서 사용해줘.
+
+프롬프트를 붙여넣는 대신 직접 실행하고 싶다면:
+
+Windows:
+
+```powershell
+.\scripts\install-claude-skill.ps1 us-stock-analysis
+.\scripts\install-all-claude-skills.ps1
+```
+
+Linux 또는 macOS:
+
+```bash
+mkdir -p ~/.claude/src
+if [ -d ~/.claude/src/stock-analysis-skill/.git ]; then
+  git -C ~/.claude/src/stock-analysis-skill pull --ff-only
+else
+  git clone --single-branch --depth 1 https://github.com/ray5273/stock-analysis-skill ~/.claude/src/stock-analysis-skill
+fi
+cd ~/.claude/src/stock-analysis-skill
+bash ./scripts/install-all-claude-skills.sh
+```
+
+커스텀 경로:
+
+```bash
+CLAUDE_HOME=/tmp/claude-home bash ./scripts/install-all-claude-skills.sh
+```
+
+## 포함된 스킬
 
 한국 주식 워크플로 요약: `kr-stock-plan -> kr-stock-dart-analysis -> kr-stock-data-pack -> kr-stock-analysis`
 
@@ -160,44 +247,6 @@ kr-stock-plan
 5. `kr-sector-audit`는 findings-first 형식으로 기존 문서를 점검합니다.
 6. `kr-sector-update`는 기존 메모의 증분 업데이트를 관리합니다.
 
-## 설치
-
-### Codex
-
-설치 경로: `$CODEX_HOME/skills/<skill-name>` 기본값은 `~/.codex/skills/`
-
-Windows:
-
-```powershell
-.\scripts\install-skill.ps1 us-stock-analysis
-.\scripts\install-all-skills.ps1
-```
-
-Linux 또는 macOS:
-
-```bash
-bash ./scripts/install-skill.sh us-stock-analysis
-bash ./scripts/install-all-skills.sh
-```
-
-### Claude Code
-
-설치 경로: `$CLAUDE_HOME/skills/<skill-name>` 기본값은 `~/.claude/skills/`
-
-Windows:
-
-```powershell
-.\scripts\install-claude-skill.ps1 us-stock-analysis
-.\scripts\install-all-claude-skills.ps1
-```
-
-Linux 또는 macOS:
-
-```bash
-bash ./scripts/install-claude-skill.sh us-stock-analysis
-bash ./scripts/install-all-claude-skills.sh
-```
-
 ## 사용 예시
 
 ### Codex
@@ -312,17 +361,44 @@ node skills/kr-stock-dart-analysis/scripts/verify-dart-coverage.js --input secti
 
 ## 분석 예시
 
-- 검증된 golden example과 재사용 fixture만 링크합니다.
-- [KR - LG CNS](<analysis-example/kr/LG CNS/memo.md>)
-- [KR - LG CNS DART reference](<analysis-example/kr/LG CNS/dart-reference.md>)
-- [KR - 대양전기공업](<analysis-example/kr/대양전기공업/memo.md>)
-- [KR - DART browser export sample](examples/kr-stock-dart-analysis/dart-browser-export-sample.json)
+검증된 golden example과 재사용 fixture만 링크합니다.
+
+**풀 의사결정 메모:**
+
+- [KR - LG CNS Memo](<analysis-example/kr/LG CNS/memo.md>)
+- [KR - 대양전기공업 Memo](<analysis-example/kr/대양전기공업/memo.md>)
+- [KR - LIG넥스원 Memo](<analysis-example/kr/LIG넥스원/memo.md>)
+- [KR - 삼성SDS Memo](<analysis-example/kr/삼성SDS/memo.md>)
+- [KR - 엘앤에프 Memo](<analysis-example/kr/엘앤에프/memo.md>)
+- [KR - 현대오토에버 Memo](<analysis-example/kr/현대오토에버/memo.md>)
+
+**리서치 브리프 및 DART 레퍼런스:**
+
+- [KR - LG CNS DART Reference](<analysis-example/kr/LG CNS/dart-reference.md>)
+- [KR - LIG넥스원 리서치 브리프](<analysis-example/kr/LIG넥스원/리서치브리프.md>)
+
+**수주 및 계약 분석:**
+
+- [KR - 두산에너빌리티 수주통합분석](<analysis-example/kr/두산에너빌리티/수주통합분석.md>)
+- [KR - 한미글로벌 수주계약리스트](<analysis-example/kr/한미글로벌/수주계약리스트.md>)
+- [KR - 한전KPS 수주계약리스트](<analysis-example/kr/한전KPS/수주계약리스트.md>)
+
+**Naver 블로거 인사이트 (Street / Alternative Views):**
+
+- [KR - 삼성SDS Naver Insights](<analysis-example/kr/삼성SDS/naver-insights.md>)
+- [KR - 엘앤에프 Naver Insights](<analysis-example/kr/엘앤에프/naver-insights.md>)
+- [KR - 알테오젠 Naver Insights](<analysis-example/kr/알테오젠/naver-insights.md>)
+- [KR - GRT Naver Insights](<analysis-example/kr/GRT/naver-insights.md>)
+- [KR - 삼성SDS Naver Blogger 후보](<analysis-example/kr/삼성SDS/naver-bloggers.json>)
+
+**섹터 리서치:**
+
 - [KR Sector - 국내 데이터센터](analysis-example/kr-sector/국내%20데이터센터.md)
 - [KR Sector - 국내 데이터센터 리서치 브리프](analysis-example/kr-sector/국내%20데이터센터-리서치브리프.md)
 
-추가 최근 예시:
+**Fixture:**
 
-- [KR - LIG넥스원](<analysis-example/kr/LIG넥스원/memo.md>)
+- [KR - DART browser export sample](examples/kr-stock-dart-analysis/dart-browser-export-sample.json)
 
 ## 검증
 

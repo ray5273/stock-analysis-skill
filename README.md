@@ -7,7 +7,76 @@ Language docs:
 - English: [README.md](README.md)
 - Korean: [README-kr.md](README-kr.md)
 
-Included skills:
+## Install
+
+### Codex
+
+Install target: `$CODEX_HOME/skills/<skill-name>` (default: `~/.codex/skills/`)
+
+Open Codex anywhere and paste this. Codex should do the rest.
+
+> Install the Codex skills from `https://github.com/ray5273/stock-analysis-skill`. Use the local repo path `~/.codex/src/stock-analysis-skill`. If `~/.codex/src/stock-analysis-skill/.git` does not exist, create `~/.codex/src` and clone the repository there. If the repo already exists, update it with `git -C ~/.codex/src/stock-analysis-skill pull --ff-only`. Then run `cd ~/.codex/src/stock-analysis-skill && bash ./scripts/install-all-skills.sh`. If this is macOS and the Naver stack needs the Codex-specific fallback path, run `cd ~/.codex/src/stock-analysis-skill && bash ./scripts/install-codex-mac-naver.sh` instead. After install, confirm the skills were copied under `${CODEX_HOME:-~/.codex}/skills/` and continue using the installed skills.
+
+If you want to run the commands yourself instead of pasting the prompt:
+
+```bash
+mkdir -p ~/.codex/src
+if [ -d ~/.codex/src/stock-analysis-skill/.git ]; then
+  git -C ~/.codex/src/stock-analysis-skill pull --ff-only
+else
+  git clone --single-branch --depth 1 https://github.com/ray5273/stock-analysis-skill ~/.codex/src/stock-analysis-skill
+fi
+cd ~/.codex/src/stock-analysis-skill
+bash ./scripts/install-all-skills.sh
+```
+
+macOS Naver-only recovery path:
+
+```bash
+mkdir -p ~/.codex/src
+if [ -d ~/.codex/src/stock-analysis-skill/.git ]; then
+  git -C ~/.codex/src/stock-analysis-skill pull --ff-only
+else
+  git clone --single-branch --depth 1 https://github.com/ray5273/stock-analysis-skill ~/.codex/src/stock-analysis-skill
+fi
+cd ~/.codex/src/stock-analysis-skill
+bash ./scripts/install-codex-mac-naver.sh
+```
+
+Custom target:
+
+```bash
+CODEX_HOME=/tmp/codex-home bash ./scripts/install-all-skills.sh
+```
+
+### Claude Code
+
+Install target: `$CLAUDE_HOME/skills/<skill-name>` (default: `~/.claude/skills/`)
+
+Open Claude Code anywhere and paste this prompt. Claude Code will do the rest.
+
+> Install the Claude Code skills from `https://github.com/ray5273/stock-analysis-skill`. Use the local repo path `~/.claude/src/stock-analysis-skill`. If `~/.claude/src/stock-analysis-skill/.git` does not exist, create `~/.claude/src` and clone the repository there. If the repo already exists, update it with `git -C ~/.claude/src/stock-analysis-skill pull --ff-only`. Then run `cd ~/.claude/src/stock-analysis-skill && bash ./scripts/install-all-claude-skills.sh`. After install, confirm the skills were copied under `${CLAUDE_HOME:-~/.claude}/skills/` and continue using the installed skills.
+
+If you want to run the commands yourself instead of pasting the prompt:
+
+```bash
+mkdir -p ~/.claude/src
+if [ -d ~/.claude/src/stock-analysis-skill/.git ]; then
+  git -C ~/.claude/src/stock-analysis-skill pull --ff-only
+else
+  git clone --single-branch --depth 1 https://github.com/ray5273/stock-analysis-skill ~/.claude/src/stock-analysis-skill
+fi
+cd ~/.claude/src/stock-analysis-skill
+bash ./scripts/install-all-claude-skills.sh
+```
+
+Custom target:
+
+```bash
+CLAUDE_HOME=/tmp/claude-home bash ./scripts/install-all-claude-skills.sh
+```
+
+## Included Skills
 
 Korean stock workflow shorthand: `kr-stock-plan -> kr-stock-dart-analysis -> kr-stock-data-pack -> kr-stock-analysis`
 
@@ -184,75 +253,6 @@ Example full report:
 
 - [analysis-example/kr-sector/국내 데이터센터.md](analysis-example/kr-sector/국내%20데이터센터.md)
 
-## Install
-
-### Codex
-
-Install target: `$CODEX_HOME/skills/<skill-name>` (default: `~/.codex/skills/`)
-
-Open Codex anywhere and paste this. Codex should do the rest.
-
-> Install the Codex skills from `https://github.com/ray5273/stock-analysis-skill`. Use the local repo path `~/.codex/src/stock-analysis-skill`. If `~/.codex/src/stock-analysis-skill/.git` does not exist, create `~/.codex/src` and clone the repository there. If the repo already exists, update it with `git -C ~/.codex/src/stock-analysis-skill pull --ff-only`. Then run `cd ~/.codex/src/stock-analysis-skill && bash ./scripts/install-all-skills.sh`. If this is macOS and the Naver stack needs the Codex-specific fallback path, run `cd ~/.codex/src/stock-analysis-skill && bash ./scripts/install-codex-mac-naver.sh` instead. After install, confirm the skills were copied under `${CODEX_HOME:-~/.codex}/skills/` and continue using the installed skills.
-
-If you want to run the commands yourself instead of pasting the prompt:
-
-```bash
-mkdir -p ~/.codex/src
-if [ -d ~/.codex/src/stock-analysis-skill/.git ]; then
-  git -C ~/.codex/src/stock-analysis-skill pull --ff-only
-else
-  git clone --single-branch --depth 1 https://github.com/ray5273/stock-analysis-skill ~/.codex/src/stock-analysis-skill
-fi
-cd ~/.codex/src/stock-analysis-skill
-bash ./scripts/install-all-skills.sh
-```
-
-macOS Naver-only recovery path:
-
-```bash
-mkdir -p ~/.codex/src
-if [ -d ~/.codex/src/stock-analysis-skill/.git ]; then
-  git -C ~/.codex/src/stock-analysis-skill pull --ff-only
-else
-  git clone --single-branch --depth 1 https://github.com/ray5273/stock-analysis-skill ~/.codex/src/stock-analysis-skill
-fi
-cd ~/.codex/src/stock-analysis-skill
-bash ./scripts/install-codex-mac-naver.sh
-```
-
-Custom target:
-
-```bash
-CODEX_HOME=/tmp/codex-home bash ./scripts/install-all-skills.sh
-```
-
-### Claude Code
-
-Install target: `$CLAUDE_HOME/skills/<skill-name>` (default: `~/.claude/skills/`)
-
-Open Claude Code anywhere and paste this prompt. Claude Code will do the rest.
-
-> Install the Claude Code skills from `https://github.com/ray5273/stock-analysis-skill`. Use the local repo path `~/.claude/src/stock-analysis-skill`. If `~/.claude/src/stock-analysis-skill/.git` does not exist, create `~/.claude/src` and clone the repository there. If the repo already exists, update it with `git -C ~/.claude/src/stock-analysis-skill pull --ff-only`. Then run `cd ~/.claude/src/stock-analysis-skill && bash ./scripts/install-all-claude-skills.sh`. After install, confirm the skills were copied under `${CLAUDE_HOME:-~/.claude}/skills/` and continue using the installed skills.
-
-If you want to run the commands yourself instead of pasting the prompt:
-
-```bash
-mkdir -p ~/.claude/src
-if [ -d ~/.claude/src/stock-analysis-skill/.git ]; then
-  git -C ~/.claude/src/stock-analysis-skill pull --ff-only
-else
-  git clone --single-branch --depth 1 https://github.com/ray5273/stock-analysis-skill ~/.claude/src/stock-analysis-skill
-fi
-cd ~/.claude/src/stock-analysis-skill
-bash ./scripts/install-all-claude-skills.sh
-```
-
-Custom target:
-
-```bash
-CLAUDE_HOME=/tmp/claude-home bash ./scripts/install-all-claude-skills.sh
-```
-
 ## Usage
 
 ### Codex
@@ -409,20 +409,42 @@ Reference files:
 
 The list below is kept to audited golden examples and reusable fixtures so the links stay in sync with validation.
 
+**Full decision memos:**
+
 - [KR - LG CNS Memo](<analysis-example/kr/LG CNS/memo.md>)
-- [KR - LG CNS DART Reference](<analysis-example/kr/LG CNS/dart-reference.md>)
 - [KR - 대양전기공업 Memo](<analysis-example/kr/대양전기공업/memo.md>)
-- [KR Sector - 국내 데이터센터](analysis-example/kr-sector/국내%20데이터센터.md)
-- [KR Sector - 국내 데이터센터 리서치 브리프](analysis-example/kr-sector/국내%20데이터센터-리서치브리프.md)
-- [KR - DART browser export sample](examples/kr-stock-dart-analysis/dart-browser-export-sample.json)
-
-Additional recent example:
-
 - [KR - LIG넥스원 Memo](<analysis-example/kr/LIG넥스원/memo.md>)
 - [KR - 삼성SDS Memo](<analysis-example/kr/삼성SDS/memo.md>)
+- [KR - 엘앤에프 Memo](<analysis-example/kr/엘앤에프/memo.md>)
+- [KR - 현대오토에버 Memo](<analysis-example/kr/현대오토에버/memo.md>)
+
+**Research briefs and DART references:**
+
+- [KR - LG CNS DART Reference](<analysis-example/kr/LG CNS/dart-reference.md>)
+- [KR - LIG넥스원 리서치 브리프](<analysis-example/kr/LIG넥스원/리서치브리프.md>)
+
+**Contract and backlog analysis (수주):**
+
+- [KR - 두산에너빌리티 수주통합분석](<analysis-example/kr/두산에너빌리티/수주통합분석.md>)
+- [KR - 한미글로벌 수주계약리스트](<analysis-example/kr/한미글로벌/수주계약리스트.md>)
+- [KR - 한전KPS 수주계약리스트](<analysis-example/kr/한전KPS/수주계약리스트.md>)
+
+**Naver blogger insights (Street / Alternative Views):**
+
 - [KR - 삼성SDS Naver Insights](<analysis-example/kr/삼성SDS/naver-insights.md>)
+- [KR - 엘앤에프 Naver Insights](<analysis-example/kr/엘앤에프/naver-insights.md>)
+- [KR - 알테오젠 Naver Insights](<analysis-example/kr/알테오젠/naver-insights.md>)
+- [KR - GRT Naver Insights](<analysis-example/kr/GRT/naver-insights.md>)
 - [KR - 삼성SDS Naver Blogger Candidates](<analysis-example/kr/삼성SDS/naver-bloggers.json>)
-- [KR - 삼성SDS Naver Posts](<analysis-example/kr/삼성SDS/naver-posts.json>)
+
+**Sector research:**
+
+- [KR Sector - 국내 데이터센터](analysis-example/kr-sector/국내%20데이터센터.md)
+- [KR Sector - 국내 데이터센터 리서치 브리프](analysis-example/kr-sector/국내%20데이터센터-리서치브리프.md)
+
+**Fixtures:**
+
+- [KR - DART browser export sample](examples/kr-stock-dart-analysis/dart-browser-export-sample.json)
 
 ## Validation
 
