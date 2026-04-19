@@ -1264,9 +1264,9 @@ function buildChartPngs(data, bars, metrics, options) {
     ma20: [239, 68, 68, 255],
     ma60: [249, 115, 22, 255],
     ma120: [147, 51, 234, 255],
-    bollinger: [16, 185, 129, 255],
-    bollingerFill: [16, 185, 129, 32],
-    tenkan: [220, 38, 38, 255],
+    bollinger: [15, 23, 42, 255],
+    bollingerFill: [15, 23, 42, 28],
+    tenkan: [192, 38, 211, 255],
     kijun: [217, 119, 6, 255],
     senkouA: [34, 197, 94, 220],
     senkouB: [239, 68, 68, 220],
@@ -1733,8 +1733,8 @@ function buildChartPngs(data, bars, metrics, options) {
     drawLegendItem(buffer, width, height, legendX, legendRow1Y, theme.kijun, "기준선");
 
     legendX = margin.left;
-    legendX = drawLegendItem(buffer, width, height, legendX, legendRow2Y, theme.senkouA, "선행스팬1");
-    drawLegendItem(buffer, width, height, legendX, legendRow2Y, theme.senkouB, "선행스팬2");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendRow2Y, theme.senkouA, "일목 선행1");
+    drawLegendItem(buffer, width, height, legendX, legendRow2Y, theme.senkouB, "일목 선행2");
 
     drawText(buffer, width, height, margin.left - 54, priceTop + 6, "주가", theme.muted, 2);
     drawText(buffer, width, height, margin.left - 86, rsiTop + 6, "상대강도", theme.muted, 2);
