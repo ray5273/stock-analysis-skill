@@ -38,6 +38,7 @@ For a standard company pack, try to gather:
 - Do not fill a note-driven block from company IR alone when the relevant DART note read is still incomplete. Carry the block as `needs_review`, `partial`, or `not separately disclosed after DART check`.
 - For outside-view blocks, say whether the claim is `confirmed by filing`, `street inference`, `media report`, or `independent view`.
 - When `naver-insights.md` exists in the company output directory (`analysis-example/kr/<company>/`), read each post entry and add a row to the `## External Views` table with `Source role: independent analysis`, `Verification status: unverified (blogger)`, and the Naver post URL. Use the blogger's verbatim snippet as the takeaway instead of paraphrasing.
+- When `analyst-report-insight.md` exists in the company output directory, add one `## External Views` row per broker-coverage entry with `Source role: sell-side consensus`, `Verification status: sell-side (broker)`, the report's landing URL in `Source`, and the per-broker 1-liner as the takeaway. In addition, surface the consensus snapshot (TP median / mean / min / max, rating distribution) as a labeled sell-side reference near the valuation block — keep it visibly separate from filing-derived valuation so the downstream memo does not confuse street anchors with facts.
 - Keep interpretation light. The pack may note why a fact matters, but it should not decide the investment view.
 
 ## Failure Modes To Avoid

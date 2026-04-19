@@ -1,0 +1,7 @@
+interface:
+  display_name: "KR Analyst Report Insight"
+  short_description: "Summarize a kr-analyst-report-fetch extracted JSON into a 7-section standalone Markdown digest of sell-side coverage."
+  default_prompt: "Use $kr-analyst-report-insight as the final step in the kr-analyst-report-* chain (discover → fetch → insight) to produce a standalone Markdown digest of Korean sell-side coverage for a KRX ticker. Input is the extracted-text JSON from kr-analyst-report-fetch (.tmp/analyst-report-cache/extracted/<ticker>/<YYYY-MM-DD>.json). Output is a 7-section Markdown file (header, consensus snapshot, broker table, recent reports with 5–8 verbatim key-point bullets per report, divergences, TP trajectory with ASCII sparkline, source-quality footer). Snippets are quoted verbatim from extracted PDF text (~1500 chars per report by default); do not paraphrase. Suitable as a standalone deliverable or as the Street / Sell-Side View input for kr-stock-analysis. Do not use to produce a thesis — it only summarizes the existing sell-side view."
+
+policy:
+  allow_implicit_invocation: true

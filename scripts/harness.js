@@ -74,6 +74,11 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === "--with-blog") {
       result.withBlog = true;
+    } else if (arg === "--with-analyst") {
+      result.withAnalyst = true;
+    } else if (arg === "--lookback-days") {
+      result.lookbackDays = argv[i + 1];
+      i += 1;
     } else if (arg === "--no-cache") {
       result.noCache = true;
     } else if (arg === "--dry-run") {
@@ -98,23 +103,29 @@ function usage() {
     "  node harness.js --mode gate    --company \"LG CNS\" [--memo-path path/to/memo.md]",
     "  node harness.js --mode all     --ticker 066970 --company \"LG CNS\" [--dart-input export.json] [--with-blog]",
     "  node harness.js --mode blog    --ticker 066970 --company \"엘앤에프\" [--bloggers id1,id2]",
+    "  node harness.js --mode analyst --ticker 066970 --company \"엘앤에프\" [--lookback-days 365]",
+    "  node harness.js --mode regression --ticker 066970 --company \"엘앤에프\" [--dart-input export.json]",
     "",
     "Modes:",
-    "  chart    Fetch OHLCV and generate PNG charts in one step",
-    "  dart     Run full DART browser export pipeline (normalize -> extract -> verify -> build-reference)",
-    "  gate     Validate a finished memo against structural quality checks",
-    "  blog     Discover Naver bloggers -> fetch posts -> summarize insights",
-    "  all      Run chart + dart (if --dart-input) + blog (if --with-blog) + gate sequentially",
+    "  chart      Fetch OHLCV and generate PNG charts in one step",
+    "  dart       Run full DART browser export pipeline (normalize -> extract -> verify -> build-reference)",
+    "  gate       Validate a finished memo against structural quality checks",
+    "  blog       Discover Naver bloggers -> fetch posts -> summarize insights",
+    "  analyst    Discover analyst reports -> fetch/extract PDFs -> write digest",
+    "  all        chart + dart (if --dart-input) + blog (if --with-blog) + analyst (if --with-analyst) + gate",
+    "  regression Always-full kr-stock-plan simulation: chart + dart (if input) + analyst + blog + gate",
     "",
     "Options:",
-    "  --ticker       KRX ticker code (e.g. 066970)",
-    "  --company      Company name (used as directory name)",
-    "  --range        Chart data range (default: 1y)",
-    "  --dart-input   Path to browser DART export JSON",
-    "  --bloggers     Comma-separated Naver blogger IDs (skips discovery)",
-    "  --max-posts    Posts per blogger for --mode blog (default 5)",
-    "  --with-blog    Include Naver blog pass in --mode all",
-    "  --no-cache     Bypass Naver blog cache (forces fresh discovery + post fetches)",
+    "  --ticker          KRX ticker code (e.g. 066970)",
+    "  --company         Company name (used as directory name)",
+    "  --range           Chart data range (default: 1y)",
+    "  --dart-input      Path to browser DART export JSON",
+    "  --bloggers        Comma-separated Naver blogger IDs (skips discovery)",
+    "  --max-posts       Posts per blogger for --mode blog (default 5)",
+    "  --lookback-days   Analyst-report lookback window (default 365)",
+    "  --with-blog       Include Naver blog pass in --mode all",
+    "  --with-analyst    Include analyst-report pass in --mode all",
+    "  --no-cache        Bypass Naver + analyst caches (forces fresh discovery + fetches)",
     "  --memo-path    Override memo path (default: analysis-example/kr/<company>/memo.md)",
     "  --output-dir   Override output directory (default: analysis-example/kr/<company>/)",
     "  --report-out   Write JSON quality gate report to this path",
@@ -343,6 +354,315 @@ function runBlog(opts) {
   );
 
   console.log(`  Insights digest: ${path.relative(REPO_ROOT, insightsMd)}`);
+}
+
+// ---------------------------------------------------------------------------
+// Analyst report pipeline
+// ---------------------------------------------------------------------------
+
+function analystArtifactPaths(opts) {
+  const outputDir = resolveOutputDir(opts);
+  return {
+    indexJson: path.join(REPO_ROOT, ".tmp", "analyst-report-cache", "index", opts.ticker || "unknown", `${new Date().toISOString().slice(0, 10)}.json`),
+    extractedJson: path.join(REPO_ROOT, ".tmp", "analyst-report-cache", "extracted", opts.ticker || "unknown", `${new Date().toISOString().slice(0, 10)}.json`),
+    digestMd: path.join(outputDir, "analyst-report-insight.md"),
+  };
+}
+
+function runAnalyst(opts) {
+  console.log("[analyst] Running analyst-report pipeline...");
+  if (!opts.company || !opts.ticker) {
+    console.error("Error: --company and --ticker are required for --mode analyst");
+    process.exit(1);
+  }
+  const outputDir = resolveOutputDir(opts);
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  if (opts.noCache) {
+    const cacheDir = path.join(REPO_ROOT, ".tmp", "analyst-report-cache");
+    if (fs.existsSync(cacheDir)) {
+      fs.rmSync(cacheDir, { recursive: true, force: true });
+      console.log(`  [analyst] Cleared cache: ${path.relative(REPO_ROOT, cacheDir)}`);
+    }
+  }
+
+  const artifacts = analystArtifactPaths(opts);
+
+  const discoverScript = path.join(
+    REPO_ROOT, "skills", "kr-analyst-report-discover", "scripts", "discover-reports.js"
+  );
+  const discoverArgs = [
+    "--company", opts.company,
+    "--ticker", opts.ticker,
+    "--output", artifacts.indexJson,
+  ];
+  if (opts.lookbackDays) discoverArgs.push("--lookback-days", String(opts.lookbackDays));
+  if (opts.noCache) discoverArgs.push("--no-cache");
+  runStep("[analyst 1/3] discover-reports.js", discoverScript, discoverArgs, opts);
+
+  const fetchScript = path.join(
+    REPO_ROOT, "skills", "kr-analyst-report-fetch", "scripts", "fetch-reports.js"
+  );
+  const fetchArgs = [
+    "--input", artifacts.indexJson,
+    "--output", artifacts.extractedJson,
+  ];
+  if (opts.noCache) fetchArgs.push("--no-cache");
+  runStep("[analyst 2/3] fetch-reports.js", fetchScript, fetchArgs, opts);
+
+  const insightScript = path.join(
+    REPO_ROOT, "skills", "kr-analyst-report-insight", "scripts", "summarize-reports.js"
+  );
+  runStep(
+    "[analyst 3/3] summarize-reports.js",
+    insightScript,
+    ["--input", artifacts.extractedJson, "--output", artifacts.digestMd],
+    opts
+  );
+
+  console.log(`  Analyst digest: ${path.relative(REPO_ROOT, artifacts.digestMd)}`);
+  return artifacts;
+}
+
+// ---------------------------------------------------------------------------
+// Routed steps registry — drives --mode regression. Adding a new leg
+// here wires it into the always-full end-to-end check automatically.
+// ---------------------------------------------------------------------------
+
+const ANALYST_REQUIRED_HEADINGS = [
+  "# Analyst Report Insight",
+  "## Consensus Snapshot",
+  "## Broker Coverage",
+  "## Recent Reports",
+  "## Divergences",
+  "## TP Trajectory",
+  "## Source Quality",
+];
+
+function assertNonEmptyFile(errors, label, filePath) {
+  if (!fs.existsSync(filePath)) {
+    errors.push(`${label}: expected artifact not found at ${path.relative(REPO_ROOT, filePath)}`);
+    return false;
+  }
+  const stat = fs.statSync(filePath);
+  if (stat.size === 0) {
+    errors.push(`${label}: artifact is empty at ${path.relative(REPO_ROOT, filePath)}`);
+    return false;
+  }
+  return true;
+}
+
+function assertAnalystDigest(errors, digestPath) {
+  if (!assertNonEmptyFile(errors, "analyst digest", digestPath)) return;
+  const body = fs.readFileSync(digestPath, "utf8");
+  const missing = ANALYST_REQUIRED_HEADINGS.filter((h) => !body.includes(h));
+  if (missing.length > 0) {
+    errors.push(`analyst digest missing headings: ${missing.join(", ")}`);
+  }
+}
+
+function assertAnalystExtracted(errors, extractedJsonPath) {
+  if (!fs.existsSync(extractedJsonPath)) return; // upstream assert already flagged
+  try {
+    const payload = JSON.parse(fs.readFileSync(extractedJsonPath, "utf8"));
+    const extracted = (payload.meta && payload.meta.extracted) || 0;
+    if (extracted < 1) {
+      errors.push(`analyst extraction produced ${extracted} texts — pypdf may be broken`);
+    }
+  } catch (err) {
+    errors.push(`analyst extracted JSON unreadable: ${err.message}`);
+  }
+}
+
+function assertBlogInsights(errors, outputDir) {
+  const insightsMd = path.join(outputDir, "naver-insights.md");
+  if (!assertNonEmptyFile(errors, "blog insights", insightsMd)) return;
+  const body = fs.readFileSync(insightsMd, "utf8");
+  if (!/^##\s+/m.test(body)) {
+    errors.push(`blog insights file has no ## sections`);
+  }
+}
+
+const ROUTED_STEPS = [
+  {
+    name: "chart",
+    run: (opts) => runChart(opts),
+    requires: (opts) => !!opts.ticker,
+    cleanCache: () => {},
+    artifacts: (opts) => [
+      path.join(resolveOutputDir(opts), "chart-data.json"),
+      path.join(resolveAssetsDir(), `${opts.company}-chart.png`),
+    ],
+    assert: (errors, opts) => {
+      for (const a of [
+        path.join(resolveOutputDir(opts), "chart-data.json"),
+        path.join(resolveAssetsDir(), `${opts.company}-chart.png`),
+      ]) {
+        assertNonEmptyFile(errors, `chart ${path.basename(a)}`, a);
+      }
+    },
+  },
+  {
+    name: "dart",
+    run: (opts) => runDart(opts),
+    requires: (opts) => !!opts.dartInput,
+    cleanCache: () => {},
+    artifacts: (opts) => [path.join(resolveOutputDir(opts), "dart-reference.md")],
+    assert: (errors, opts) => {
+      assertNonEmptyFile(
+        errors,
+        "dart reference",
+        path.join(resolveOutputDir(opts), "dart-reference.md")
+      );
+    },
+    optional: true, // only runs if --dart-input provided
+  },
+  {
+    name: "analyst",
+    run: (opts) => runAnalyst(opts),
+    requires: (opts) => !!(opts.ticker && opts.company),
+    cleanCache: (opts) => {
+      const ticker = opts.ticker || "unknown";
+      const cachePaths = [
+        path.join(REPO_ROOT, ".tmp", "analyst-report-cache", "index", ticker),
+        path.join(REPO_ROOT, ".tmp", "analyst-report-cache", "extracted", ticker),
+        path.join(REPO_ROOT, ".tmp", "analyst-report-cache", "text", ticker),
+      ];
+      for (const p of cachePaths) {
+        if (fs.existsSync(p)) {
+          fs.rmSync(p, { recursive: true, force: true });
+        }
+      }
+    },
+    artifacts: (opts) => {
+      const a = analystArtifactPaths(opts);
+      return [a.indexJson, a.extractedJson, a.digestMd];
+    },
+    assert: (errors, opts) => {
+      const a = analystArtifactPaths(opts);
+      assertNonEmptyFile(errors, "analyst index", a.indexJson);
+      assertNonEmptyFile(errors, "analyst extracted", a.extractedJson);
+      assertAnalystExtracted(errors, a.extractedJson);
+      assertAnalystDigest(errors, a.digestMd);
+    },
+  },
+  {
+    name: "blog",
+    run: (opts) => runBlog(opts),
+    requires: (opts) => !!(opts.company && (opts.ticker || opts.bloggers)),
+    cleanCache: () => {
+      const cacheDir = path.join(REPO_ROOT, ".tmp", "naver-blog-cache");
+      if (fs.existsSync(cacheDir)) {
+        fs.rmSync(cacheDir, { recursive: true, force: true });
+      }
+    },
+    artifacts: (opts) => [path.join(resolveOutputDir(opts), "naver-insights.md")],
+    assert: (errors, opts) => {
+      assertBlogInsights(errors, resolveOutputDir(opts));
+    },
+  },
+  {
+    name: "gate",
+    run: (opts) => {
+      const report = runGate(opts);
+      if (!report.passed) {
+        throw new Error("gate FAILED");
+      }
+      return report;
+    },
+    requires: (opts) => fs.existsSync(resolveMemoPath(opts)),
+    cleanCache: () => {},
+    artifacts: () => [],
+    assert: (errors, opts) => {
+      const memoPath = resolveMemoPath(opts);
+      if (!fs.existsSync(memoPath)) {
+        errors.push(`gate: memo not found at ${path.relative(REPO_ROOT, memoPath)}`);
+      }
+    },
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Regression — always-full end-to-end kr-stock-plan simulation.
+// ---------------------------------------------------------------------------
+
+function runRegression(opts) {
+  console.log("[regression] Running full kr-stock-plan simulation...");
+  console.log(`[regression] Steps: ${ROUTED_STEPS.map((s) => s.name).join(" -> ")}`);
+
+  if (opts.dryRun) {
+    for (const step of ROUTED_STEPS) {
+      const willRun = step.requires(opts);
+      const marker = willRun ? "[dry-run]" : "[dry-run skip]";
+      console.log(`${marker} step=${step.name}${willRun ? "" : " (requirements not met)"}`);
+      if (willRun) {
+        try {
+          step.run(opts); // propagates dryRun
+        } catch (err) {
+          console.error(`  dry-run of ${step.name} threw: ${err.message}`);
+        }
+      }
+    }
+    console.log("\n[regression] Dry-run complete.");
+    return { passed: true, steps: [] };
+  }
+
+  // Clean caches up front so discovery + extraction actually re-run.
+  console.log("[regression] Cleaning caches for: " + ROUTED_STEPS.filter((s) => s.cleanCache).map((s) => s.name).join(", "));
+  for (const step of ROUTED_STEPS) {
+    if (step.cleanCache) step.cleanCache(opts);
+  }
+
+  const summary = [];
+  const errors = [];
+
+  for (const step of ROUTED_STEPS) {
+    const canRun = step.requires(opts);
+    if (!canRun) {
+      if (step.optional) {
+        summary.push({ name: step.name, status: "skip", ms: 0, reason: "optional prerequisites missing" });
+        console.log(`\n[regression] ${step.name}: SKIP (optional, prerequisites missing)`);
+      } else {
+        summary.push({ name: step.name, status: "fail", ms: 0, reason: "prerequisites missing" });
+        errors.push(`${step.name}: prerequisites missing (required step cannot run)`);
+        console.log(`\n[regression] ${step.name}: FAIL (prerequisites missing)`);
+      }
+      continue;
+    }
+
+    const start = Date.now();
+    try {
+      step.run(opts);
+      const ms = Date.now() - start;
+      const before = errors.length;
+      step.assert(errors, opts);
+      const added = errors.length - before;
+      const status = added === 0 ? "ok" : "fail";
+      summary.push({ name: step.name, status, ms });
+      console.log(`\n[regression] ${step.name}: ${status.toUpperCase()} (${(ms / 1000).toFixed(1)}s)`);
+    } catch (err) {
+      const ms = Date.now() - start;
+      errors.push(`${step.name}: ${err.message}`);
+      summary.push({ name: step.name, status: "fail", ms, reason: err.message });
+      console.log(`\n[regression] ${step.name}: FAIL (${(ms / 1000).toFixed(1)}s) — ${err.message}`);
+    }
+  }
+
+  // Final summary
+  console.log("\n=== Regression Summary ===");
+  for (const s of summary) {
+    const icon = s.status === "ok" ? "\u2713" : s.status === "skip" ? "\u26A0" : "\u2717";
+    const elapsed = s.ms ? `${(s.ms / 1000).toFixed(1)}s` : "—";
+    console.log(`  ${icon} ${s.name.padEnd(10)} ${s.status.padEnd(5)} ${elapsed}${s.reason ? "  (" + s.reason + ")" : ""}`);
+  }
+  const runCount = summary.filter((s) => s.status !== "skip").length;
+  const okCount = summary.filter((s) => s.status === "ok").length;
+  console.log(`\nSteps covered: ${okCount}/${runCount}`);
+  if (errors.length > 0) {
+    console.log("\nFailures:");
+    for (const e of errors) console.log(`  - ${e}`);
+  }
+  return { passed: errors.length === 0, steps: summary, errors };
 }
 
 // ---------------------------------------------------------------------------
@@ -616,7 +936,7 @@ function main() {
   }
 
   if (!opts.mode) {
-    console.error("Error: --mode is required (chart, dart, gate, blog, all)");
+    console.error("Error: --mode is required (chart, dart, gate, blog, analyst, all, regression)");
     console.error(usage());
     process.exit(1);
   }
@@ -626,7 +946,7 @@ function main() {
     process.exit(1);
   }
 
-  const needsTicker = ["chart", "dart", "all"].includes(opts.mode);
+  const needsTicker = ["chart", "dart", "all", "analyst", "regression"].includes(opts.mode);
   if (needsTicker && !opts.ticker) {
     if (opts.mode === "all") {
       // all mode can skip chart/dart if no ticker
@@ -651,6 +971,8 @@ function main() {
     runDart(opts);
   } else if (opts.mode === "blog") {
     runBlog(opts);
+  } else if (opts.mode === "analyst") {
+    runAnalyst(opts);
   } else if (opts.mode === "gate") {
     const report = runGate(opts);
     process.exit(report.passed ? 0 : 1);
@@ -666,6 +988,15 @@ function main() {
       console.log("[dart] Skipped (no --dart-input provided)");
       console.log("");
     }
+    if (opts.withAnalyst) {
+      if (opts.ticker && opts.company) {
+        runAnalyst(opts);
+        console.log("");
+      } else {
+        console.log("[analyst] Skipped (--with-analyst requires --ticker and --company)");
+        console.log("");
+      }
+    }
     if (opts.withBlog) {
       if (opts.ticker || opts.bloggers) {
         runBlog(opts);
@@ -677,6 +1008,9 @@ function main() {
     }
     const report = runGate(opts);
     process.exit(report.passed ? 0 : 1);
+  } else if (opts.mode === "regression") {
+    const result = runRegression(opts);
+    process.exit(result.passed ? 0 : 1);
   } else {
     console.error(`Error: unknown mode '${opts.mode}'`);
     process.exit(1);

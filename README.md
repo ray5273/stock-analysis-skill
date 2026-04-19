@@ -153,6 +153,10 @@ Primary instructions:
 - [skills/kr-stock-analysis/SKILL.md](skills/kr-stock-analysis/SKILL.md)
 - [skills/kr-stock-analysis/references/blended-source-notes.md](skills/kr-stock-analysis/references/blended-source-notes.md)
 - [skills/kr-stock-update/SKILL.md](skills/kr-stock-update/SKILL.md)
+- [skills/kr-web-browse/SKILL.md](skills/kr-web-browse/SKILL.md)
+- [skills/kr-analyst-report-discover/SKILL.md](skills/kr-analyst-report-discover/SKILL.md)
+- [skills/kr-analyst-report-fetch/SKILL.md](skills/kr-analyst-report-fetch/SKILL.md)
+- [skills/kr-analyst-report-insight/SKILL.md](skills/kr-analyst-report-insight/SKILL.md)
 
 Current behavior:
 
@@ -173,9 +177,18 @@ kr-stock-plan
   -> ask user needs, then lock security, mode, must-answer questions, and the user's priority question
   -> decide fresh memo vs follow-up vs dated update
   -> if filing precision matters: kr-stock-dart-analysis
+  -> if sell-side consensus matters: kr-analyst-report-discover -> kr-analyst-report-fetch -> kr-analyst-report-insight
+  -> if independent retail voices matter: kr-naver-blogger -> kr-naver-insight
   -> kr-stock-data-pack
   -> kr-stock-analysis
 ```
+
+Analyst-report pipeline details:
+
+- `kr-web-browse` is a thin non-Naver browser wrapper; it reuses the gstack `browse` binary vendored under `kr-naver-browse` and exposes `browseText`, `browseLinks`, and `downloadFile` for sibling skills.
+- `kr-analyst-report-discover` scrapes sell-side reports from `consensus.hankyung.com` (primary) with `finance.naver.com/research` as fallback. Default lookback is 365 days (`--lookback-days` overrides). Login-gated reports are kept with `requiresAuth: true`. Output: `.tmp/analyst-report-cache/index/<ticker>/<YYYY-MM-DD>.json`.
+- `kr-analyst-report-fetch` downloads each non-auth PDF and extracts text via the shared `skills/kr-stock-dart-analysis/scripts/extract-pdf-text.py` helper (requires `pypdf`). Output: `.tmp/analyst-report-cache/extracted/<ticker>/<YYYY-MM-DD>.json`.
+- `kr-analyst-report-insight` renders a 7-section Markdown digest (consensus snapshot, broker table, recent reports with verbatim key-point bullets, divergences, TP trajectory with ASCII sparkline, source-quality footer). Snippets are quoted verbatim at ~1500 chars per report; it is a standalone deliverable and also the ingestion source for `kr-stock-data-pack` → `External Views` with `Source role: sell-side consensus`.
 
 Routing guide:
 

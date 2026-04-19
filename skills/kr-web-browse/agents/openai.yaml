@@ -1,0 +1,7 @@
+interface:
+  display_name: "Generic Web Browser"
+  short_description: "Headless browser wrapper for generic (non-Naver) web pages plus Node-stdlib PDF downloader."
+  default_prompt: "Use $kr-web-browse when another skill needs to fetch the text or anchor links of a public non-Naver web page, or download a direct PDF URL to disk. It exposes a Node module at scripts/browse-web.js with browseText, browseLinks, downloadFile, and resolveBrowseBinary. It reuses the gstack browse binary vendored by kr-naver-browse — install kr-naver-browse first. Do not use this module for Naver URLs (use kr-naver-browse instead), and do not rely on it for pages that require login."
+
+policy:
+  allow_implicit_invocation: true

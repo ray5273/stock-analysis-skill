@@ -1,0 +1,7 @@
+interface:
+  display_name: "KR Analyst Report Discovery"
+  short_description: "Discover sell-side analyst reports for a KRX ticker from Hankyung Consensus and Naver Pay Research."
+  default_prompt: "Use $kr-analyst-report-discover to list recent Korean sell-side analyst reports for a specific KRX ticker. It scrapes consensus.hankyung.com (primary) and finance.naver.com/research (fallback), extracts broker, analyst, date, title, rating, target price, and direct PDF URL per report, and writes a dated JSON index to .tmp/analyst-report-cache/index/<ticker>/<YYYY-MM-DD>.json. Default lookback is 365 days. Login-gated reports are kept with requiresAuth: true and pdfUrl: null. Feed the output JSON into kr-analyst-report-fetch. Requires kr-web-browse (which reuses kr-naver-browse's gstack binary)."
+
+policy:
+  allow_implicit_invocation: true

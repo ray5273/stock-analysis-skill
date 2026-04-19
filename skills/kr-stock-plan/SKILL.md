@@ -40,10 +40,12 @@ For Korean single-name work, this is the default entry point. It should decide w
    List what the downstream analysis must answer and what can stay out of scope.
 7. Decide outside-views routing.
    Apply the outside-views decision gate from `references/workflow.md` to decide whether a Naver blog pass should run before `kr-stock-data-pack`. Record the decision in the brief as `Naver blog pass: yes / no / deferred` with a one-line reason.
+7b. Decide analyst-report routing.
+   Apply the analyst-report decision gate from `references/workflow.md` to decide whether a sell-side pass (`kr-analyst-report-discover` → `kr-analyst-report-fetch` → `kr-analyst-report-insight`) should run before `kr-stock-data-pack`. Record the decision in the brief as `Analyst report pass: yes / no / deferred` with a one-line reason.
 8. Hand off cleanly.
-   Produce a short research brief that routes the work across `kr-stock-dart-analysis`, `kr-stock-data-pack`, and `kr-stock-analysis` as needed.
+   Produce a short research brief that routes the work across `kr-stock-dart-analysis`, `kr-analyst-report-*`, `kr-naver-*`, `kr-stock-data-pack`, and `kr-stock-analysis` as needed.
 9. Continue automatically when appropriate.
-   If the user asked for analysis rather than planning-only, execute the routed downstream skills immediately in the same turn instead of requiring the user to invoke each one manually.
+   If the user asked for analysis rather than planning-only, execute the routed downstream skills immediately in the same turn instead of requiring the user to invoke each one manually. Include the analyst-report chain in the routed execution when the gate recommends it.
 
 Read [references/workflow.md](references/workflow.md) for planning rules.
 Read [references/output-format.md](references/output-format.md) for the required brief shape.
@@ -57,6 +59,7 @@ Read [references/output-format.md](references/output-format.md) for the required
 - Avoid numeric estimates at this stage unless the user explicitly asked for a scoping estimate and provided a source.
 - When latest filing precision is likely to be thesis-critical, explicitly route the downstream workflow through `kr-stock-dart-analysis` before `kr-stock-data-pack` or `kr-stock-analysis`.
 - When independent Naver blog voices are likely to sharpen the memo, route the Naver pipeline (`kr-naver-blogger` → `kr-naver-insight`) before `kr-stock-data-pack` so the digest is ready for ingestion. See the outside-views decision gate in `references/workflow.md`.
+- When sell-side consensus (target price, rating distribution, broker coverage) is likely to sharpen the memo, or the user explicitly asks about 컨센서스 / 증권사 리포트 / 애널리스트 TP, route the analyst-report pipeline (`kr-analyst-report-discover` → `kr-analyst-report-fetch` → `kr-analyst-report-insight`) before `kr-stock-data-pack` so the digest is ready for ingestion. See the analyst-report decision gate in `references/workflow.md`. The analyst-report pass and the Naver pass are independent — run both when both gates say yes; they feed different memo sections.
 - Treat `kr-stock-plan` as the default orchestrator for Korean single-stock work. Unless the user explicitly requests planning only, carry the work forward yourself after the brief is locked.
 - Resolve follow-up requests against `analysis-example/kr/<company>/memo.md` first. Only ask the user to restate the ticker or company when the target memo is missing or ambiguous.
 - Keep the user question as a priority lens. If the user supplied a specific concern, the downstream memo should reorder emphasis around that concern instead of treating it as an appendix.

@@ -69,6 +69,8 @@ Execution rule:
 
 - Outside-views-aware workflow: `kr-stock-plan -> kr-stock-dart-analysis (optional) -> kr-naver-blogger -> kr-naver-insight -> kr-stock-data-pack -> kr-stock-analysis`
 - Naver-first exploratory workflow: `kr-stock-plan -> kr-naver-blogger -> kr-naver-insight -> kr-stock-data-pack -> kr-stock-analysis`
+- Analyst-report-aware workflow: `kr-stock-plan -> kr-stock-dart-analysis (optional) -> kr-analyst-report-discover -> kr-analyst-report-fetch -> kr-analyst-report-insight -> kr-stock-data-pack -> kr-stock-analysis`
+- Full outside-views workflow: `kr-stock-plan -> kr-stock-dart-analysis (optional) -> kr-analyst-report-discover -> kr-analyst-report-fetch -> kr-analyst-report-insight -> kr-naver-blogger -> kr-naver-insight -> kr-stock-data-pack -> kr-stock-analysis` (run the analyst pass and the Naver pass independently; they feed different memo sections — sell-side consensus vs independent retail voices)
 
 The Naver-first path applies when the user's ask is explicitly about what Naver bloggers or the retail community thinks, not about a filing-grounded decision memo.
 
@@ -99,9 +101,31 @@ Also recommend a Naver pass when the user's request is exploratory ("네이버 �
 
 The `naver-insights.md` digest lands in `analysis-example/kr/<company>/` and `kr-stock-data-pack` ingests its rows into `External Views` with `Source role: independent analysis`.
 
+## Analyst Report Decision
+
+Decide whether the downstream workflow should include an analyst-report pass (`kr-analyst-report-discover` → `kr-analyst-report-fetch` → `kr-analyst-report-insight`) before `kr-stock-data-pack`.
+
+Recommend an analyst-report pass when **any** of these are true:
+
+- User explicitly asked about sell-side consensus, target price, broker coverage, 증권사 리포트, 컨센서스, or 애널리스트 TP.
+- Output mode is `full memo` or `pre-earnings note` AND the company has meaningful sell-side coverage (KOSPI mid/large cap, well-covered KOSDAQ names). Retail-only small-caps with near-zero coverage can skip.
+- Output mode is `post-earnings note` and the user wants consensus-vs-print framing.
+- The user's priority question is about relative valuation anchoring against street TPs.
+
+Default to `no` when:
+
+- Output mode is `quick view`.
+- Company has little or no sell-side coverage (obscure small-caps, recent relistings, holding shells).
+- User explicitly said "skip sell-side", "company only", "filing only".
+
+The analyst pass is independent of the Naver pass — both can run in the same brief; they feed distinct memo sections (`Street / Sell-Side View` vs `Alternative Views`). Decide each gate on its own criteria.
+
+The `analyst-report-insight.md` digest lands in `analysis-example/kr/<company>/` and `kr-stock-data-pack` ingests its rows into `External Views` with `Source role: sell-side consensus`.
+
 ## Failure Modes To Avoid
 
 - leaving ticker or share class ambiguous
 - mixing operating company analysis with holding-company logic without saying so
 - asking the downstream writer to decide the output mode
 - sneaking thesis conclusions into the planning artifact
+- skipping the analyst-report pass when the user explicitly asked about 컨센서스 / TP / 증권사 coverage

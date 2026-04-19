@@ -551,4 +551,10 @@ find "$REPO_ROOT/analysis-example/kr" -type f -name "memo.md" -print | while IFS
     node "$REPO_ROOT/scripts/harness.js" --mode gate --company "$COMPANY" --memo-path "$MEMO" || exit 1
 done
 
+# Regression wiring check: --dry-run exercises the ROUTED_STEPS registry
+# without network or pypdf. Catches path/flag breakage when a new routed
+# skill is added.
+echo "Regression (dry-run): 엘앤에프"
+node "$REPO_ROOT/scripts/harness.js" --mode regression --ticker 066970 --company "엘앤에프" --dry-run >/dev/null || exit 1
+
 echo "Validation passed."

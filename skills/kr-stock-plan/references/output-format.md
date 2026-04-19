@@ -39,6 +39,8 @@ Use this default planning shape unless the user asked for something else.
 - Why memo reuse is enough or not enough:
 - Naver blog pass: yes / no / deferred
 - Why Naver pass:
+- Analyst report pass: yes / no / deferred
+- Why analyst report pass:
 
 ## Must Answer
 - ...

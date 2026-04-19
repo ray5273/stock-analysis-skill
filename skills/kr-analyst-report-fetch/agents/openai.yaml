@@ -1,0 +1,7 @@
+interface:
+  display_name: "KR Analyst Report Fetch"
+  short_description: "Download PDFs from a kr-analyst-report-discover index and extract plain text via pypdf."
+  default_prompt: "Use $kr-analyst-report-fetch after kr-analyst-report-discover has produced a dated index JSON for a KRX ticker. It downloads each report's PDF (skipping requiresAuth rows), caches the PDF + the extracted .txt under .tmp/analyst-report-cache/pdfs/<ticker>/, and writes a summary JSON to .tmp/analyst-report-cache/extracted/<ticker>/<YYYY-MM-DD>.json for downstream kr-analyst-report-insight. PDF text extraction calls skills/kr-stock-dart-analysis/scripts/extract-pdf-text.py via child_process; that script requires pypdf (python3 -m pip install pypdf). Requires kr-web-browse for the Node-stdlib downloader."
+
+policy:
+  allow_implicit_invocation: true

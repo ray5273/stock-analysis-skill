@@ -43,5 +43,6 @@ Read [../kr-stock-analysis/references/blended-source-notes.md](../kr-stock-analy
 - Distinguish verified facts from your inference.
 - Label outside inputs by source role and keep their verification status visible.
 - When `naver-insights.md` exists in the company output directory, ingest its per-post entries into `## External Views` with `Source role: independent analysis`, `Verification status: unverified (blogger)`, and the post URL in `Source`. Do not treat blogger claims as primary-source numbers.
+- When `analyst-report-insight.md` exists in the company output directory, ingest its broker-coverage rows into `## External Views` with `Source role: sell-side consensus`, `Verification status: sell-side (broker)`, the report's landing URL in `Source`, and the per-broker 1-liner as the takeaway. Also carry the consensus TP median and rating distribution into the valuation / view block as a labeled street-consensus reference — do not treat analyst TPs as primary filings.
 - Do not convert a thin source set into a confident valuation call.
 - Ask a short user-need check before gathering broad data blocks when the must-have sections are still unclear.

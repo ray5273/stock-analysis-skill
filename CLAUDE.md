@@ -23,6 +23,10 @@ bash ./scripts/install-skill.sh us-stock-analysis
 bash ./scripts/install-skill.sh kr-naver-browse
 bash ./scripts/install-skill.sh kr-naver-blogger
 bash ./scripts/install-skill.sh kr-naver-insight
+bash ./scripts/install-skill.sh kr-web-browse
+bash ./scripts/install-skill.sh kr-analyst-report-discover
+bash ./scripts/install-skill.sh kr-analyst-report-fetch
+bash ./scripts/install-skill.sh kr-analyst-report-insight
 ```
 
 **Install all skills (Codex):**
@@ -39,6 +43,10 @@ bash ./scripts/install-claude-skill.sh us-stock-analysis
 bash ./scripts/install-claude-skill.sh kr-naver-browse
 bash ./scripts/install-claude-skill.sh kr-naver-blogger
 bash ./scripts/install-claude-skill.sh kr-naver-insight
+bash ./scripts/install-claude-skill.sh kr-web-browse
+bash ./scripts/install-claude-skill.sh kr-analyst-report-discover
+bash ./scripts/install-claude-skill.sh kr-analyst-report-fetch
+bash ./scripts/install-claude-skill.sh kr-analyst-report-insight
 ```
 
 **Install all skills (Claude Code):**
@@ -59,6 +67,9 @@ node skills/kr-naver-blogger/scripts/build-query-set.js --company "엘앤에프"
 node skills/kr-naver-blogger/scripts/discover-bloggers.js --company "엘앤에프" --ticker 066970 --output /tmp/bloggers.json
 node skills/kr-naver-insight/scripts/fetch-blog-posts.js --input /tmp/bloggers.json --company "엘앤에프" --output /tmp/posts.json
 node skills/kr-naver-insight/scripts/summarize-insights.js --input /tmp/posts.json --output /tmp/insights.md
+node skills/kr-analyst-report-discover/scripts/discover-reports.js --company "엘앤에프" --ticker 066970 --output /tmp/analyst-index.json
+node skills/kr-analyst-report-fetch/scripts/fetch-reports.js --input /tmp/analyst-index.json --output /tmp/analyst-extracted.json
+node skills/kr-analyst-report-insight/scripts/summarize-reports.js --input /tmp/analyst-extracted.json --output /tmp/analyst-digest.md
 ```
 
 ## Architecture
@@ -92,6 +103,10 @@ All scripts accept JSON via `--input` and output Markdown or PNG. They use only 
 | `discover-bloggers.js` | Find and rank Naver bloggers covering a KRX company (uses dynamic queries + in-blog search) |
 | `fetch-blog-posts.js` | Fetch and cache Naver blog posts filtered by company mention |
 | `summarize-insights.js` | Render a Markdown digest of Naver blog posts for the Street / Alternative Views section |
+| `browse-web.js` | Generic (non-Naver) helpers that reuse the gstack `browse` binary plus a Node-stdlib `downloadFile` (used by the analyst-report chain) |
+| `discover-reports.js` | Scrape consensus.hankyung.com (primary) + finance.naver.com/research (fallback) for sell-side analyst reports over a lookback window (default 365 days) |
+| `fetch-reports.js` | Download PDFs from the discover index, extract plain text via shared `kr-stock-dart-analysis/scripts/extract-pdf-text.py` helper, and cache per-report |
+| `summarize-reports.js` | Render a 7-section Markdown digest of sell-side coverage (consensus, broker table, recent reports with verbatim bullets, divergences, TP trajectory, source quality) |
 
 Input JSON schemas are documented in `references/script-inputs.md` with sample files under `examples/<market>/`.
 
@@ -105,8 +120,10 @@ node scripts/harness.js --mode dart    --ticker 066970 --company "LG CNS" --dart
 node scripts/harness.js --mode gate    --company "LG CNS"
 node scripts/harness.js --mode all     --ticker 066970 --company "LG CNS" --dart-input export.json
 node scripts/harness.js --mode all     --ticker 066970 --company "엘앤에프" --with-blog
-node scripts/harness.js --mode all     --ticker 066970 --company "엘앤에프" --with-blog --bloggers blogger1,blogger2
+node scripts/harness.js --mode all     --ticker 066970 --company "엘앤에프" --with-blog --with-analyst
 node scripts/harness.js --mode blog    --ticker 066970 --company "엘앤에프"
+node scripts/harness.js --mode analyst --ticker 066970 --company "엘앤에프"
+node scripts/harness.js --mode regression --ticker 066970 --company "엘앤에프" --dart-input export.json
 ```
 
 | Mode | What it does |
@@ -115,7 +132,9 @@ node scripts/harness.js --mode blog    --ticker 066970 --company "엘앤에프"
 | `dart` | normalize → extract → verify → build-reference (full DART browser export pipeline) |
 | `gate` | 9 structural quality checks on a finished memo (required sections, 기준일, chart PNGs, DART Recheck, valuation metrics, source dates) |
 | `blog` | discover-bloggers.js → fetch-blog-posts.js → summarize-insights.js (Naver blogger discovery + insights digest) |
-| `all` | chart + dart (if `--dart-input`) + blog (if `--with-blog`) + gate sequentially |
+| `analyst` | discover-reports.js → fetch-reports.js → summarize-reports.js (Hankyung/Naver analyst-report chain) |
+| `all` | chart + dart (if `--dart-input`) + blog (if `--with-blog`) + analyst (if `--with-analyst`) + gate sequentially |
+| `regression` | Run every routed skill end-to-end (chart → dart → analyst → blog → gate) with artifact + section assertions; designed to catch wiring regressions in the full `kr-stock-plan` chain |
 
 The quality gate runs automatically as part of `validate-skills.sh` / `.ps1` against all example memos.
 
@@ -145,6 +164,9 @@ The quality gate runs automatically as part of `validate-skills.sh` / `.ps1` aga
 - **No npm packages**: all scripts must work with `node` alone. Do not add `require()` calls for non-stdlib modules.
 - **Korean tickers**: `fetch-kr-chart.js` accepts bare numeric codes (e.g. `066970`) or explicit `.KS`/`.KQ` suffixes; it retries with `.KS` then `.KQ` automatically.
 - **Cross-platform scripts**: every `.sh` script must have a `.ps1` counterpart in `scripts/`. CI tests all three platforms (Ubuntu, macOS, Windows).
+- **PDF extraction**: both `kr-stock-dart-analysis` and `kr-analyst-report-fetch` call `skills/kr-stock-dart-analysis/scripts/extract-pdf-text.py` via `child_process`, which requires `python3 -m pip install pypdf` on the host before running the fetch chain.
+- **Analyst-report chain**: `kr-analyst-report-*` skills share the gstack `browse` binary vendored under `kr-naver-browse` (via `kr-web-browse`). Install `kr-naver-browse` first so the binary is resolvable. Source priority is Hankyung Consensus first, Naver Pay Research as fallback; default lookback is 365 days; login-gated reports are skipped in v1. PDFs are downloaded into a scratch tempdir, extracted, and deleted — only the extracted `.txt` is cached under `.tmp/analyst-report-cache/text/<ticker>/`.
+- **Regression extensibility**: `--mode regression` iterates a `ROUTED_STEPS` registry at the top of `scripts/harness.js` and runs every routed leg with artifact + section assertions. When `kr-stock-plan` gains a new routed skill, add a one-line entry to `ROUTED_STEPS` (`{ name, run, requires, cleanCache, artifacts, assert }`) and the regression mode picks it up automatically. A full (non-dry) regression needs network access + `pypdf`; `validate-skills.sh` only runs `--dry-run` so CI stays offline.
 
 ## gstack
 

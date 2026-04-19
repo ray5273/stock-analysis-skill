@@ -1,12 +1,107 @@
 {
   "company": "리가켐바이오",
   "ticker": "141080",
-  "discoveredAt": "2026-04-18",
-  "bloggers": [],
+  "discoveredAt": "2026-04-19",
+  "bloggers": [
+    {
+      "blogId": "whiteecnomy",
+      "displayName": null,
+      "blogTitle": null,
+      "subscriberCount": null,
+      "relevantPostCount": 1,
+      "dedicatedPostCount": 1,
+      "deepTechPostCount": 1,
+      "tradingTitleCount": 0,
+      "listicleTitleCount": 0,
+      "isTradingBlog": false,
+      "searchHitCount": 0,
+      "nicknameHitCount": 1,
+      "nicknameAnchors": [
+        "기술이전"
+      ],
+      "roundupMentioned": false,
+      "roundupSources": [],
+      "inBlogPage1Total": 1,
+      "inBlogPaginationPages": 1,
+      "generalPostCount": 6,
+      "stockPostRatio": 1,
+      "bracketedTitleRatio": 0,
+      "formulaicTitleRatio": 0.16666666666666666,
+      "dedicatedFormulaicRatio": 1,
+      "datedPostCount": 1,
+      "staleCoverageRatio": 0,
+      "latestRelevantPostDate": "2026-04-03",
+      "latestPostDate": "2026-04-03",
+      "categories": [],
+      "profileSnippet": null
+    },
+    {
+      "blogId": "biodad",
+      "displayName": null,
+      "blogTitle": null,
+      "subscriberCount": null,
+      "relevantPostCount": 1,
+      "dedicatedPostCount": 1,
+      "deepTechPostCount": 0,
+      "tradingTitleCount": 0,
+      "listicleTitleCount": 0,
+      "isTradingBlog": false,
+      "searchHitCount": 0,
+      "nicknameHitCount": 1,
+      "nicknameAnchors": [
+        "기술이전"
+      ],
+      "roundupMentioned": false,
+      "roundupSources": [],
+      "inBlogPage1Total": 2,
+      "inBlogPaginationPages": 1,
+      "generalPostCount": 2,
+      "stockPostRatio": 0,
+      "bracketedTitleRatio": 0,
+      "formulaicTitleRatio": 0,
+      "dedicatedFormulaicRatio": 0,
+      "datedPostCount": 1,
+      "staleCoverageRatio": 0,
+      "latestRelevantPostDate": "2026-04-02",
+      "latestPostDate": "2026-04-02",
+      "categories": [],
+      "profileSnippet": null
+    },
+    {
+      "blogId": "garnett3123",
+      "displayName": null,
+      "blogTitle": null,
+      "subscriberCount": null,
+      "relevantPostCount": 3,
+      "dedicatedPostCount": 3,
+      "deepTechPostCount": 2,
+      "tradingTitleCount": 0,
+      "listicleTitleCount": 0,
+      "isTradingBlog": false,
+      "searchHitCount": 1,
+      "nicknameHitCount": 0,
+      "nicknameAnchors": [],
+      "roundupMentioned": false,
+      "roundupSources": [],
+      "inBlogPage1Total": 10,
+      "inBlogPaginationPages": 2,
+      "generalPostCount": 1,
+      "stockPostRatio": 0,
+      "bracketedTitleRatio": 0,
+      "formulaicTitleRatio": 0,
+      "dedicatedFormulaicRatio": 0.6666666666666666,
+      "datedPostCount": 3,
+      "staleCoverageRatio": 0,
+      "latestRelevantPostDate": "2026-04-05",
+      "latestPostDate": "2026-04-05",
+      "categories": [],
+      "profileSnippet": null
+    }
+  ],
   "meta": {
     "searchQueries": 3,
-    "candidatesFound": 0,
-    "qualified": 0,
+    "candidatesFound": 25,
+    "qualified": 3,
     "skipped": 0,
     "querySet": {
       "queries": [
@@ -19,22 +114,79 @@
           "source": "base"
         },
         {
-          "text": "리가켐바이오 주요 제품",
-          "source": "fallback"
+          "text": "리가켐바이오 ADC",
+          "source": "news-trend"
         }
       ],
       "meta": {
-        "newsHeadlinesScanned": 0,
-        "newsListicleDropped": 0,
+        "newsHeadlinesScanned": 26,
+        "newsListicleDropped": 6,
         "dartProductsExtracted": 0,
         "contextFileUsed": null,
         "generatedBy": "kr-naver-blogger/build-query-set.js"
       }
     },
-    "relatedQueries": [],
-    "nicknameQueries": [],
+    "relatedQueries": [
+      {
+        "text": "리가켐바이오주가",
+        "nickname": "주가",
+        "wholeQuery": false
+      },
+      {
+        "text": "리가켐바이오 주가전망",
+        "nickname": "주가전망",
+        "wholeQuery": false
+      },
+      {
+        "text": "리가켐바이오 목표주가",
+        "nickname": "목표주가",
+        "wholeQuery": false
+      },
+      {
+        "text": "리가켐바이오 전망",
+        "nickname": "전망",
+        "wholeQuery": false
+      },
+      {
+        "text": "리가켐바이오주식",
+        "nickname": "주식",
+        "wholeQuery": false
+      },
+      {
+        "text": "리가켐바이오 채용",
+        "nickname": "채용",
+        "wholeQuery": false
+      },
+      {
+        "text": "리가켐바이오주식시세",
+        "nickname": "주식시세",
+        "wholeQuery": false
+      },
+      {
+        "text": "리가켐바이오 기술이전",
+        "nickname": "기술이전",
+        "wholeQuery": false
+      },
+      {
+        "text": "리가켐바이오사이언스",
+        "nickname": "사이언스",
+        "wholeQuery": false
+      }
+    ],
+    "nicknameQueries": [
+      {
+        "text": "리가켐바이오 기술이전",
+        "nickname": "기술이전",
+        "hits": 3
+      },
+      {
+        "text": "리가켐바이오사이언스",
+        "nickname": "사이언스",
+        "hits": 0
+      }
+    ],
     "eventQueries": [],
-    "nicknameAnchoredCount": 0,
+    "nicknameAnchoredCount": 2,
     "roundupFetched": [],
     "deepMode": false,
     "blogFilterApplied": false,
