@@ -80,7 +80,15 @@ foreach ($skillDir in $skillDirs) {
         $chartOverlayOut = ".\.tmp\$(Split-Path -Leaf $tempRoot)\kr-chart-overlay.png"
         $chartMomentumOut = ".\.tmp\$(Split-Path -Leaf $tempRoot)\kr-chart-momentum.png"
 
-        node $chartScript --input $chartSample --png-out $chartOut --image-path "chart.png" | Out-Null
+        $chartStderr = Join-Path $tempRoot "kr-chart.stderr"
+        node $chartScript --input $chartSample --png-out $chartOut --image-path "chart.png" 2>$chartStderr | Out-Null
+        if (Test-Path $chartStderr) {
+            $chartFontLines = Get-Content -Path $chartStderr | Where-Object { $_ -match '\[font\]' }
+            if (-not ($chartFontLines | Where-Object { $_ -match 'external=(true|available)' })) {
+                $reason = if ($chartFontLines) { $chartFontLines[-1] } else { "no [font] signal" }
+                Write-Warning "chart-basics.js rendered via bitmap fallback - Korean glyphs may be incomplete ($reason). Set KR_STOCK_CHART_FONT or install a Korean font."
+            }
+        }
         if (-not (Test-Path $chartOut) -or (Get-Item $chartOut).Length -le 0) {
             Write-Error "Expected chart PNG was not created: $chartOut"
         }
@@ -99,7 +107,15 @@ foreach ($skillDir in $skillDirs) {
         $valuationOutPer = ".\.tmp\$(Split-Path -Leaf $tempRoot)\kr-valuation-per.png"
         $valuationOutPbr = ".\.tmp\$(Split-Path -Leaf $tempRoot)\kr-valuation-pbr.png"
 
-        node $valuationScript --input $valuationSample --png-out $valuationOut --image-path "valuation.png" | Out-Null
+        $valuationStderr = Join-Path $tempRoot "kr-valuation.stderr"
+        node $valuationScript --input $valuationSample --png-out $valuationOut --image-path "valuation.png" 2>$valuationStderr | Out-Null
+        if (Test-Path $valuationStderr) {
+            $valuationFontLines = Get-Content -Path $valuationStderr | Where-Object { $_ -match '\[font\]' }
+            if (-not ($valuationFontLines | Where-Object { $_ -match 'external=(true|available)' })) {
+                $reason = if ($valuationFontLines) { $valuationFontLines[-1] } else { "no [font] signal" }
+                Write-Warning "valuation-chart.js rendered via bitmap fallback - Korean glyphs may be incomplete ($reason). Set KR_STOCK_CHART_FONT or install a Korean font."
+            }
+        }
         if (-not (Test-Path $valuationOutPer) -or (Get-Item $valuationOutPer).Length -le 0) {
             Write-Error "Expected PER valuation PNG was not created: $valuationOutPer"
         }

@@ -117,7 +117,18 @@ const EXTERNAL_FONT_CANDIDATES = [
   "/mnt/c/Windows/Fonts/NanumGothic.ttf",
   "/mnt/c/Windows/Fonts/NotoSansKR-VF.ttf",
   "/mnt/c/Windows/Fonts/NotoSerifKR-VF.ttf",
+  "/System/Library/Fonts/AppleSDGothicNeo.ttc",
+  "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
+  "/Library/Fonts/AppleGothic.ttf",
+  "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+  "/usr/share/fonts/opentype/noto/NotoSansCJKkr-Regular.otf",
+  "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+  "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+  "/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf",
+  "/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc",
+  "/usr/share/fonts/google-noto-sans-cjk-vf/NotoSansCJK-VF.otf.ttc",
 ].filter(Boolean);
+const KR_FONT_NAME_RE = /^(malgun|malgunbd|nanum|noto.*(kr|cjk))[^/\\]*\.(ttf|ttc|otf)$/i;
 const EXTERNAL_TEXT_STATE = { checked: false, available: false, fontPath: null };
 const EXTERNAL_TEXT_CACHE = new Map();
 
@@ -315,17 +326,77 @@ function containsHangul(text) {
   return /[\uac00-\ud7a3]/.test(String(text || ""));
 }
 
+function findKrFontByDirScan(dirs) {
+  for (const dir of dirs) {
+    if (!dir || !fs.existsSync(dir)) continue;
+    let entries;
+    try { entries = fs.readdirSync(dir); } catch { continue; }
+    const hit = entries.find((f) => KR_FONT_NAME_RE.test(f));
+    if (hit) return path.join(dir, hit);
+  }
+  return null;
+}
+
+function discoverKrFontFallback() {
+  if (process.platform === "win32") {
+    return findKrFontByDirScan([
+      "C:\\Windows\\Fonts",
+      process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, "Microsoft\\Windows\\Fonts"),
+    ]);
+  }
+  try {
+    const out = execFileSync("fc-match", ["-f", "%{file}\n", ":lang=ko"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    if (out && fs.existsSync(out)) return out;
+  } catch {
+    // fc-match not installed
+  }
+  return null;
+}
+
 function resolveExternalTextRenderer() {
   if (EXTERNAL_TEXT_STATE.checked) { return EXTERNAL_TEXT_STATE; }
   EXTERNAL_TEXT_STATE.checked = true;
   const helperPath = process.platform === "win32" ? EXTERNAL_TEXT_HELPER_PS1 : EXTERNAL_TEXT_HELPER_PY;
-  if (!fs.existsSync(helperPath)) { return EXTERNAL_TEXT_STATE; }
-  const fontPath = EXTERNAL_FONT_CANDIDATES.find((c) => fs.existsSync(c));
-  if (!fontPath) { return EXTERNAL_TEXT_STATE; }
+  if (!fs.existsSync(helperPath)) {
+    EXTERNAL_TEXT_STATE.reason = "helper-missing";
+    return EXTERNAL_TEXT_STATE;
+  }
+  let fontPath = EXTERNAL_FONT_CANDIDATES.find((c) => fs.existsSync(c));
+  if (!fontPath) { fontPath = discoverKrFontFallback(); }
+  if (!fontPath) {
+    EXTERNAL_TEXT_STATE.reason = "no-korean-font-found";
+    return EXTERNAL_TEXT_STATE;
+  }
   EXTERNAL_TEXT_STATE.available = true;
   EXTERNAL_TEXT_STATE.fontPath = fontPath;
   return EXTERNAL_TEXT_STATE;
 }
+
+let EXTERNAL_TEXT_RENDER_OK = false;
+function noteExternalRenderSucceeded() { EXTERNAL_TEXT_RENDER_OK = true; }
+function noteExternalRenderFailed(reason) {
+  EXTERNAL_TEXT_STATE.available = false;
+  if (!EXTERNAL_TEXT_STATE.reason) EXTERNAL_TEXT_STATE.reason = reason || "helper-failed";
+}
+process.on("exit", () => {
+  if (EXTERNAL_TEXT_RENDER_OK && EXTERNAL_TEXT_STATE.fontPath) {
+    process.stderr.write(`[font] external=true path=${EXTERNAL_TEXT_STATE.fontPath}\n`);
+    return;
+  }
+  if (!EXTERNAL_TEXT_STATE.checked) {
+    try { resolveExternalTextRenderer(); } catch {}
+  }
+  if (EXTERNAL_TEXT_STATE.fontPath && !EXTERNAL_TEXT_STATE.reason) {
+    process.stderr.write(`[font] external=available path=${EXTERNAL_TEXT_STATE.fontPath}\n`);
+    return;
+  }
+  const reason = EXTERNAL_TEXT_STATE.reason || (EXTERNAL_TEXT_STATE.fontPath ? "not-invoked" : "no-korean-font-found");
+  const fp = EXTERNAL_TEXT_STATE.fontPath || "none";
+  process.stderr.write(`[font] external=false path=${fp} reason=${reason}\n`);
+});
 
 function externalFontSize(scale) {
   return Math.max(12, Math.round(scale * 9));
@@ -350,12 +421,15 @@ function loadExternalTextMask(text, scale = 1) {
         : execFileSync("python3", [EXTERNAL_TEXT_HELPER_PY, "--font-path", renderer.fontPath, "--font-size", String(externalFontSize(scale)), "--text", normalized], { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
     const mask = normalizeExternalTextPayload(stdout);
     EXTERNAL_TEXT_CACHE.set(cacheKey, mask);
+    noteExternalRenderSucceeded();
     return mask;
   } catch (error) {
     if (error && error.stdout) {
-      try { const mask = normalizeExternalTextPayload(error.stdout); EXTERNAL_TEXT_CACHE.set(cacheKey, mask); return mask; } catch (_) { /* fall through */ }
+      try { const mask = normalizeExternalTextPayload(error.stdout); EXTERNAL_TEXT_CACHE.set(cacheKey, mask); noteExternalRenderSucceeded(); return mask; } catch (_) { /* fall through */ }
     }
-    EXTERNAL_TEXT_STATE.available = false;
+    const stderrLines = error && error.stderr ? String(error.stderr).split("\n").map((s) => s.trim()).filter(Boolean) : [];
+    const reason = stderrLines.length > 0 ? `helper-failed:${stderrLines[stderrLines.length - 1].slice(0, 80)}` : "helper-failed";
+    noteExternalRenderFailed(reason);
     EXTERNAL_TEXT_STATE.fontPath = null;
     return null;
   }

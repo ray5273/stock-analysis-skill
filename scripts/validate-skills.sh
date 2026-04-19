@@ -77,7 +77,14 @@ if (!pattern.test(text)) {
         CHART_OUT_OVERLAY="$TMP_ROOT/$SKILL_NAME-chart-overlay.png"
         CHART_OUT_MOMENTUM="$TMP_ROOT/$SKILL_NAME-chart-momentum.png"
 
-        node "$CHART_SCRIPT" --input "$CHART_SAMPLE" --png-out "$CHART_OUT" --image-path "chart.png" >/dev/null
+        CHART_STDERR="$TMP_ROOT/$SKILL_NAME-chart.stderr"
+        node "$CHART_SCRIPT" --input "$CHART_SAMPLE" --png-out "$CHART_OUT" --image-path "chart.png" >/dev/null 2>"$CHART_STDERR"
+        if grep -qE '\[font\] external=(true|available)' "$CHART_STDERR"; then
+            :
+        else
+            FONT_REASON=$(grep '\[font\]' "$CHART_STDERR" | tail -1 || true)
+            echo "Warning: chart-basics.js rendered via bitmap fallback — Korean glyphs may be incomplete (${FONT_REASON:-no [font] signal}). Set KR_STOCK_CHART_FONT or install a Korean font."
+        fi
         if [ ! -s "$CHART_OUT" ]; then
             echo "Expected chart PNG was not created: $CHART_OUT" >&2
             exit 1
@@ -99,7 +106,14 @@ if (!pattern.test(text)) {
         VALUATION_OUT_PER="$TMP_ROOT/$SKILL_NAME-valuation-per.png"
         VALUATION_OUT_PBR="$TMP_ROOT/$SKILL_NAME-valuation-pbr.png"
 
-        node "$VALUATION_SCRIPT" --input "$VALUATION_SAMPLE" --png-out "$VALUATION_OUT" --image-path "valuation.png" >/dev/null
+        VALUATION_STDERR="$TMP_ROOT/$SKILL_NAME-valuation.stderr"
+        node "$VALUATION_SCRIPT" --input "$VALUATION_SAMPLE" --png-out "$VALUATION_OUT" --image-path "valuation.png" >/dev/null 2>"$VALUATION_STDERR"
+        if grep -qE '\[font\] external=(true|available)' "$VALUATION_STDERR"; then
+            :
+        else
+            FONT_REASON=$(grep '\[font\]' "$VALUATION_STDERR" | tail -1 || true)
+            echo "Warning: valuation-chart.js rendered via bitmap fallback — Korean glyphs may be incomplete (${FONT_REASON:-no [font] signal}). Set KR_STOCK_CHART_FONT or install a Korean font."
+        fi
         if [ ! -s "$VALUATION_OUT_PER" ]; then
             echo "Expected PER valuation PNG was not created: $VALUATION_OUT_PER" >&2
             exit 1
