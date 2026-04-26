@@ -417,6 +417,7 @@ bash ./scripts/validate-skills.sh
 이 검증에는 다음이 포함됩니다.
 
 - skill 명세 체크
+- skill frontmatter strict YAML 파싱 체크
 - 문서와 agent prompt의 산출물 경로 계약 체크
 - README 로컬 링크 존재 여부 체크
 - [docs/quality-rubrics.md](docs/quality-rubrics.md) 기준 golden example 감사

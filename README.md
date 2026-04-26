@@ -496,6 +496,7 @@ bash ./scripts/validate-skills.sh
 Validation now includes:
 
 - Skill spec checks
+- Strict YAML parsing for skill frontmatter
 - Output-path contract checks across docs and agent prompts
 - README local-link verification
 - Golden example audits using the rubric in [docs/quality-rubrics.md](docs/quality-rubrics.md)

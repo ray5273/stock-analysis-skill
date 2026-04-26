@@ -1,6 +1,14 @@
 ---
 name: kr-analyst-report-fetch
-description: Download the PDFs referenced by a `kr-analyst-report-discover` index and extract plain text from each via `pypdf`. Writes a dated JSON file with per-report PDF path, extracted text path, page count, and extraction success flag. Skips reports with `requiresAuth: true` or a missing `pdfUrl`. PDFs and `.txt` siblings are cached per `reportId` and are immutable, so re-runs are cheap. Requires Python 3 and `pypdf` (same dependency as `kr-stock-dart-analysis`). Do not use for IR deck downloads or non-PDF sources — this script assumes selectable-text PDFs.
+description: >-
+  Download the PDFs referenced by a `kr-analyst-report-discover` index and
+  extract plain text from each via `pypdf`. Writes a dated JSON file with
+  per-report PDF path, extracted text path, page count, and extraction success
+  flag. Skips reports with `requiresAuth: true` or a missing `pdfUrl`. PDFs
+  and `.txt` siblings are cached per `reportId` and are immutable, so re-runs
+  are cheap. Requires Python 3 and `pypdf` (same dependency as
+  `kr-stock-dart-analysis`). Do not use for IR deck downloads or non-PDF
+  sources — this script assumes selectable-text PDFs.
 ---
 
 # Korean Analyst Report Fetch + Extract

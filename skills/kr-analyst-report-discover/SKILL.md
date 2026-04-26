@@ -1,6 +1,14 @@
 ---
 name: kr-analyst-report-discover
-description: Discover recent sell-side analyst reports for a KRX-listed company from Hankyung Consensus (primary) and Naver Pay Research (fallback). Default lookback is 365 days. Returns a dated JSON index with broker, analyst, date, title, rating, target price, landing URL, and direct PDF URL per report. Reports behind login walls are kept in the index with `requiresAuth: true` and skipped by downstream `kr-analyst-report-fetch`. Requires `kr-web-browse` (which in turn reuses `kr-naver-browse`'s gstack binary). Do not use for generic news articles, IR decks, or non-Korean broker reports.
+description: >-
+  Discover recent sell-side analyst reports for a KRX-listed company from
+  Hankyung Consensus (primary) and Naver Pay Research (fallback). Default
+  lookback is 365 days. Returns a dated JSON index with broker, analyst, date,
+  title, rating, target price, landing URL, and direct PDF URL per report.
+  Reports behind login walls are kept in the index with `requiresAuth: true`
+  and skipped by downstream `kr-analyst-report-fetch`. Requires
+  `kr-web-browse` (which in turn reuses `kr-naver-browse`'s gstack binary). Do
+  not use for generic news articles, IR decks, or non-Korean broker reports.
 ---
 
 # Korean Analyst Report Discovery
