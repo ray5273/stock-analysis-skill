@@ -437,6 +437,7 @@ The list below is kept to audited golden examples and reusable fixtures so the l
 - [KR - 삼성SDS Memo](<analysis-example/kr/삼성SDS/memo.md>)
 - [KR - 엘앤에프 Memo](<analysis-example/kr/엘앤에프/memo.md>)
 - [KR - 현대오토에버 Memo](<analysis-example/kr/현대오토에버/memo.md>)
+- [KR - HMM Memo](<analysis-example/kr/HMM/memo.md>)
 
 **Research briefs, data packs, and DART references:**
 
@@ -446,6 +447,9 @@ The list below is kept to audited golden examples and reusable fixtures so the l
 - [KR - 리가켐바이오 Data Pack](<analysis-example/kr/리가켐바이오/data-pack.md>)
 - [KR - LG CNS DART Reference](<analysis-example/kr/LG CNS/dart-reference.md>)
 - [KR - LIG넥스원 리서치 브리프](<analysis-example/kr/LIG넥스원/리서치브리프.md>)
+- [KR - HMM Data Pack](<analysis-example/kr/HMM/data-pack.md>)
+- [KR - HMM DART 분석](<analysis-example/kr/HMM/dart-analysis.md>)
+- [KR - HMM Analyst Report Insight](<analysis-example/kr/HMM/analyst-report-insight.md>)
 
 **Contract and backlog analysis (수주):**
 
@@ -460,6 +464,7 @@ The list below is kept to audited golden examples and reusable fixtures so the l
 - [KR - 알테오젠 Naver Insights](<analysis-example/kr/알테오젠/naver-insights.md>)
 - [KR - GRT Naver Insights](<analysis-example/kr/GRT/naver-insights.md>)
 - [KR - 리가켐바이오 Naver Insights](<analysis-example/kr/리가켐바이오/naver-insights.md>)
+- [KR - HMM Naver Insights](<analysis-example/kr/HMM/naver-insights.md>)
 - [KR - 리가켐바이오 Naver Posts](<analysis-example/kr/리가켐바이오/naver-posts.json>)
 - [KR - 리가켐바이오 Naver Blogger Candidates](<analysis-example/kr/리가켐바이오/naver-bloggers.json>)
 - [KR - 삼성SDS Naver Blogger Candidates](<analysis-example/kr/삼성SDS/naver-bloggers.json>)
