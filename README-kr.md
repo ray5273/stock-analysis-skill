@@ -118,6 +118,7 @@ Use $kr-stock-plan as the entry point for Korean stock work. Have it ask what th
 - `kr-stock-data-pack`: 종목 메모 작성 전에 구조화된 팩트팩과 외부 관점 입력값 수집
 - `kr-stock-analysis`: 한국 주식 quick view, full decision memo, 이벤트 노트, pair compare 작성과 외부 관점 요약, archetype별 불편한 질문, 판단 변경 논점, 후속 리서치 프롬프트 생성
 - `kr-stock-update`: 기존 한국 주식 메모에 기준일 이후 업데이트를 누적 반영
+- `kr-foreign-analyst`: 외국계 IB의 한국 상장사 커버리지를 한국 뉴스에서 수집해 `## Street / Alternative Views`용 Markdown 블록 생성
 - `kr-portfolio-monitor`: 키움 REST API 기반 국내주식 포트폴리오 스냅샷
 - `kr-sector-plan`: 한국 섹터 리서치 범위를 실행용 브리프로 정리
 - `kr-sector-data-pack`: 섹터 보고서 작성 전에 구조화된 팩트팩 수집
@@ -162,6 +163,8 @@ Use $kr-stock-plan as the entry point for Korean stock work. Have it ask what th
 - [skills/kr-stock-analysis/SKILL.md](skills/kr-stock-analysis/SKILL.md)
 - [skills/kr-stock-analysis/references/blended-source-notes.md](skills/kr-stock-analysis/references/blended-source-notes.md)
 - [skills/kr-stock-update/SKILL.md](skills/kr-stock-update/SKILL.md)
+- [skills/kr-foreign-analyst/SKILL.md](skills/kr-foreign-analyst/SKILL.md)
+- [skills/kr-foreign-analyst/references/output-format.md](skills/kr-foreign-analyst/references/output-format.md)
 
 현재 동작:
 
@@ -182,6 +185,7 @@ kr-stock-plan
   -> 사용자 필요 확인 후 종목, 출력 모드, 핵심 질문 확정
   -> 신규 memo / follow-up / dated update 분기
   -> 공시 정밀도가 중요하면: kr-stock-dart-analysis
+  -> 외국계 IB 관점이 중요하면: kr-foreign-analyst
   -> kr-stock-data-pack
   -> kr-stock-analysis
 ```
@@ -201,6 +205,8 @@ kr-stock-plan
 - `scripts/chart-basics.js`: `--png-out`으로 지정한 파일은 메인 추세 차트로 저장하고, 같은 이름의 `-overlay.png`, `-momentum.png` 파일을 보조지표/모멘텀 차트로 추가 생성
 - `scripts/build-kr-universe-rs-cache.js`: 통합 `KOSPI + KOSDAQ` RS percentile 캐시를 `.tmp/kr-rs-cache/<YYYY-MM-DD>.json`에 생성
 - `scripts/kr-trend-rules.js`: 메모의 `Chart and Positioning` 섹션에 넣을 `Minervini Trend Template` 판정과 `KRX 52주 신고가 리더십 점수` 블록 생성
+- `skills/kr-foreign-analyst/scripts/fetch-analyst-coverage.js`: 한국 뉴스에서 외국계 IB 커버리지 기사와 broker/rating/TP/date 메타데이터 수집
+- `skills/kr-foreign-analyst/scripts/summarize-analyst-views.js`: 수집 JSON을 `## Street / Alternative Views`용 Markdown 블록으로 렌더링
 - `scripts/valuation-bands.js`: 3~5년 밸류에이션 밴드 요약
 - `scripts/peer-valuation.js`: 피어 밸류에이션 표 생성
 - `skills/kr-stock-dart-analysis/scripts/extract-dart-sections.js`: DART 원문 텍스트에서 섹션 인덱스 생성

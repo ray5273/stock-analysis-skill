@@ -27,6 +27,7 @@ bash ./scripts/install-skill.sh kr-web-browse
 bash ./scripts/install-skill.sh kr-analyst-report-discover
 bash ./scripts/install-skill.sh kr-analyst-report-fetch
 bash ./scripts/install-skill.sh kr-analyst-report-insight
+bash ./scripts/install-skill.sh kr-foreign-analyst
 ```
 
 **Install all skills (Codex):**
@@ -47,6 +48,7 @@ bash ./scripts/install-claude-skill.sh kr-web-browse
 bash ./scripts/install-claude-skill.sh kr-analyst-report-discover
 bash ./scripts/install-claude-skill.sh kr-analyst-report-fetch
 bash ./scripts/install-claude-skill.sh kr-analyst-report-insight
+bash ./scripts/install-claude-skill.sh kr-foreign-analyst
 ```
 
 **Install all skills (Claude Code):**
@@ -70,6 +72,8 @@ node skills/kr-naver-insight/scripts/summarize-insights.js --input /tmp/posts.js
 node skills/kr-analyst-report-discover/scripts/discover-reports.js --company "엘앤에프" --ticker 066970 --output /tmp/analyst-index.json
 node skills/kr-analyst-report-fetch/scripts/fetch-reports.js --input /tmp/analyst-index.json --output /tmp/analyst-extracted.json
 node skills/kr-analyst-report-insight/scripts/summarize-reports.js --input /tmp/analyst-extracted.json --output /tmp/analyst-digest.md
+node skills/kr-foreign-analyst/scripts/fetch-analyst-coverage.js --company "삼성전자" --ticker 005930 --output /tmp/foreign-coverage.json --allow-empty
+node skills/kr-foreign-analyst/scripts/summarize-analyst-views.js --input /tmp/foreign-coverage.json --output /tmp/foreign-views.md
 ```
 
 ## Architecture
@@ -107,6 +111,8 @@ All scripts accept JSON via `--input` and output Markdown or PNG. They use only 
 | `discover-reports.js` | Scrape consensus.hankyung.com (primary) + finance.naver.com/research (fallback) for sell-side analyst reports over a lookback window (default 365 days) |
 | `fetch-reports.js` | Download PDFs from the discover index, extract plain text via shared `kr-stock-dart-analysis/scripts/extract-pdf-text.py` helper, and cache per-report |
 | `summarize-reports.js` | Render a 7-section Markdown digest of sell-side coverage (consensus, broker table, recent reports with verbatim bullets, divergences, TP trajectory, source quality) |
+| `fetch-analyst-coverage.js` | Collect foreign-IB coverage of a KRX company from Korean news and extract broker, rating, target price, date, and snippet metadata |
+| `summarize-analyst-views.js` | Render foreign-IB coverage JSON as a `## Street / Alternative Views` Markdown block |
 
 Input JSON schemas are documented in `references/script-inputs.md` with sample files under `examples/<market>/`.
 
@@ -123,6 +129,8 @@ node scripts/harness.js --mode all     --ticker 066970 --company "엘앤에프" 
 node scripts/harness.js --mode all     --ticker 066970 --company "엘앤에프" --with-blog --with-analyst
 node scripts/harness.js --mode blog    --ticker 066970 --company "엘앤에프"
 node scripts/harness.js --mode analyst --ticker 066970 --company "엘앤에프"
+node scripts/harness.js --mode foreign --ticker 005930 --company "삼성전자"
+node scripts/harness.js --mode all     --ticker 005930 --company "삼성전자" --with-foreign
 node scripts/harness.js --mode regression --ticker 066970 --company "엘앤에프" --dart-input export.json
 ```
 
@@ -133,7 +141,8 @@ node scripts/harness.js --mode regression --ticker 066970 --company "엘앤에�
 | `gate` | 9 structural quality checks on a finished memo (required sections, 기준일, chart PNGs, DART Recheck, valuation metrics, source dates) |
 | `blog` | discover-bloggers.js → fetch-blog-posts.js → summarize-insights.js (Naver blogger discovery + insights digest) |
 | `analyst` | discover-reports.js → fetch-reports.js → summarize-reports.js (Hankyung/Naver analyst-report chain) |
-| `all` | chart + dart (if `--dart-input`) + blog (if `--with-blog`) + analyst (if `--with-analyst`) + gate sequentially |
+| `foreign` | fetch-analyst-coverage.js → summarize-analyst-views.js (foreign-IB coverage from Korean news → Street / Alternative Views block) |
+| `all` | chart + dart (if `--dart-input`) + blog (if `--with-blog`) + analyst (if `--with-analyst`) + foreign (if `--with-foreign`) + gate sequentially |
 | `regression` | Run every routed skill end-to-end (chart → dart → analyst → blog → gate) with artifact + section assertions; designed to catch wiring regressions in the full `kr-stock-plan` chain |
 
 The quality gate runs automatically as part of `validate-skills.sh` / `.ps1` against all example memos.

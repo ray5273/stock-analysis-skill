@@ -100,6 +100,7 @@ Use $kr-stock-plan as the entry point for LG CNS. First ask what the user actual
 - `kr-stock-data-pack` for gathering structured company fact packs before drafting, including optional outside-view inputs
 - `kr-stock-analysis` for Korean stock quick views, full decision memos, event notes, pair compares, archetype-specific uncomfortable questions, decision-changing issues, structured stance, and follow-up research prompts
 - `kr-stock-update` for dated follow-up updates to an existing Korean stock memo
+- `kr-foreign-analyst` for collecting foreign-IB coverage of a KRX company from Korean news and rendering a `## Street / Alternative Views` Markdown block
 - `kr-portfolio-monitor` for multi-position KRX portfolio snapshots via Kiwoom REST API or Yahoo fallback
 - `kr-sector-plan` for scoping Korea sector research into an execution-ready brief
 - `kr-sector-data-pack` for gathering structured sector fact packs before drafting
@@ -157,6 +158,8 @@ Primary instructions:
 - [skills/kr-analyst-report-discover/SKILL.md](skills/kr-analyst-report-discover/SKILL.md)
 - [skills/kr-analyst-report-fetch/SKILL.md](skills/kr-analyst-report-fetch/SKILL.md)
 - [skills/kr-analyst-report-insight/SKILL.md](skills/kr-analyst-report-insight/SKILL.md)
+- [skills/kr-foreign-analyst/SKILL.md](skills/kr-foreign-analyst/SKILL.md)
+- [skills/kr-foreign-analyst/references/output-format.md](skills/kr-foreign-analyst/references/output-format.md)
 
 Current behavior:
 
@@ -178,6 +181,7 @@ kr-stock-plan
   -> decide fresh memo vs follow-up vs dated update
   -> if filing precision matters: kr-stock-dart-analysis
   -> if sell-side consensus matters: kr-analyst-report-discover -> kr-analyst-report-fetch -> kr-analyst-report-insight
+  -> if foreign-IB views matter: kr-foreign-analyst
   -> if independent retail voices matter: kr-naver-blogger -> kr-naver-insight
   -> kr-stock-data-pack
   -> kr-stock-analysis
@@ -189,6 +193,7 @@ Analyst-report pipeline details:
 - `kr-analyst-report-discover` scrapes sell-side reports from `consensus.hankyung.com` (primary) with `finance.naver.com/research` as fallback. Default lookback is 365 days (`--lookback-days` overrides). Login-gated reports are kept with `requiresAuth: true`. Output: `.tmp/analyst-report-cache/index/<ticker>/<YYYY-MM-DD>.json`.
 - `kr-analyst-report-fetch` downloads each non-auth PDF and extracts text via the shared `skills/kr-stock-dart-analysis/scripts/extract-pdf-text.py` helper (requires `pypdf`). Output: `.tmp/analyst-report-cache/extracted/<ticker>/<YYYY-MM-DD>.json`.
 - `kr-analyst-report-insight` renders a 7-section Markdown digest (consensus snapshot, broker table, recent reports with verbatim key-point bullets, divergences, TP trajectory with ASCII sparkline, source-quality footer). Snippets are quoted verbatim at ~1500 chars per report; it is a standalone deliverable and also the ingestion source for `kr-stock-data-pack` → `External Views` with `Source role: sell-side consensus`.
+- `kr-foreign-analyst` searches Korean news for foreign investment-bank coverage, extracts broker / rating / target-price / date metadata from article text, and renders a memo-ready `## Street / Alternative Views` block. Treat it as secondary news-sourced evidence, not a primary report or filing fact.
 
 Routing guide:
 

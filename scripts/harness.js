@@ -76,6 +76,8 @@ function parseArgs(argv) {
       result.withBlog = true;
     } else if (arg === "--with-analyst") {
       result.withAnalyst = true;
+    } else if (arg === "--with-foreign") {
+      result.withForeign = true;
     } else if (arg === "--lookback-days") {
       result.lookbackDays = argv[i + 1];
       i += 1;
@@ -101,9 +103,10 @@ function usage() {
     "  node harness.js --mode chart   --ticker 066970 --company \"LG CNS\" [--range 1y]",
     "  node harness.js --mode dart    --ticker 066970 --company \"LG CNS\" --dart-input export.json",
     "  node harness.js --mode gate    --company \"LG CNS\" [--memo-path path/to/memo.md]",
-    "  node harness.js --mode all     --ticker 066970 --company \"LG CNS\" [--dart-input export.json] [--with-blog]",
+    "  node harness.js --mode all     --ticker 066970 --company \"LG CNS\" [--dart-input export.json] [--with-blog] [--with-analyst] [--with-foreign]",
     "  node harness.js --mode blog    --ticker 066970 --company \"엘앤에프\" [--bloggers id1,id2]",
     "  node harness.js --mode analyst --ticker 066970 --company \"엘앤에프\" [--lookback-days 365]",
+    "  node harness.js --mode foreign --ticker 005930 --company \"삼성전자\"",
     "  node harness.js --mode regression --ticker 066970 --company \"엘앤에프\" [--dart-input export.json]",
     "",
     "Modes:",
@@ -112,7 +115,8 @@ function usage() {
     "  gate       Validate a finished memo against structural quality checks",
     "  blog       Discover Naver bloggers -> fetch posts -> summarize insights",
     "  analyst    Discover analyst reports -> fetch/extract PDFs -> write digest",
-    "  all        chart + dart (if --dart-input) + blog (if --with-blog) + analyst (if --with-analyst) + gate",
+    "  foreign    Fetch foreign-IB coverage from Korean news -> render Street / Alternative Views block",
+    "  all        chart + dart (if --dart-input) + blog (if --with-blog) + analyst (if --with-analyst) + foreign (if --with-foreign) + gate",
     "  regression Always-full kr-stock-plan simulation: chart + dart (if input) + analyst + blog + gate",
     "",
     "Options:",
@@ -125,7 +129,8 @@ function usage() {
     "  --lookback-days   Analyst-report lookback window (default 365)",
     "  --with-blog       Include Naver blog pass in --mode all",
     "  --with-analyst    Include analyst-report pass in --mode all",
-    "  --no-cache        Bypass Naver + analyst caches (forces fresh discovery + fetches)",
+    "  --with-foreign    Include foreign-IB coverage pass in --mode all",
+    "  --no-cache        Bypass Naver + analyst + foreign caches (forces fresh discovery + fetches)",
     "  --memo-path    Override memo path (default: analysis-example/kr/<company>/memo.md)",
     "  --output-dir   Override output directory (default: analysis-example/kr/<company>/)",
     "  --report-out   Write JSON quality gate report to this path",
@@ -421,6 +426,63 @@ function runAnalyst(opts) {
   );
 
   console.log(`  Analyst digest: ${path.relative(REPO_ROOT, artifacts.digestMd)}`);
+  return artifacts;
+}
+
+// ---------------------------------------------------------------------------
+// Foreign-IB coverage pipeline
+// ---------------------------------------------------------------------------
+
+function foreignArtifactPaths(opts) {
+  const outputDir = resolveOutputDir(opts);
+  return {
+    coverageJson: path.join(outputDir, "foreign-analyst-coverage.json"),
+    viewsMd: path.join(outputDir, "foreign-analyst-views.md"),
+  };
+}
+
+function runForeign(opts) {
+  console.log("[foreign] Running foreign-analyst pipeline...");
+  if (!opts.company) {
+    console.error("Error: --company is required for --mode foreign");
+    process.exit(1);
+  }
+  const outputDir = resolveOutputDir(opts);
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  if (opts.noCache) {
+    const cacheDir = path.join(REPO_ROOT, ".tmp", "foreign-analyst-cache");
+    if (fs.existsSync(cacheDir)) {
+      fs.rmSync(cacheDir, { recursive: true, force: true });
+      console.log(`  [foreign] Cleared cache: ${path.relative(REPO_ROOT, cacheDir)}`);
+    }
+  }
+
+  const artifacts = foreignArtifactPaths(opts);
+  const fetchScript = path.join(
+    REPO_ROOT, "skills", "kr-foreign-analyst", "scripts", "fetch-analyst-coverage.js"
+  );
+  const fetchArgs = [
+    "--company", opts.company,
+    "--output", artifacts.coverageJson,
+  ];
+  if (opts.ticker) fetchArgs.push("--ticker", opts.ticker);
+  if (opts.noCache) fetchArgs.push("--no-cache");
+  if (opts.mode === "all") fetchArgs.push("--allow-empty");
+
+  runStep("[foreign 1/2] fetch-analyst-coverage.js", fetchScript, fetchArgs, opts);
+
+  const summarizeScript = path.join(
+    REPO_ROOT, "skills", "kr-foreign-analyst", "scripts", "summarize-analyst-views.js"
+  );
+  runStep(
+    "[foreign 2/2] summarize-analyst-views.js",
+    summarizeScript,
+    ["--input", artifacts.coverageJson, "--output", artifacts.viewsMd],
+    opts
+  );
+
+  console.log(`  Foreign-IB views: ${path.relative(REPO_ROOT, artifacts.viewsMd)}`);
   return artifacts;
 }
 
@@ -936,7 +998,7 @@ function main() {
   }
 
   if (!opts.mode) {
-    console.error("Error: --mode is required (chart, dart, gate, blog, analyst, all, regression)");
+    console.error("Error: --mode is required (chart, dart, gate, blog, analyst, foreign, all, regression)");
     console.error(usage());
     process.exit(1);
   }
@@ -973,6 +1035,8 @@ function main() {
     runBlog(opts);
   } else if (opts.mode === "analyst") {
     runAnalyst(opts);
+  } else if (opts.mode === "foreign") {
+    runForeign(opts);
   } else if (opts.mode === "gate") {
     const report = runGate(opts);
     process.exit(report.passed ? 0 : 1);
@@ -1003,6 +1067,15 @@ function main() {
         console.log("");
       } else {
         console.log("[blog] Skipped (--with-blog requires --ticker or --bloggers)");
+        console.log("");
+      }
+    }
+    if (opts.withForeign) {
+      if (opts.company) {
+        runForeign(opts);
+        console.log("");
+      } else {
+        console.log("[foreign] Skipped (--with-foreign requires --company)");
         console.log("");
       }
     }

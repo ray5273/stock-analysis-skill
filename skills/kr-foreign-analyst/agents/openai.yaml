@@ -1,0 +1,7 @@
+interface:
+  display_name: "Foreign Analyst Coverage (KR)"
+  short_description: "Collect foreign-IB research coverage of a KRX company from Korean news and render it for a memo's Street / Alternative Views section."
+  default_prompt: "Use $kr-foreign-analyst when writing or updating a kr-stock-analysis memo and you want the latest foreign investment-bank views on a KRX-listed company. It runs Korean news searches (연합인포맥스/한경/머니투데이/네이버 뉴스), extracts broker / rating / target price / date metadata for IBs on its whitelist (Morgan Stanley, Goldman, JPMorgan, Nomura, CLSA, UBS, HSBC, Macquarie, Citi, BofA, Daiwa, etc.), caches articles by URL, and emits a Markdown block that pastes into `## Street / Alternative Views`. Treat the output as source material — synthesis belongs in the memo, not the digest."
+
+policy:
+  allow_implicit_invocation: true
