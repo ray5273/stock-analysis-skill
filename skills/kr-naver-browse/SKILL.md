@@ -70,7 +70,8 @@ is installed through this repo's `scripts/install-*.{sh,ps1}` helpers, the hook
 builds or refreshes gstack under the installed skill's `vendor/gstack/`, ensures
 `bun` can produce runnable compiled executables (trying Homebrew, npm, then the
 official Bun installer pinned by `BUN_VERSION_TAG`, default `bun-v1.3.10`), runs
-`bun install`, `bun run build`, and `bunx playwright install chromium`, strips
+`bun install`, `bun run build`, Linux `bunx playwright install-deps chromium`
+unless `SKILL_INSTALL_SKIP_LINUX_DEPS=1`, and `bunx playwright install chromium`, strips
 vendored `SKILL.md` files so Codex does not recursively load gstack's own skill
 pack, and verifies that `vendor/gstack/browse/dist/browse` can launch and
 navigate to `https://example.com`.
@@ -87,7 +88,8 @@ same final path: `vendor/gstack/browse/dist/browse`. The higher-level Naver
 skills keep calling the same path either way.
 
 Set `SKILL_INSTALL_SKIP_HOOKS=1` to skip this bootstrap, set
-`SKILL_INSTALL_AUTO_BUN=0` to avoid automatic `bun` installation, set
+`SKILL_INSTALL_SKIP_LINUX_DEPS=1` to skip automatic Linux/WSL system dependency
+installation, set `SKILL_INSTALL_AUTO_BUN=0` to avoid automatic `bun` installation, set
 `SKILL_INSTALL_FORCE_CODEX_MAC=1` to force the macOS Codex fallback path during
 install, or set `GSTACK_BROWSE_BIN` to an absolute existing gstack `browse`
 binary path.

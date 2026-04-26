@@ -43,18 +43,23 @@ is_binary_runtime() {
 run_binary_smoke() {
     candidate=$1
     state_root=$(mktemp -d)
+    smoke_log="$state_root/smoke.log"
     mkdir -p "$state_root/.gstack"
-    if BROWSE_STATE_FILE="$state_root/.gstack/browse.json" "$candidate" goto "https://example.com" >/dev/null 2>&1; then
+    if BROWSE_STATE_FILE="$state_root/.gstack/browse.json" "$candidate" goto "https://example.com" >"$smoke_log" 2>&1; then
         BROWSE_STATE_FILE="$state_root/.gstack/browse.json" "$candidate" stop >/dev/null 2>&1 || true
         rm -rf "$state_root"
         return 0
     fi
-    BROWSE_STATE_FILE="$state_root/.gstack/browse.json" "$candidate" restart >/dev/null 2>&1 || \
+    BROWSE_STATE_FILE="$state_root/.gstack/browse.json" "$candidate" restart >>"$smoke_log" 2>&1 || \
         BROWSE_STATE_FILE="$state_root/.gstack/browse.json" "$candidate" stop >/dev/null 2>&1 || true
-    if BROWSE_STATE_FILE="$state_root/.gstack/browse.json" "$candidate" goto "https://example.com" >/dev/null 2>&1; then
+    if BROWSE_STATE_FILE="$state_root/.gstack/browse.json" "$candidate" goto "https://example.com" >>"$smoke_log" 2>&1; then
         BROWSE_STATE_FILE="$state_root/.gstack/browse.json" "$candidate" stop >/dev/null 2>&1 || true
         rm -rf "$state_root"
         return 0
+    fi
+    if grep -Eqi 'libnspr4\.so|libnss3\.so|libatk|libxkbcommon|libgbm|error while loading shared libraries|Host system is missing dependencies' "$smoke_log"; then
+        echo "Playwright Linux deps missing for gstack browse." >&2
+        echo "Manual recovery: cd \"$SKILL_DIR/vendor/gstack\" && bunx playwright install-deps chromium && bunx playwright install chromium" >&2
     fi
     rm -rf "$state_root"
     return 1
@@ -224,6 +229,20 @@ else
 fi
 
 ensure_bun
+
+if [ "$(uname -s)" = "Linux" ] && [ "${SKILL_INSTALL_SKIP_LINUX_DEPS:-0}" != "1" ]; then
+    if [ -t 0 ]; then
+        echo "Playwright Chromium Linux dependencies may require sudo." >&2
+        echo "sudo may ask for your password if system packages are missing." >&2
+    fi
+    if ! (cd "$GSTACK_DIR" && bunx playwright install-deps chromium); then
+        echo "Playwright Linux deps install failed." >&2
+        echo "Manual recovery: cd \"$GSTACK_DIR\" && bunx playwright install-deps chromium" >&2
+        if [ ! -t 0 ]; then
+            echo "This install was non-interactive; rerun from a local terminal if sudo needs a password." >&2
+        fi
+    fi
+fi
 
 # If we reached this point, the existing binary was missing or failed smoke.
 # Force gstack setup/build to create a fresh compiled browser binary instead

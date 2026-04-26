@@ -206,8 +206,9 @@ Bundled helpers:
 
 - `scripts/fetch-kr-chart.js` for current KRX daily bars
 - `scripts/chart-basics.js` for technical reads plus three-part PNG chart output that separates the main trend view, the heavier overlays, and momentum panels for `MACD` and `ADX/DMI`
-- `scripts/chart-basics.js` now draws KR main charts with candlesticks, a close line, and a current-price guide, and uses Korean chart labels when a Hangul-capable local font is available
+- `scripts/chart-basics.js` now draws KR main charts with candlesticks, a close line, and a current-price guide, and uses Korean chart labels through `KR_STOCK_CHART_FONT`, then the bundled `skills/kr-stock-analysis/assets/fonts/NotoSansKR-Regular.ttf`, then OS font discovery
 - `scripts/chart-basics.js` writes the requested `--png-out` path as the main trend chart and writes sibling `*-overlay.png` and `*-momentum.png` files for the heavier indicator and momentum views
+- `scripts/valuation-chart.js` uses the same bundled Korean font path for P/E, P/B, and EV/EBITDA PNG labels. The bundled Noto Korean Regular font comes from the official `notofonts/noto-cjk` distribution and is included with `LICENSE-NotoSansKR.txt` under the SIL Open Font License.
 - `scripts/build-kr-universe-rs-cache.js` for integrated `KOSPI + KOSDAQ` relative-strength percentile cache files under `.tmp/kr-rs-cache/<YYYY-MM-DD>.json`
 - `scripts/kr-trend-rules.js` for `Minervini Trend Template` pass/fail plus `KRX 52주 신고가 리더십 점수` markdown blocks that can be embedded in the memo's `Chart and Positioning` section
 - `scripts/valuation-bands.js` for 3-5 year valuation band summaries
@@ -474,6 +475,10 @@ The list below is kept to audited golden examples and reusable fixtures so the l
 - In that case, rerun the Naver fetch step outside the sandbox or with
   elevated execution. Do not assume `0 posts` means the bloggers or posts do
   not exist until the runtime issue is excluded.
+- On Linux/WSL installs, the `kr-naver-browse` post-install hook tries
+  `bunx playwright install-deps chromium` before installing Chromium. Set
+  `SKILL_INSTALL_SKIP_LINUX_DEPS=1` to skip automatic system dependency
+  installation.
 
 **Sector research:**
 

@@ -68,6 +68,7 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 - Use `scripts/valuation-bands.js` when the user provides 3-5 years of historical valuation multiples and you need markdown tables plus ASCII band charts for P/E, EV/EBITDA, and P/B.
 - Use `scripts/valuation-chart.js` when the user provides 3-5 years of historical valuation multiples and you need PNG time-series charts for P/E, P/B, and EV/EBITDA bands that can be embedded in a markdown memo. Accepts the same input JSON as `valuation-bands.js`. Requires at least 3 years of data per metric; defaults to a 5-year window.
 - Run all bundled scripts with `node`.
+- PNG chart labels render Hangul with `KR_STOCK_CHART_FONT` first, then the bundled `assets/fonts/NotoSansKR-Regular.ttf`, then OS font discovery. The bundled Noto Korean Regular face is sourced from the official `notofonts/noto-cjk` distribution and ships with `assets/fonts/LICENSE-NotoSansKR.txt` under the SIL Open Font License. The install hook verifies Pillow and a bundled-font text-mask smoke test; set `SKILL_INSTALL_SKIP_LINUX_DEPS=1` to avoid automatic Linux dependency installation attempts.
 
 ## Operating Rules
 
