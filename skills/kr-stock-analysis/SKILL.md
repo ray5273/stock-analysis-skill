@@ -28,16 +28,18 @@ For `full memo` work, the target is not a generic long report. The target is a d
 
 ## Workflow
 
+The 11 steps below are the canonical work order. Group them into the 3 phases described in `## Parallel Dispatch` below: Steps 1, 2, 4 belong to Phase A; the data-gathering parts of Steps 3 and 5 belong to Phase B and must be dispatched as parallel subagents in a single turn; Steps 3 (final pack assembly), 6-11 belong to Phase C.
+
 1. Lock the mode.
    Confirm whether the user wants a quick view, full memo, event note, or pair compare.
 2. Load prior work.
    Reuse the planning brief, `kr-stock-dart-analysis` output, and data pack when available instead of re-scoping from scratch.
 3. Refresh material facts.
-   Verify the latest company facts needed to support the conclusion and anchor material numbers to primary sources.
+   Verify the latest company facts needed to support the conclusion and anchor material numbers to primary sources. The DART, chart, and external-view fetches that feed the data pack must be dispatched as parallel subagents — see `## Parallel Dispatch`. Run `kr-stock-data-pack` itself only after those subagents return, so it can ingest their artifacts.
 4. Classify the archetype.
    Decide which business archetype best fits the company and use that choice to drive the uncomfortable-question set.
 5. Scan outside views.
-   Pull sell-side notes, specialist media, or independent long-form analysis to surface market framing, disagreements, and open questions. When independent Naver coverage is available, use `kr-naver-blogger` to identify specialists for the ticker and `kr-naver-insight` to fetch and digest their recent posts as source type 4 material.
+   Pull sell-side notes, specialist media, or independent long-form analysis to surface market framing, disagreements, and open questions. When independent Naver coverage is available, use `kr-naver-blogger` to identify specialists for the ticker and `kr-naver-insight` to fetch and digest their recent posts as source type 4 material. All three outside-view channels (sell-side, Naver, foreign IB) must be dispatched as parallel subagents alongside the Step 3 data fetches — see `## Parallel Dispatch`.
 6. Build the memo.
    Separate verified facts from inference, keep section boundaries clean, and label what came from primary sources versus outside interpretation.
 7. Run DART recheck on key claims.
@@ -58,6 +60,61 @@ Read [references/blended-source-notes.md](references/blended-source-notes.md) wh
 Read [references/uncomfortable-question-rubric.md](references/uncomfortable-question-rubric.md) to map the company archetype to the right uncomfortable questions.
 Read [references/script-inputs.md](references/script-inputs.md) when using the bundled scripts with structured JSON inputs.
 
+## Parallel Dispatch
+
+The 11-step workflow groups into 3 execution phases. Phase B is the only phase that must be parallelized — running its 5 channels sequentially burns the main agent's context with raw filing, PDF, and blog text and slows the memo turn dramatically.
+
+### Phase A — Scope (sequential, main agent)
+Steps 1, 2, 4. Lock mode, load prior work from the company directory, form an initial archetype hypothesis. Cheap and conversational; do not delegate.
+
+### Phase B — Independent data gathering (parallel subagents, single turn)
+In one assistant turn, dispatch the channels below as separate `Agent` calls in parallel — multiple `Agent` tool uses in the same response, not sequential turns. Skipping this rule is the single biggest cause of context bloat in this skill.
+
+| Channel | Sub-skill / scripts | Standard artifact (in `analysis-example/kr/<company>/`) |
+|---|---|---|
+| DART | `kr-stock-dart-analysis` | `dart-analysis.md`, `dart-cache.json` |
+| Chart | `scripts/fetch-kr-chart.js` → `scripts/chart-basics.js` | `chart-data.json`, `assets/<company>-chart*.png` |
+| Sell-side | `kr-analyst-report-discover` → `kr-analyst-report-fetch` → `kr-analyst-report-insight` | `analyst-report-insight.md` |
+| Naver blogger | `kr-naver-blogger` → `kr-naver-insight` | `naver-insights.md` |
+| Foreign IB | `kr-foreign-analyst` | `foreign-views.md` (or inline block for `Street / Alternative Views`) |
+
+Channel selection by mode:
+- `quick view`: Chart + DART only.
+- `full memo`: all 5 channels.
+- `pre-earnings note`: DART + Chart + Sell-side. Skip Naver and Foreign unless the user asked for sentiment.
+- `post-earnings note`: DART + Sell-side + Foreign. Chart optional.
+- `pair compare`: run the 5-channel set per company in parallel; do not interleave per-company sequentially.
+
+`subagent_type` for each Phase B call: use `general-purpose` by default. Use `Explore` only when a channel reduces to read-only file/symbol lookup (rare here).
+
+Subagent prompt template — paste this verbatim into each `Agent` call, substituting the bracketed values:
+
+```
+You are a data-gathering subagent for a KRX stock memo on <company> (<ticker>).
+
+Goal: invoke the <sub-skill name> skill and persist its output to disk.
+
+Inputs:
+- ticker: <ticker>
+- company: <company>
+- output dir: analysis-example/kr/<company>/
+
+Required actions:
+1. Invoke the <sub-skill name> skill via the Skill tool with the inputs above.
+2. Make sure the skill's standard artifact (<artifact filename>) lands in the output dir.
+3. Do not dump raw filing, PDF, or blog text into your reply.
+
+Return to me, in <=200 words:
+- absolute path of the artifact you wrote
+- the 3 most decision-relevant findings (one bullet each, with a date)
+- any gaps the main agent should know about (auth-walled report, missing filing, empty Naver result, etc.)
+```
+
+### Phase C — Synthesis (sequential, main agent)
+After Phase B returns, run `kr-stock-data-pack` (it auto-ingests `analyst-report-insight.md` and `naver-insights.md` when present), then continue with Steps 6-11: build the memo, run DART recheck on thesis-critical claims, attack the thesis, surface follow-up prompts, run helper scripts, and write the deliverable. The main agent reads the Phase B artifacts on demand via `Read` instead of carrying them in context.
+
+If a Phase B subagent returns a gap (e.g. Naver returned 0 specialist hits, foreign IB had no recent coverage, an analyst PDF was auth-walled), record the gap in the memo's `Decision-Changing Issues` or `Follow-up Research Prompts` section rather than retrying the whole channel.
+
 ## Bundled Scripts
 
 - Use `scripts/peer-valuation.js` when the user provides peer metrics and you need a consistent markdown comparison table.
@@ -74,6 +131,7 @@ Read [references/script-inputs.md](references/script-inputs.md) when using the b
 
 - Cite where each important factual claim came from.
 - Ask a short user-need check before drafting when the active brief does not already define the mode, must-answer questions, or section priorities.
+- Keep raw filing text, raw PDF text, raw blog post bodies, and raw news article bodies inside Phase B subagents — never read them into the main agent's context. The main agent works from the artifact files those subagents wrote and from their <=200-word return summaries.
 - Use exact dates for disclosures, earnings, guidance, and news.
 - Separate verified facts from your inference.
 - A thesis-critical statement is not fully verified until it survives the DART recheck step when a relevant filing exists.
