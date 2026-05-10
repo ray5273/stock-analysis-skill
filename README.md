@@ -215,6 +215,8 @@ Bundled helpers:
 - `scripts/peer-valuation.js` for comparable-company valuation tables
 - `skills/kr-stock-dart-analysis/scripts/extract-dart-sections.js` for building a section index from a text export of a DART filing
 - `skills/kr-stock-dart-analysis/scripts/normalize-browser-dart-export.js` for converting a Chrome extension browser export into the text format used by DART section extraction
+- `skills/kr-stock-dart-analysis/scripts/fetch-opendart.js` for the OpenDART API alternative to the Chrome extension: resolves `--ticker` to corp_code, downloads the latest 정기공시 (사업/반기/분기) `document.xml` ZIP plus structured endpoints (majorshareholder, alotMatter, tesstkAcqsDspsSttus, irdsSttus, cpndlhCmpsBoardCo, fnlttSinglAcntAll), and emits the same `dart-browser-export.json` schema so the downstream `normalize → extract → verify → build` chain runs unchanged. Requires `OPENDART_API_KEY` in env (a `.env` file at the repo root is honored and is gitignored). Caches under `.tmp/opendart-cache/`.
+- `skills/kr-stock-dart-analysis/scripts/opendart-zip.py` Python3 stdlib helper used by `fetch-opendart.js` for cp949-safe ZIP extraction and `dart4.xsd` XML pre-processing
 - `skills/kr-stock-dart-analysis/scripts/verify-dart-coverage.js` for checking whether the filing TOC was fully parsed
 - `skills/kr-stock-dart-analysis/scripts/build-dart-reference.js` for generating `dart-reference.md` and `dart-cache.json`
 - `dart-cache.json` now reserves a `verifiedClaims` block for memo-critical claim verification results
@@ -376,6 +378,22 @@ Reference files:
 - [Claude DART Extractor README](integrations/claude-dart-extension/README.md)
 - [Sample browser export JSON](examples/kr-stock-dart-analysis/dart-browser-export-sample.json)
 
+### OpenDART API Workflow
+
+When `OPENDART_API_KEY` is available, prefer the API path over the Chrome extension. `fetch-opendart.js` produces the same `dart-browser-export.json` schema, so the rest of the pipeline (`normalize → extract → verify → build-reference`) is unchanged.
+
+```bash
+# put the key in a gitignored .env file at the repo root, or export it inline
+export OPENDART_API_KEY=<your_key>
+node skills/kr-stock-dart-analysis/scripts/fetch-opendart.js --ticker 267250 --year 2025 --report-code 11011 --output analysis-example/kr/HD현대/
+node skills/kr-stock-dart-analysis/scripts/normalize-browser-dart-export.js --input analysis-example/kr/HD현대/dart-browser-export.json --output analysis-example/kr/HD현대/dart-text.txt
+node skills/kr-stock-dart-analysis/scripts/extract-dart-sections.js --input analysis-example/kr/HD현대/dart-text.txt --output analysis-example/kr/HD현대/dart-sections.json
+node skills/kr-stock-dart-analysis/scripts/verify-dart-coverage.js --input analysis-example/kr/HD현대/dart-sections.json --output analysis-example/kr/HD현대/dart-coverage.json
+node skills/kr-stock-dart-analysis/scripts/build-dart-reference.js --sections analysis-example/kr/HD현대/dart-sections.json --coverage analysis-example/kr/HD현대/dart-coverage.json --output analysis-example/kr/HD현대/dart-reference.md --company "HD현대" --ticker 267250 --filing-title "사업보고서 (2025.12)" --filing-date 2026-03-20 --as-of 2026-05-10
+```
+
+`--report-code` is `11011` (사업보고서), `11012` (반기보고서), `11013` (분기보고서, Q1), `11014` (분기보고서, Q3). Cache lives in `.tmp/opendart-cache/` (gitignored). The script never logs the API key.
+
 ```text
 /kr-stock-dart-analysis list all disclosed single-sales or supply contracts for a Korean company over the last 12 months, keeping original notices, amendments, counterparties, amounts, sales ratios, contract periods, and latest status visible row by row.
 ```
@@ -438,9 +456,18 @@ The list below is kept to audited golden examples and reusable fixtures so the l
 - [KR - 엘앤에프 Memo](<analysis-example/kr/엘앤에프/memo.md>)
 - [KR - 현대오토에버 Memo](<analysis-example/kr/현대오토에버/memo.md>)
 - [KR - HMM Memo](<analysis-example/kr/HMM/memo.md>)
+- [KR - HD현대 Memo](<analysis-example/kr/HD현대/memo.md>)
+- [KR - 한화오션 Memo](<analysis-example/kr/한화오션/memo.md>)
+- [KR - SK이노베이션 Memo](<analysis-example/kr/SK이노베이션/memo.md>)
+- [KR - S-Oil Memo](<analysis-example/kr/S-Oil/memo.md>)
+- [US - Tesla Chart Memo](<analysis-example/us/tesla/memo.md>)
 
 **Research briefs, data packs, and DART references:**
 
+- [Benchmark - KOSPI vs S&P 500 1Y](<analysis-example/benchmarks/kospi-sp500-1y.md>)
+- [Benchmark - KOSPI vs S&P 500 2025-01-08 to 2026-01-08](<analysis-example/benchmarks/kospi-sp500-20250108-20260108.md>)
+- [Benchmark - KOSPI vs S&P 500 Recent 3M](<analysis-example/benchmarks/kospi-sp500-recent-3m.md>)
+- [US - Tesla Chart Analysis](<analysis-example/us/tesla/chart-analysis.md>)
 - [KR - 리가켐바이오 리서치 브리프](<analysis-example/kr/리가켐바이오/리서치브리프.md>)
 - [KR - 리가켐바이오 DART 분석](<analysis-example/kr/리가켐바이오/dart-analysis.md>)
 - [KR - 리가켐바이오 DART Reference](<analysis-example/kr/리가켐바이오/dart-reference.md>)
@@ -450,6 +477,35 @@ The list below is kept to audited golden examples and reusable fixtures so the l
 - [KR - HMM Data Pack](<analysis-example/kr/HMM/data-pack.md>)
 - [KR - HMM DART 분석](<analysis-example/kr/HMM/dart-analysis.md>)
 - [KR - HMM Analyst Report Insight](<analysis-example/kr/HMM/analyst-report-insight.md>)
+- [KR - HD현대 DART Reference (OpenDART)](<analysis-example/kr/HD현대/dart-reference.md>)
+- [KR - HD현대 DART Coverage](<analysis-example/kr/HD현대/dart-coverage.json>)
+- [KR - HD현대 Chart PNG](<analysis-example/kr/assets/HD현대-chart.png>)
+- [KR - HD현대 Overlay Chart PNG](<analysis-example/kr/assets/HD현대-chart-overlay.png>)
+- [KR - HD현대 Momentum Chart PNG](<analysis-example/kr/assets/HD현대-chart-momentum.png>)
+- [KR - 한화오션 Data Pack](<analysis-example/kr/한화오션/data-pack.md>)
+- [KR - 한화오션 Analyst Report Insight](<analysis-example/kr/한화오션/analyst-report-insight.md>)
+- [KR - 한화오션 Chart Analysis](<analysis-example/kr/한화오션/chart-analysis.md>)
+- [KR - SK이노베이션 Data Pack](<analysis-example/kr/SK이노베이션/data-pack.md>)
+- [KR - SK이노베이션 Analyst Report Insight](<analysis-example/kr/SK이노베이션/analyst-report-insight.md>)
+- [KR - SK이노베이션 Chart Analysis](<analysis-example/kr/SK이노베이션/chart-analysis.md>)
+- [KR - SK이노베이션 Chart Data](<analysis-example/kr/SK이노베이션/chart-data.json>)
+- [KR - SK이노베이션 Trend Rules](<analysis-example/kr/SK이노베이션/trend-rules.md>)
+- [KR - SK이노베이션 Trend Rules JSON](<analysis-example/kr/SK이노베이션/trend-rules.json>)
+- [KR - SK이노베이션 Chart PNG](<analysis-example/kr/assets/SK이노베이션-chart.png>)
+- [KR - SK이노베이션 Overlay Chart PNG](<analysis-example/kr/assets/SK이노베이션-chart-overlay.png>)
+- [KR - SK이노베이션 Momentum Chart PNG](<analysis-example/kr/assets/SK이노베이션-chart-momentum.png>)
+- [KR - S-Oil Data Pack](<analysis-example/kr/S-Oil/data-pack.md>)
+- [KR - S-Oil DART Reference (OpenDART)](<analysis-example/kr/S-Oil/dart-reference.md>)
+- [KR - S-Oil DART Cache](<analysis-example/kr/S-Oil/dart-cache.json>)
+- [KR - S-Oil Chart Analysis](<analysis-example/kr/S-Oil/chart-analysis.md>)
+- [KR - S-Oil Chart Data](<analysis-example/kr/S-Oil/chart-data.json>)
+- [KR - S-Oil Trend Rules](<analysis-example/kr/S-Oil/trend-rules.md>)
+- [KR - S-Oil Trend Rules JSON](<analysis-example/kr/S-Oil/trend-rules.json>)
+- [KR - S-Oil Chart PNG](<analysis-example/kr/assets/S-Oil-chart.png>)
+- [KR - S-Oil Overlay Chart PNG](<analysis-example/kr/assets/S-Oil-chart-overlay.png>)
+- [KR - S-Oil Momentum Chart PNG](<analysis-example/kr/assets/S-Oil-chart-momentum.png>)
+- [KR - 솔루스첨단소재 Chart Analysis](<analysis-example/kr/솔루스첨단소재/chart-analysis.md>)
+- [KR - 한화오션 Foreign Analyst Views](<analysis-example/kr/한화오션/foreign-analyst-views.md>)
 
 **Contract and backlog analysis (수주):**
 
@@ -465,6 +521,12 @@ The list below is kept to audited golden examples and reusable fixtures so the l
 - [KR - GRT Naver Insights](<analysis-example/kr/GRT/naver-insights.md>)
 - [KR - 리가켐바이오 Naver Insights](<analysis-example/kr/리가켐바이오/naver-insights.md>)
 - [KR - HMM Naver Insights](<analysis-example/kr/HMM/naver-insights.md>)
+- [KR - 한화오션 Naver Insights](<analysis-example/kr/한화오션/naver-insights.md>)
+- [KR - SK이노베이션 Naver Insights](<analysis-example/kr/SK이노베이션/naver-insights.md>)
+- [KR - 한화오션 Naver Posts](<analysis-example/kr/한화오션/naver-posts.json>)
+- [KR - 한화오션 Naver Blogger Candidates](<analysis-example/kr/한화오션/naver-bloggers.json>)
+- [KR - S-Oil Naver Posts](<analysis-example/kr/S-Oil/naver-posts.json>)
+- [KR - S-Oil Naver Blogger Candidates](<analysis-example/kr/S-Oil/naver-bloggers.json>)
 - [KR - 리가켐바이오 Naver Posts](<analysis-example/kr/리가켐바이오/naver-posts.json>)
 - [KR - 리가켐바이오 Naver Blogger Candidates](<analysis-example/kr/리가켐바이오/naver-bloggers.json>)
 - [KR - 삼성SDS Naver Blogger Candidates](<analysis-example/kr/삼성SDS/naver-bloggers.json>)

@@ -210,6 +210,8 @@ kr-stock-plan
 - `scripts/valuation-bands.js`: 3~5년 밸류에이션 밴드 요약
 - `scripts/peer-valuation.js`: 피어 밸류에이션 표 생성
 - `skills/kr-stock-dart-analysis/scripts/extract-dart-sections.js`: DART 원문 텍스트에서 섹션 인덱스 생성
+- `skills/kr-stock-dart-analysis/scripts/fetch-opendart.js`: Chrome 확장의 대안 경로. `--ticker`로 corp_code를 해석한 뒤 OpenDART API로 최신 정기공시 (사업/반기/분기) `document.xml` ZIP과 구조화 엔드포인트(majorshareholder, alotMatter, tesstkAcqsDspsSttus, irdsSttus, cpndlhCmpsBoardCo, fnlttSinglAcntAll)를 받아와 동일한 `dart-browser-export.json` 스키마로 출력. 환경변수 `OPENDART_API_KEY` 필요(레포 루트의 gitignored `.env` 파일도 인식). 캐시는 `.tmp/opendart-cache/`
+- `skills/kr-stock-dart-analysis/scripts/opendart-zip.py`: `fetch-opendart.js`가 호출하는 Python3 stdlib 헬퍼. cp949 한글 파일명을 보존한 ZIP 추출과 `dart4.xsd` XML 전처리 담당
 - `skills/kr-stock-dart-analysis/scripts/verify-dart-coverage.js`: 목차 대비 파싱 커버리지 검증
 - `skills/kr-stock-dart-analysis/scripts/build-dart-reference.js`: `dart-reference.md`와 `dart-cache.json` 생성
 - `dart-cache.json`: 핵심 주장 재검증 결과를 담는 `verifiedClaims` 필드 예약
@@ -337,6 +339,22 @@ node skills/kr-stock-dart-analysis/scripts/verify-dart-coverage.js --input secti
 - [Claude DART Extractor README](integrations/claude-dart-extension/README.md)
 - [브라우저 export 샘플 JSON](examples/kr-stock-dart-analysis/dart-browser-export-sample.json)
 
+### OpenDART API 워크플로
+
+`OPENDART_API_KEY`가 환경에 있으면 Chrome extension 대신 API 경로를 우선 사용합니다. `fetch-opendart.js`는 동일한 `dart-browser-export.json` 스키마를 출력하므로 이후 `normalize → extract → verify → build-reference` 체인은 그대로 사용됩니다.
+
+```bash
+# 키는 레포 루트의 gitignored .env 파일에 두거나 인라인으로 export
+export OPENDART_API_KEY=<your_key>
+node skills/kr-stock-dart-analysis/scripts/fetch-opendart.js --ticker 267250 --year 2025 --report-code 11011 --output analysis-example/kr/HD현대/
+node skills/kr-stock-dart-analysis/scripts/normalize-browser-dart-export.js --input analysis-example/kr/HD현대/dart-browser-export.json --output analysis-example/kr/HD현대/dart-text.txt
+node skills/kr-stock-dart-analysis/scripts/extract-dart-sections.js --input analysis-example/kr/HD현대/dart-text.txt --output analysis-example/kr/HD현대/dart-sections.json
+node skills/kr-stock-dart-analysis/scripts/verify-dart-coverage.js --input analysis-example/kr/HD현대/dart-sections.json --output analysis-example/kr/HD현대/dart-coverage.json
+node skills/kr-stock-dart-analysis/scripts/build-dart-reference.js --sections analysis-example/kr/HD현대/dart-sections.json --coverage analysis-example/kr/HD현대/dart-coverage.json --output analysis-example/kr/HD현대/dart-reference.md --company "HD현대" --ticker 267250 --filing-title "사업보고서 (2025.12)" --filing-date 2026-03-20 --as-of 2026-05-10
+```
+
+`--report-code`는 `11011`(사업보고서), `11012`(반기보고서), `11013`(1분기보고서), `11014`(3분기보고서). 캐시는 `.tmp/opendart-cache/`(gitignored)에 저장되며, API 키는 어떤 경우에도 로그로 출력되지 않습니다.
+
 ```text
 /kr-stock-dart-analysis list all disclosed single-sales or supply contracts for a Korean company over the last 12 months, keeping original notices, amendments, counterparties, amounts, sales ratios, contract periods, and latest status visible row by row.
 ```
@@ -377,11 +395,17 @@ node skills/kr-stock-dart-analysis/scripts/verify-dart-coverage.js --input secti
 - [KR - 삼성SDS Memo](<analysis-example/kr/삼성SDS/memo.md>)
 - [KR - 엘앤에프 Memo](<analysis-example/kr/엘앤에프/memo.md>)
 - [KR - 현대오토에버 Memo](<analysis-example/kr/현대오토에버/memo.md>)
+- [KR - HD현대 Memo (지주사, OpenDART 1차 자료 기반)](<analysis-example/kr/HD현대/memo.md>)
 
 **리서치 브리프 및 DART 레퍼런스:**
 
 - [KR - LG CNS DART Reference](<analysis-example/kr/LG CNS/dart-reference.md>)
 - [KR - LIG넥스원 리서치 브리프](<analysis-example/kr/LIG넥스원/리서치브리프.md>)
+- [KR - HD현대 DART Reference (OpenDART 기반)](<analysis-example/kr/HD현대/dart-reference.md>)
+- [KR - HD현대 DART Coverage](<analysis-example/kr/HD현대/dart-coverage.json>)
+- [KR - HD현대 Chart PNG](<analysis-example/kr/assets/HD현대-chart.png>)
+- [KR - HD현대 Overlay Chart PNG](<analysis-example/kr/assets/HD현대-chart-overlay.png>)
+- [KR - HD현대 Momentum Chart PNG](<analysis-example/kr/assets/HD현대-chart-momentum.png>)
 
 **수주 및 계약 분석:**
 
