@@ -151,8 +151,10 @@ function usage() {
     "  - The input JSON must include bars with date and close.",
     "  - high and low are required for Bollinger and Ichimoku overlays to be fully useful.",
     "  - volume is optional but recommended for volume panel and participation read.",
-    "  - When --png-out is set, the script writes the main trend chart to that path and sibling overlay and momentum charts to *-overlay.png and *-momentum.png.",
-    "  - The markdown output prints all three image snippets when PNG output is enabled.",
+    "  - When --png-out is set, the script writes the main trend chart to that path and sibling overlay, momentum, and structure charts to *-overlay.png, *-momentum.png, and *-structure.png.",
+    "  - The structure chart pairs candles with a horizontal volume-by-price gutter (POC highlighted) and ATR-tolerance clustered horizontal support/resistance zones (max 3 each, within ±30% of current price).",
+    "  - A sibling *-structure-zones.csv lists every zone including broken/distance-filtered ones (type, zone_low, zone_high, center_price, touch_count, last_touch_date, score, status).",
+    "  - The markdown output prints all four image snippets plus a Support / Resistance Zones table when PNG output is enabled.",
   ].join("\n");
 }
 
@@ -666,6 +668,270 @@ function drawFilledBand(buffer, width, height, upperPoints, lowerPoints, color) 
   }
 }
 
+function computeVolumeProfile(bars, binCount) {
+  if (!Array.isArray(bars) || bars.length === 0 || !Number.isFinite(binCount) || binCount < 1) {
+    return null;
+  }
+  const highs = [];
+  const lows = [];
+  for (const bar of bars) {
+    if (Number.isFinite(bar.high)) highs.push(bar.high);
+    if (Number.isFinite(bar.low)) lows.push(bar.low);
+  }
+  if (highs.length === 0 || lows.length === 0) {
+    return null;
+  }
+  const priceMin = Math.min(...lows);
+  const priceMax = Math.max(...highs);
+  if (priceMin >= priceMax) {
+    return null;
+  }
+  const bins = Array.from({ length: binCount }, (_, index) => ({
+    priceLow: priceMin + ((priceMax - priceMin) * index) / binCount,
+    priceHigh: priceMin + ((priceMax - priceMin) * (index + 1)) / binCount,
+    volume: 0,
+  }));
+  for (const bar of bars) {
+    if (
+      !Number.isFinite(bar.high) ||
+      !Number.isFinite(bar.low) ||
+      !Number.isFinite(bar.close) ||
+      !Number.isFinite(bar.volume)
+    ) {
+      continue;
+    }
+    const typical = (bar.high + bar.low + bar.close) / 3;
+    let binIndex = Math.floor(((typical - priceMin) / (priceMax - priceMin)) * binCount);
+    if (binIndex < 0) binIndex = 0;
+    if (binIndex >= binCount) binIndex = binCount - 1;
+    bins[binIndex].volume += bar.volume;
+  }
+  let pocIndex = 0;
+  let maxVolume = bins[0].volume;
+  for (let i = 1; i < binCount; i += 1) {
+    if (bins[i].volume > maxVolume) {
+      maxVolume = bins[i].volume;
+      pocIndex = i;
+    }
+  }
+  return { bins, pocIndex, maxVolume, priceMin, priceMax };
+}
+
+function detectSwingPivots(bars, k) {
+  const highs = [];
+  const lows = [];
+  if (!Array.isArray(bars) || bars.length < 2 * k + 1) {
+    return { highs, lows };
+  }
+  for (let i = k; i < bars.length - k; i += 1) {
+    const bar = bars[i];
+    if (!Number.isFinite(bar.high) || !Number.isFinite(bar.low)) continue;
+    let isHigh = true;
+    let isLow = true;
+    for (let j = i - k; j <= i + k; j += 1) {
+      if (j === i) continue;
+      const other = bars[j];
+      if (!Number.isFinite(other.high) || !Number.isFinite(other.low)) continue;
+      if (other.high > bar.high) isHigh = false;
+      if (other.low < bar.low) isLow = false;
+      if (other.high === bar.high && j > i) isHigh = false;
+      if (other.low === bar.low && j > i) isLow = false;
+    }
+    if (isHigh) highs.push({ index: i, price: bar.high });
+    if (isLow) lows.push({ index: i, price: bar.low });
+  }
+  return { highs, lows };
+}
+
+function computeATR14(bars) {
+  if (!Array.isArray(bars) || bars.length < 15) return null;
+  const trs = [];
+  for (let i = 1; i < bars.length; i += 1) {
+    const cur = bars[i];
+    const prev = bars[i - 1];
+    if (
+      !Number.isFinite(cur.high) ||
+      !Number.isFinite(cur.low) ||
+      !Number.isFinite(prev.close)
+    ) {
+      trs.push(null);
+      continue;
+    }
+    const tr = Math.max(
+      cur.high - cur.low,
+      Math.abs(cur.high - prev.close),
+      Math.abs(cur.low - prev.close),
+    );
+    trs.push(tr);
+  }
+  const valid = trs.slice(-14).filter((v) => Number.isFinite(v));
+  if (valid.length === 0) return null;
+  const sum = valid.reduce((acc, v) => acc + v, 0);
+  return sum / valid.length;
+}
+
+function clusterPriceZones(points, tolerance) {
+  if (!Array.isArray(points) || points.length === 0 || !Number.isFinite(tolerance) || tolerance <= 0) {
+    return [];
+  }
+  const sorted = [...points].sort((a, b) => a.price - b.price);
+  const clusters = [];
+  for (const point of sorted) {
+    const last = clusters[clusters.length - 1];
+    if (last && point.price - last.maxPrice <= tolerance) {
+      last.points.push(point);
+      last.maxPrice = Math.max(last.maxPrice, point.price);
+    } else {
+      clusters.push({ points: [point], maxPrice: point.price });
+    }
+  }
+  const zones = [];
+  for (const cluster of clusters) {
+    if (cluster.points.length < 2) continue;
+    const prices = cluster.points.map((p) => p.price);
+    const indices = cluster.points.map((p) => p.index);
+    const zoneLow = Math.min(...prices);
+    const zoneHigh = Math.max(...prices);
+    const center = prices.reduce((a, v) => a + v, 0) / prices.length;
+    zones.push({
+      zoneLow,
+      zoneHigh,
+      center,
+      swingTouchCount: cluster.points.length,
+      swingIndices: indices,
+    });
+  }
+  return zones;
+}
+
+function recountZoneTouches(zones, bars) {
+  for (const zone of zones) {
+    let touchCount = 0;
+    let lastTouchIndex = -1;
+    for (let i = 0; i < bars.length; i += 1) {
+      const bar = bars[i];
+      if (!Number.isFinite(bar.high) || !Number.isFinite(bar.low)) continue;
+      const overlap = Math.max(bar.low, zone.zoneLow) <= Math.min(bar.high, zone.zoneHigh);
+      if (overlap) {
+        touchCount += 1;
+        lastTouchIndex = i;
+      }
+    }
+    zone.touchCount = touchCount;
+    zone.lastTouchIndex = lastTouchIndex;
+    zone.lastTouchDate = lastTouchIndex >= 0 ? bars[lastTouchIndex].date : null;
+  }
+  return zones;
+}
+
+const MAX_ZONE_DISTANCE_PCT = 0.30;
+
+function classifyAndFilterZones(zones, bars, currentPrice, holdDays) {
+  if (!Number.isFinite(currentPrice) || currentPrice <= 0) return [];
+  const tail = bars.slice(-holdDays);
+  const lastFive = bars.slice(-5);
+  const result = [];
+  for (const zone of zones) {
+    const distancePct = Math.abs(zone.center - currentPrice) / currentPrice;
+    let type = null;
+    if (zone.zoneHigh < currentPrice) type = "support";
+    else if (zone.zoneLow > currentPrice) type = "resistance";
+    else type = "inside";
+
+    let status = "active";
+    if (type === "support") {
+      const allBelow = tail.length === holdDays && tail.every(
+        (b) => Number.isFinite(b.close) && b.close < zone.zoneLow,
+      );
+      if (allBelow) status = "broken";
+    } else if (type === "resistance") {
+      const allAbove = tail.length === holdDays && tail.every(
+        (b) => Number.isFinite(b.close) && b.close > zone.zoneHigh,
+      );
+      if (allAbove) status = "broken";
+    }
+
+    if (status === "broken") {
+      const flippedTouch = lastFive.some(
+        (b) =>
+          Number.isFinite(b.high) &&
+          Number.isFinite(b.low) &&
+          Math.max(b.low, zone.zoneLow) <= Math.min(b.high, zone.zoneHigh),
+      );
+      if (flippedTouch) {
+        status = "flipped";
+        type = type === "support" ? "resistance" : "support";
+      }
+    }
+
+    const excludedByDistance = distancePct > MAX_ZONE_DISTANCE_PCT;
+    result.push({
+      ...zone,
+      type,
+      status,
+      distancePct,
+      excludedByDistance,
+    });
+  }
+  return result;
+}
+
+function computeVolumeAtZone(zone, bars) {
+  let total = 0;
+  for (const bar of bars) {
+    if (!Number.isFinite(bar.high) || !Number.isFinite(bar.low) || !Number.isFinite(bar.volume)) continue;
+    if (Math.max(bar.low, zone.zoneLow) <= Math.min(bar.high, zone.zoneHigh)) {
+      total += bar.volume;
+    }
+  }
+  return total;
+}
+
+function scoreZones(zones, bars, currentPrice) {
+  if (!Array.isArray(zones) || zones.length === 0) return zones;
+  const latestIndex = bars.length - 1;
+  for (const zone of zones) {
+    zone.volumeAtZone = computeVolumeAtZone(zone, bars);
+    zone.daysSinceLastTouch = zone.lastTouchIndex >= 0 ? latestIndex - zone.lastTouchIndex : 9999;
+  }
+  const touchCounts = zones.map((z) => z.touchCount);
+  const volumes = zones.map((z) => z.volumeAtZone);
+  const minMax = (arr) => ({ min: Math.min(...arr), max: Math.max(...arr) });
+  const norm = (v, range) => (range.max > range.min ? (v - range.min) / (range.max - range.min) : 0.5);
+  const tcRange = minMax(touchCounts);
+  const volRange = minMax(volumes);
+  for (const zone of zones) {
+    const recencyScore = Math.exp(-zone.daysSinceLastTouch / 30);
+    const distScore = Math.max(0, 1 - zone.distancePct / MAX_ZONE_DISTANCE_PCT);
+    const statusBonus = zone.status === "active" ? 1.0 : zone.status === "flipped" ? 0.7 : 0;
+    zone.score =
+      0.35 * norm(zone.touchCount, tcRange) +
+      0.25 * recencyScore +
+      0.20 * norm(zone.volumeAtZone, volRange) +
+      0.15 * distScore +
+      0.05 * statusBonus;
+  }
+  return zones;
+}
+
+function writeZonesCSV(filePath, zones) {
+  const header = "type,zone_low,zone_high,center_price,touch_count,last_touch_date,score,status";
+  const rows = zones.map((z) => {
+    const type = z.type || "inside";
+    const zl = Math.round(z.zoneLow);
+    const zh = Math.round(z.zoneHigh);
+    const cp = Math.round(z.center);
+    const tc = z.touchCount || 0;
+    const ld = z.lastTouchDate || "";
+    const sc = Number.isFinite(z.score) ? z.score.toFixed(4) : "";
+    const st = z.status || "";
+    return `${type},${zl},${zh},${cp},${tc},${ld},${sc},${st}`;
+  });
+  const csv = [header, ...rows].join("\n") + "\n";
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, csv);
+}
+
 function glyphWidth() {
   return 5;
 }
@@ -1090,6 +1356,13 @@ function buildChartPngs(data, bars, metrics, options) {
     plusDi: [34, 197, 94, 255],
     minusDi: [239, 68, 68, 255],
     adxGuide: [148, 163, 184, 255],
+    structureResistance: [231, 76, 60, 255],
+    structureSupport: [52, 152, 219, 255],
+    zoneSupport: [52, 152, 219, 46],
+    zoneResistance: [231, 76, 60, 46],
+    zoneFlipped: [155, 89, 182, 46],
+    volumeProfileBar: [148, 163, 184, 200],
+    volumeProfilePoc: [249, 115, 22, 230],
   };
 
   const margin = { left: 100, right: 120, top: 84, bottom: 78 };
@@ -1248,6 +1521,7 @@ function buildChartPngs(data, bars, metrics, options) {
     mainOutput: path.resolve(options.pngOut),
     overlayOutput: path.resolve(appendSuffixToPath(options.pngOut, "overlay")),
     momentumOutput: path.resolve(appendSuffixToPath(options.pngOut, "momentum")),
+    structureOutput: path.resolve(appendSuffixToPath(options.pngOut, "structure")),
     mainImagePath: options.imagePath || path.basename(options.pngOut),
     overlayImagePath: options.imagePath
       ? appendSuffixToPath(options.imagePath, "overlay")
@@ -1255,6 +1529,9 @@ function buildChartPngs(data, bars, metrics, options) {
     momentumImagePath: options.imagePath
       ? appendSuffixToPath(options.imagePath, "momentum")
       : appendSuffixToPath(path.basename(options.pngOut), "momentum"),
+    structureImagePath: options.imagePath
+      ? appendSuffixToPath(options.imagePath, "structure")
+      : appendSuffixToPath(path.basename(options.pngOut), "structure"),
   };
 
   const buildMomentumChart = () => {
@@ -1636,18 +1913,182 @@ function buildChartPngs(data, bars, metrics, options) {
     writePng(chartPaths.overlayOutput, buffer);
   };
 
+  const buildStructureChart = () => {
+    const buffer = createRgbaBuffer(width, height, theme.background);
+    const totalSlotsForStructure = barsWindow.length;
+    const chartTitle = String(data.name || data.ticker || "UNKNOWN");
+    const gutterWidth = Math.max(100, Math.round(plotWidth * 0.18));
+    const gutterGap = 12;
+    const candleAreaWidth = plotWidth - gutterWidth - gutterGap;
+    const gutterLeft = margin.left + candleAreaWidth + gutterGap;
+    const xForSlot = (slot) => {
+      if (totalSlotsForStructure <= 1) {
+        return margin.left + candleAreaWidth / 2;
+      }
+      return margin.left + (candleAreaWidth * slot) / (totalSlotsForStructure - 1);
+    };
+
+    const priceTop = margin.top + headerHeight;
+    const structurePriceHeight = basePlotHeight;
+    const priceRange = buildPriceRange([priceSeries.close]);
+
+    fillRect(buffer, width, height, margin.left, priceTop, candleAreaWidth, structurePriceHeight, theme.panel);
+    fillRect(buffer, width, height, gutterLeft, priceTop, gutterWidth, structurePriceHeight, theme.panel);
+
+    drawLine(buffer, width, height, margin.left, priceTop, margin.left + candleAreaWidth, priceTop, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, priceTop + structurePriceHeight, margin.left + candleAreaWidth, priceTop + structurePriceHeight, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, priceTop, margin.left, priceTop + structurePriceHeight, theme.border, 1);
+    drawLine(buffer, width, height, margin.left + candleAreaWidth, priceTop, margin.left + candleAreaWidth, priceTop + structurePriceHeight, theme.border, 1);
+
+    drawLine(buffer, width, height, gutterLeft, priceTop, gutterLeft + gutterWidth, priceTop, theme.border, 1);
+    drawLine(buffer, width, height, gutterLeft, priceTop + structurePriceHeight, gutterLeft + gutterWidth, priceTop + structurePriceHeight, theme.border, 1);
+    drawLine(buffer, width, height, gutterLeft, priceTop, gutterLeft, priceTop + structurePriceHeight, theme.border, 1);
+    drawLine(buffer, width, height, gutterLeft + gutterWidth, priceTop, gutterLeft + gutterWidth, priceTop + structurePriceHeight, theme.border, 1);
+
+    drawText(buffer, width, height, margin.left, margin.top + 4, chartTitle, theme.text, 3);
+    drawText(buffer, width, height, margin.left, margin.top + 34, `${data.ticker || "UNKNOWN"} 구조 분석 (매물대 + 지지/저항 zone)`, theme.muted, 2);
+    drawText(buffer, width, height, margin.left + plotWidth, margin.top + 10, `기준일 ${metrics.latest.date}`, theme.muted, 2, "right");
+
+    const legendY = margin.top + 56;
+    let legendX = margin.left;
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.candleUpFill, "캔들");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, [231, 76, 60, 120], "저항 zone");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, [52, 152, 219, 120], "지지 zone");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.volumeProfileBar, "매물대");
+    drawLegendItem(buffer, width, height, legendX, legendY, theme.volumeProfilePoc, "POC");
+
+    drawText(buffer, width, height, margin.left - 54, priceTop + 6, "주가", theme.muted, 2);
+    drawText(buffer, width, height, gutterLeft + 6, priceTop + 6, "매물대", theme.muted, 2);
+
+    for (let tick = 0; tick <= 4; tick += 1) {
+      const y = priceTop + (structurePriceHeight * tick) / 4;
+      drawLine(buffer, width, height, margin.left, y, margin.left + candleAreaWidth, y, theme.grid, 1);
+      const value = priceRange.max - ((priceRange.max - priceRange.min) * tick) / 4;
+      drawText(buffer, width, height, margin.left + plotWidth + 10, y - 7, formatAxisNumber(value), theme.muted, 2);
+    }
+
+    const dateTickIndices = pickTickIndices(barsWindow.length, 6);
+    dateTickIndices.forEach((index) => {
+      const x = xForSlot(index);
+      drawLine(buffer, width, height, x, priceTop, x, priceTop + structurePriceHeight, theme.grid, 1);
+      drawText(buffer, width, height, x, priceTop + structurePriceHeight + 14, dateLabel(barsWindow[index].date), theme.muted, 2, "center");
+    });
+    drawText(buffer, width, height, margin.left + candleAreaWidth / 2, priceTop + structurePriceHeight + 42, "날짜", theme.muted, 2, "center");
+
+    drawCandlesticks(buffer, width, height, barsWindow, xForSlot, priceRange.min, priceRange.max, priceTop, structurePriceHeight, theme);
+
+    const lastBar = barsWindow[barsWindow.length - 1];
+    const currentPrice = Number.isFinite(lastBar.close) ? lastBar.close : metrics.latestClose;
+    const atr = computeATR14(barsWindow);
+    const tolerance = Math.max((atr || 0) * 0.5, currentPrice * 0.005);
+    const pivots = detectSwingPivots(barsWindow, 5);
+
+    const highZones = clusterPriceZones(pivots.highs, tolerance);
+    const lowZones = clusterPriceZones(pivots.lows, tolerance);
+    const allZones = [...highZones, ...lowZones];
+    recountZoneTouches(allZones, barsWindow);
+
+    const classified = classifyAndFilterZones(allZones, barsWindow, currentPrice, 3);
+    scoreZones(classified, barsWindow, currentPrice);
+
+    const drawableSupport = classified
+      .filter((z) => z.type === "support" && z.status !== "broken" && !z.excludedByDistance)
+      .sort((a, b) => (b.score || 0) - (a.score || 0))
+      .slice(0, 3);
+    const drawableResistance = classified
+      .filter((z) => z.type === "resistance" && z.status !== "broken" && !z.excludedByDistance)
+      .sort((a, b) => (b.score || 0) - (a.score || 0))
+      .slice(0, 3);
+    const drawnZones = [...drawableSupport, ...drawableResistance];
+
+    for (const zone of drawnZones) {
+      const yTop = valueToY(zone.zoneHigh, priceRange.min, priceRange.max, priceTop, structurePriceHeight);
+      const yBottom = valueToY(zone.zoneLow, priceRange.min, priceRange.max, priceTop, structurePriceHeight);
+      const fillH = Math.max(3, yBottom - yTop);
+      const fillColor = zone.status === "flipped"
+        ? theme.zoneFlipped
+        : zone.type === "support" ? theme.zoneSupport : theme.zoneResistance;
+      fillRect(buffer, width, height, margin.left, yTop, candleAreaWidth, fillH, fillColor);
+      const labelColor = zone.type === "support" ? theme.structureSupport : theme.structureResistance;
+      const labelText = `${formatAxisNumber(Math.round(zone.center))} (x${zone.touchCount})`;
+      const labelY = Math.round((yTop + yBottom) / 2) - 7;
+      drawText(buffer, width, height, margin.left + candleAreaWidth - 8, labelY, labelText, labelColor, 2, "right");
+    }
+
+    const profile = computeVolumeProfile(barsWindow, 50);
+    if (profile && profile.maxVolume > 0) {
+      profile.bins.forEach((bin, binIndex) => {
+        if (bin.volume <= 0) return;
+        const yTop = valueToY(bin.priceHigh, priceRange.min, priceRange.max, priceTop, structurePriceHeight);
+        const yBottom = valueToY(bin.priceLow, priceRange.min, priceRange.max, priceTop, structurePriceHeight);
+        const binHeight = Math.max(2, yBottom - yTop - 1);
+        const barLength = Math.max(2, Math.round((bin.volume / profile.maxVolume) * (gutterWidth - 12)));
+        const isPoc = binIndex === profile.pocIndex;
+        const color = isPoc ? theme.volumeProfilePoc : theme.volumeProfileBar;
+        fillRect(buffer, width, height, gutterLeft + 4, yTop, barLength, binHeight, color);
+      });
+
+      const pocBin = profile.bins[profile.pocIndex];
+      const pocMidPrice = (pocBin.priceLow + pocBin.priceHigh) / 2;
+      const pocY = valueToY(pocMidPrice, priceRange.min, priceRange.max, priceTop, structurePriceHeight);
+      drawLine(buffer, width, height, margin.left, pocY, margin.left + candleAreaWidth, pocY, theme.volumeProfilePoc, 1);
+      drawValueCallout(
+        buffer,
+        width,
+        height,
+        margin.left + candleAreaWidth - 8,
+        pocY,
+        `POC ${formatAxisNumber(pocMidPrice)}`,
+        { ...theme, close: theme.volumeProfilePoc },
+        priceTop,
+        structurePriceHeight,
+      );
+    }
+
+    writePng(chartPaths.structureOutput, buffer);
+
+    const drawnSet = new Set(drawnZones);
+    const csvZones = [...classified].sort((a, b) => {
+      const aDrawn = drawnSet.has(a) ? 0 : 1;
+      const bDrawn = drawnSet.has(b) ? 0 : 1;
+      if (aDrawn !== bDrawn) return aDrawn - bDrawn;
+      return (b.score || 0) - (a.score || 0);
+    });
+    const csvPath = chartPaths.structureOutput.replace(/\.png$/, "-zones.csv");
+    writeZonesCSV(csvPath, csvZones);
+
+    const totalSupport = classified.filter((z) => z.type === "support").length;
+    const totalResistance = classified.filter((z) => z.type === "resistance").length;
+    const brokenDrawn = drawnZones.filter((z) => z.status === "broken").length;
+    const allWithinDistance = drawnZones.every((z) => z.distancePct <= MAX_ZONE_DISTANCE_PCT);
+    const distancePctStr = `${Math.round(MAX_ZONE_DISTANCE_PCT * 100)}%`;
+    console.error("[structure-chart] self-check");
+    console.error(`  diagonal SR lines drawn: 0`);
+    console.error(`  support zones drawn: ${drawableSupport.length}/${totalSupport}`);
+    console.error(`  resistance zones drawn: ${drawableResistance.length}/${totalResistance}`);
+    console.error(`  broken zones drawn: ${brokenDrawn}`);
+    console.error(`  all zones within ±${distancePctStr} of current price: ${allWithinDistance ? "yes" : "no"}`);
+    console.error(`  CSV columns: 8`);
+
+    return { drawnZones, allZones: csvZones, csvPath };
+  };
+
   buildMainTrendChart();
   buildOverlayChart();
   buildMomentumChart();
+  const structureResult = buildStructureChart();
 
   return {
     imagePaths: {
       main: chartPaths.mainImagePath,
       overlay: chartPaths.overlayImagePath,
       momentum: chartPaths.momentumImagePath,
+      structure: chartPaths.structureImagePath,
     },
     chartBarsUsed: barsWindow.length,
     leadBarsUsed: leadSlots,
+    structureZones: structureResult ? structureResult.drawnZones : [],
+    structureCsvPath: structureResult ? structureResult.csvPath : null,
   };
 }
 
@@ -1911,10 +2352,32 @@ function main() {
     console.log("");
     console.log(`![${data.name || data.ticker || "Chart"} momentum chart](${pngInfo.imagePaths.momentum})`);
     console.log("");
+    console.log(`![${data.name || data.ticker || "Chart"} structure chart](${pngInfo.imagePaths.structure})`);
+    console.log("");
     console.log(
-      `The main chart uses OHLC candlesticks with upper and lower wicks, plus MA5, MA20, MA60, MA120, and volume. The overlay chart separates Bollinger Bands, Ichimoku cloud lines, and RSI14, and reserves ${pngInfo.leadBarsUsed} forward slots for the projected cloud. The momentum chart focuses on MACD, signal, histogram, and ADX/DMI so crossovers, momentum acceleration, and trend strength are easier to see.`,
+      `The main chart uses OHLC candlesticks with upper and lower wicks, plus MA5, MA20, MA60, MA120, and volume. The overlay chart separates Bollinger Bands, Ichimoku cloud lines, and RSI14, and reserves ${pngInfo.leadBarsUsed} forward slots for the projected cloud. The momentum chart focuses on MACD, signal, histogram, and ADX/DMI so crossovers, momentum acceleration, and trend strength are easier to see. The structure chart pairs candles with a horizontal volume-by-price gutter (POC highlighted) and ATR-tolerance clustered support/resistance zones drawn as horizontal price bands (up to 3 each, within ±30% of current price). The full zone roster — including broken or distance-filtered zones — is exported to a sibling \`-zones.csv\`.`,
     );
     console.log("");
+
+    if (Array.isArray(pngInfo.structureZones) && pngInfo.structureZones.length > 0) {
+      console.log("## Support / Resistance Zones (Structure Chart)");
+      console.log("");
+      console.log("| Type | Zone | Center | Touches | Last Touch | Score | Status |");
+      console.log("| --- | --- | --- | --- | --- | --- | --- |");
+      const sorted = [...pngInfo.structureZones].sort((a, b) => (b.score || 0) - (a.score || 0));
+      for (const z of sorted) {
+        const zoneText = `${formatAxisNumber(Math.round(z.zoneLow))} ~ ${formatAxisNumber(Math.round(z.zoneHigh))}`;
+        const center = formatAxisNumber(Math.round(z.center));
+        const score = Number.isFinite(z.score) ? z.score.toFixed(3) : "n/a";
+        const lastTouch = z.lastTouchDate || "n/a";
+        console.log(`| ${z.type} | ${zoneText} | ${center} | ${z.touchCount} | ${lastTouch} | ${score} | ${z.status} |`);
+      }
+      console.log("");
+      if (pngInfo.structureCsvPath) {
+        console.log(`Full zone roster (including broken / distance-filtered): \`${path.basename(pngInfo.structureCsvPath)}\``);
+        console.log("");
+      }
+    }
   }
 
   console.log("## Indicators");

@@ -118,17 +118,17 @@ Use peer comparisons only if the peer set is genuinely comparable.
 - For `Minervini Trend Template` or `KRX 52주 신고가 리더십 점수`, prefer roughly 2 years of daily bars or otherwise confirm that a 252-trading-day window exists before forcing a full rule verdict.
 - Use `scripts/fetch-kr-chart.js` to pull current KRX bars when the user did not provide price history.
 - When the output will become PNG chart assets, always pass the explicit company name with `--name "<회사명>"`. Do not rely on ticker fallback if you want the PNG title to show `삼성SDS`, `LG전자`, or another human-readable stock name.
-- Use `scripts/chart-basics.js` to generate both the markdown technical read and the three-part PNG chart assets that can be embedded in the memo.
+- Use `scripts/chart-basics.js` to generate both the markdown technical read and the four-part PNG chart assets that can be embedded in the memo (main trend, overlay, momentum, structure).
 - Use `scripts/build-kr-universe-rs-cache.js` to build or reuse the as-of-date integrated KOSPI+KOSDAQ RS percentile cache before writing a `Rule Screen` block.
 - Use `scripts/kr-trend-rules.js` to generate the `Rule Screen` markdown block once the chart data and RS cache are ready.
 - Gather at least 120 daily bars when possible.
 - Report latest close and date, MA5, MA20, MA60, MA120, Bollinger Bands, Ichimoku state, RSI 14, MACD, ADX/DMI, volume versus 20-day average, and nearby breakout or breakdown levels.
-- When a memo includes the `Rule Screen`, place it near the top of `Chart and Positioning`, immediately after the three PNG images and before the prose technical read.
+- When a memo includes the `Rule Screen`, place it near the top of `Chart and Positioning`, immediately after the four PNG images and before the prose technical read.
 - The main chart should prefer OHLC candlesticks plus a close line and a visible current-price guide, while the overlay chart keeps heavier indicators separate.
 - The chart set should show readable axes, price labels, date labels, and clearly separated overlay and momentum views instead of stacking every indicator on one price panel.
 - For Korean stock memos, prefer Korean legend and panel labels when a Hangul-capable local font is available.
 - Treat missing company-name titles as a chart-generation failure, not as an acceptable fallback. If a PNG would render without the company name, regenerate the input with `name` populated before producing the memo.
-- When you are writing a markdown memo file, embed the generated main trend PNG first, the overlay PNG immediately after it, and the momentum PNG right after that near the start of the chart section.
+- When you are writing a markdown memo file, embed the generated main trend PNG first, the overlay PNG immediately after it, the momentum PNG right after that, and the structure PNG (매물대 + 수평 지지/저항 zone) last near the start of the chart section. The companion `*-structure-zones.csv` can be cited when discussing key price levels, including broken or distance-filtered zones that are not drawn on the chart.
 - Keep chart analysis secondary to fundamentals. Use it to frame positioning, momentum, and key levels, not to override business reality.
 - End the chart section with a short chart-only conclusion that says whether the setup looks like bullish continuation, bearish continuation, a technical rebound, a pullback, or range-building.
 - If you do not have enough bars, say the chart read is limited and fall back to simple price-action context such as 1-week, 1-month, 3-month, and 52-week range behavior.

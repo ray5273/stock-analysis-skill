@@ -119,7 +119,7 @@ If a Phase B subagent returns a gap (e.g. Naver returned 0 specialist hits, fore
 
 - Use `scripts/peer-valuation.js` when the user provides peer metrics and you need a consistent markdown comparison table.
 - Use `scripts/fetch-kr-chart.js` when you need current KRX daily bars and the user did not already provide OHLCV history.
-- Use `scripts/chart-basics.js` when you need a technical read plus three-part PNG charts that separate the main price trend, heavier overlay indicators, and momentum panels for `MACD` and `ADX/DMI` inside a markdown memo.
+- Use `scripts/chart-basics.js` when you need a technical read plus four-part PNG charts that separate the main price trend, heavier overlay indicators, momentum panels for `MACD` and `ADX/DMI`, and a structure chart that pairs candles with a horizontal 매물대 (volume-by-price) gutter and ATR-tolerance clustered horizontal 지지/저항 zone(최대 3+3개, 현재가 ±30% 이내)을 사용한다. 보조로 `*-structure-zones.csv` 파일에 broken/거리필터 zone까지 포함한 전체 roster가 8개 컬럼(type, zone_low, zone_high, center_price, touch_count, last_touch_date, score, status)으로 동시 출력된다.
 - Use `scripts/build-kr-universe-rs-cache.js` when the memo needs an integrated KOSPI+KOSDAQ RS percentile cache for same-date rule checks.
 - Use `scripts/kr-trend-rules.js` when the memo needs a `Rule Screen` block with `Minervini Trend Template` pass/fail plus the `KRX 52주 신고가 리더십 점수`.
 - Use `scripts/valuation-bands.js` when the user provides 3-5 years of historical valuation multiples and you need markdown tables plus ASCII band charts for P/E, EV/EBITDA, and P/B.

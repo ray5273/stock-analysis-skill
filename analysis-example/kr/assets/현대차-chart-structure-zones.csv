@@ -1,0 +1,4 @@
+type,zone_low,zone_high,center_price,touch_count,last_touch_date,score,status
+support,491000,510000,500500,36,2026-04-24,0.7757,active
+support,445000,452000,448500,3,2026-03-31,0.1759,active
+support,253500,254500,254000,2,2025-12-01,0.0568,active

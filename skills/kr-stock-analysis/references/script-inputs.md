@@ -46,7 +46,7 @@ Run:
 node scripts/chart-basics.js --input <path-to-json> [--png-out <path-to-png>] [--image-path <markdown-image-path>]
 ```
 
-When `--png-out` is set, the script writes the main trend chart to that exact path and writes sibling overlay and momentum images to the same base name with `-overlay` and `-momentum` before the extension. The momentum chart includes `MACD`, `signal`, `histogram`, and `ADX/DMI`, and the markdown output references all three images.
+When `--png-out` is set, the script writes the main trend chart to that exact path and writes sibling overlay, momentum, and structure images to the same base name with `-overlay`, `-momentum`, and `-structure` before the extension. The momentum chart includes `MACD`, `signal`, `histogram`, and `ADX/DMI`; the structure chart overlays a horizontal 매물대 (volume-by-price, 50 bins) gutter with POC highlighted plus ATR-tolerance clustered horizontal 지지/저항 zone(support 최대 3개 + resistance 최대 3개, 현재가 ±30% 이내, 사선 금지). Alongside the structure PNG the script also writes a companion CSV `<base>-chart-structure-zones.csv` with columns `type,zone_low,zone_high,center_price,touch_count,last_touch_date,score,status` listing every zone — including `broken` and distance-filtered zones that are absent from the chart — so memo authors can cite full zone provenance. The markdown stdout references all four images plus a Support / Resistance Zones table for the drawn zones.
 When `--png-out` is set, the input JSON must include a non-empty `name` field so the company name is printed at the top of all PNG charts.
 
 Expected input:
