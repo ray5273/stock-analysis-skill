@@ -1,2 +1,7 @@
 candidate_id,kind,direction,status,confidence,label,date,index,type,price,min_swing
-1,none,insufficient wave candidate,insufficient wave candidate,0.0000,,,,,,15536
+1,impulse,bearish,drawable,0.7302,,2026-02-27,45,high,223000,25018
+1,impulse,bearish,drawable,0.7302,1,2026-03-09,50,low,167300,25018
+1,impulse,bearish,drawable,0.7302,2,2026-03-18,57,high,209000,25018
+1,impulse,bearish,drawable,0.7302,3,2026-03-31,66,low,167000,25018
+1,impulse,bearish,drawable,0.7302,4,2026-06-02,108,high,370000,25018
+1,impulse,bearish,drawable,0.7302,5,2026-06-11,114,low,287500,25018

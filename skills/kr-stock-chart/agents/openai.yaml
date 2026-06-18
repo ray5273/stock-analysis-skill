@@ -1,0 +1,7 @@
+interface:
+  display_name: "Korean Stock Chart"
+  short_description: "Fetch KRX OHLCV, render five-part PNG charts, and write reusable chart artifacts including MA200-aware technical reads."
+  default_prompt: "Use $kr-stock-chart to prepare reusable KRX chart artifacts for a Korean stock. Fetch about 2 years of daily bars by default, write or update `analysis-example/kr/<company>/chart-data.json`, `chart-analysis.md`, and the chart PNG / CSV sidecars under `analysis-example/kr/assets/`, and include today's MA5, MA20, MA60, MA120, and MA200 levels in the technical read."
+
+policy:
+  allow_implicit_invocation: true
