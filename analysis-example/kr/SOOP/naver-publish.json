@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "status": "converted",
+  "source": {
+    "memoPath": "/mnt/c/Users/Sanghyeok/Documents/codex_workspace/stock-analysis-skill/analysis-example/kr/SOOP/memo.md",
+    "memoSha256": "7b75f4e85ba9ff16b6f6d924586d7ff3a014ca3bdd7b8ff4e1b95d3ddd901b31",
+    "asOfDate": "2026-06-21"
+  },
+  "post": {
+    "company": "SOOP",
+    "ticker": "067160",
+    "title": "SOOP | 이 정체가 치지직(네이버)에 구조적으로 점유율을 내주는 시작인가, 아니면 과매도된 캐시카우의 일시 정체인가 | 2026-06-21",
+    "issue": "이 정체가 치지직(네이버)에 구조적으로 점유율을 내주는 시작인가, 아니면 과매도된 캐시카우의 일시 정체인가",
+    "category": null,
+    "tags": [
+      "SOOP",
+      "067160",
+      "주식분석",
+      "딥밸류",
+      "치지직",
+      "글로벌",
+      "배당",
+      "별풍선",
+      "플랫폼"
+    ],
+    "markdownPath": "/mnt/c/Users/Sanghyeok/Documents/codex_workspace/stock-analysis-skill/analysis-example/kr/SOOP/naver-post.md",
+    "markdownSha256": "644efb0efb1b7e9ca4d4b1f0359d8c5d456f4b640f353baa1ffbbb24daf21258",
+    "images": [
+      {
+        "order": 1,
+        "alt": "SOOP main trend chart",
+        "relativePath": "assets/SOOP-chart.png",
+        "absolutePath": "/mnt/c/Users/Sanghyeok/Documents/codex_workspace/stock-analysis-skill/analysis-example/kr/SOOP/assets/SOOP-chart.png",
+        "sha256": "e339a238d40cd637c2fd4ad0f7b6e9daa3cb3c5ca49327e50674483b704fbc12",
+        "section": "Chart and Positioning"
+      },
+      {
+        "order": 2,
+        "alt": "SOOP overlay chart",
+        "relativePath": "assets/SOOP-chart-overlay.png",
+        "absolutePath": "/mnt/c/Users/Sanghyeok/Documents/codex_workspace/stock-analysis-skill/analysis-example/kr/SOOP/assets/SOOP-chart-overlay.png",
+        "sha256": "123f1d9b50e44269923085cd0ba9bdffb55a026d4a9af8514620312fc73ef960",
+        "section": "Chart and Positioning"
+      },
+      {
+        "order": 3,
+        "alt": "SOOP momentum chart",
+        "relativePath": "assets/SOOP-chart-momentum.png",
+        "absolutePath": "/mnt/c/Users/Sanghyeok/Documents/codex_workspace/stock-analysis-skill/analysis-example/kr/SOOP/assets/SOOP-chart-momentum.png",
+        "sha256": "c54f2d879e981f61077583472440061f81bda1639eb293fa82b34aaa89ac11ab",
+        "section": "Chart and Positioning"
+      },
+      {
+        "order": 4,
+        "alt": "SOOP structure chart",
+        "relativePath": "assets/SOOP-chart-structure.png",
+        "absolutePath": "/mnt/c/Users/Sanghyeok/Documents/codex_workspace/stock-analysis-skill/analysis-example/kr/SOOP/assets/SOOP-chart-structure.png",
+        "sha256": "03c5eced95df0d33358095d31a1f6559bf46d4e6af2078dfac15f220bb0edeb3",
+        "section": "Chart and Positioning"
+      }
+    ]
+  },
+  "prepare": null,
+  "publish": null
+}

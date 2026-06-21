@@ -509,6 +509,10 @@ The links below are grouped by the question each artifact answers. They are kept
 - [KR - 삼성전자 Sell-Side Count Memo](<analysis-example/kr/삼성전자/memo.md>) and [KR - SK하이닉스 Sell-Side Count Memo](<analysis-example/kr/SK하이닉스/memo.md>) for semiconductor examples focused on sell-side coverage count and market framing.
 - [KR - HD현대 Memo](<analysis-example/kr/HD현대/memo.md>) for an OpenDART-backed holding-company example.
 
+**Naver Blog publishing: inspect the memo-to-post transformation**
+
+- [KR - SOOP Naver Blog Post](<analysis-example/kr/SOOP/naver-post.md>) for a mobile-friendly blog version that preserves the memo's thesis, figures, contrary views, charts, sources, and investment disclaimer.
+
 **DART filing extraction and data packs: check how raw filings become memo-ready evidence**
 
 - [KR - 리가켐바이오 리서치 브리프](<analysis-example/kr/리가켐바이오/리서치브리프.md>)
