@@ -35,7 +35,39 @@ const HEADING_MAP = new Map([
   ["decision-changing issues", "판단을 바꿀 신호"],
   ["structured stance", "현재 판단"],
   ["sources", "출처"],
+  ["why this matters", "왜 중요한가"],
+  ["price model", "가격 모델"],
+  ["samsung seat scenarios", "삼성 좌석 시나리오"],
+  ["samsung sds revenue impact", "삼성SDS 매출 영향"],
+  ["why enterprise, not business", "Business가 아니라 Enterprise인 이유"],
+  ["investment takeaway", "투자 시사점"],
 ]);
+
+const IMAGE_LINE_PATTERN = /^!\[([^\]]*)]\(([^)]+\.png(?:\?[^)]*)?)\)\s*$/gim;
+
+const CHART_CAPTIONS = [
+  "가격 추세와 이동평균 위치를 먼저 봅니다.",
+  "이동평균·밴드·구름을 겹쳐 추세 압력을 확인합니다.",
+  "RSI와 MACD로 단기 모멘텀의 방향을 점검합니다.",
+  "지지·저항 구간과 구조적 가격대를 확인합니다.",
+];
+
+function researchSignature(selectedSections, images) {
+  const headings = new Set(selectedSections.map(section => section.heading.toLowerCase()));
+  const completed = [];
+  if (["business and thesis", "dart recheck"].some(heading => headings.has(heading))) completed.push("공시·사업");
+  if (["revenue mix", "what the latest results say"].some(heading => headings.has(heading))) completed.push("실적·재무");
+  if (["current valuation snapshot", "historical valuation bands"].some(heading => headings.has(heading))) completed.push("밸류에이션");
+  if (images.length || headings.has("chart and positioning")) completed.push("차트·수급");
+  if (headings.has("street / alternative views")) completed.push("시장 시각");
+  if (["catalysts", "risks", "decision-changing issues"].some(heading => headings.has(heading))) completed.push("리스크·촉매");
+  return [
+    "**RESEARCH COMPLETE · AI-ASSISTED EQUITY INTELLIGENCE**",
+    "Codex (or Claude) × Stock Research Skill · Crafted by **ray5273**",
+    completed.length ? completed.map(label => `✓ ${label}`).join(" · ") : null,
+    "[GitHub](https://github.com/ray5273/stock-analysis-skill) · Open Research Workflow",
+  ].filter(Boolean);
+}
 
 function parseArgs(argv) {
   const args = {};
@@ -52,10 +84,10 @@ function parseArgs(argv) {
 
 function parseMetadata(markdown) {
   const metadata = {};
-  const firstSection = markdown.split(/^##\s+/m)[0];
-  for (const line of firstSection.split(/\r?\n/)) {
-    const match = line.match(/^[-*]\s+([^:：]+)[:：]\s*(.+?)\s*$/);
-    if (match) metadata[match[1].trim()] = match[2].trim();
+  const headerBlock = markdown.split(/\r?\n/).slice(0, 40).join("\n");
+  for (const line of headerBlock.split(/\r?\n/)) {
+    const match = line.match(/^(?:[-*]\s+)?([^#\n:：]+)[:：]\s*(.+?)\s*$/);
+    if (match) metadata[match[1].trim()] = match[2].trim().replace(/^`|`$/g, "");
   }
   return metadata;
 }
@@ -77,6 +109,14 @@ function parseSections(markdown) {
   return sections;
 }
 
+function stripLeadingMetadataLines(markdown) {
+  return markdown
+    .split(/\r?\n/)
+    .filter(line => !/^(?:기준일|최근 업데이트일)\s*[:：]\s*`?\d{4}-\d{2}-\d{2}`?\s*$/.test(line.trim()))
+    .join("\n")
+    .replace(/^\n+/, "");
+}
+
 function splitTableRow(line) {
   return line.trim().replace(/^\||\|$/g, "").split("|").map((cell) => cell.trim());
 }
@@ -86,35 +126,65 @@ function isDivider(line) {
   return cells.length > 0 && cells.every((cell) => /^:?-{3,}:?$/.test(cell));
 }
 
-function tableToList(lines) {
-  const headers = splitTableRow(lines[0]);
-  const rows = lines.slice(2).map(splitTableRow);
-  return rows.map((cells) => {
-    const lead = cells[0] || "항목";
-    const details = headers.slice(1).map((header, index) => {
-      const value = cells[index + 1] || "";
-      return value ? `${header}: ${value}` : null;
-    }).filter(Boolean);
-    return `- **${lead}**${details.length ? ` — ${details.join(" · ")}` : ""}`;
-  }).join("\n");
+function alignmentFromDivider(cell) {
+  if (/^:-{3,}:$/.test(cell)) return "center";
+  if (/^-{3,}:$/.test(cell)) return "right";
+  return "left";
+}
+
+function parseMarkdownTableBlock(lines, startIndex = 0) {
+  if (!lines[startIndex]?.includes("|") || !lines[startIndex + 1] || !isDivider(lines[startIndex + 1])) return null;
+  const tableLines = [lines[startIndex], lines[startIndex + 1]];
+  let index = startIndex + 2;
+  while (index < lines.length && lines[index].includes("|") && lines[index].trim()) {
+    tableLines.push(lines[index]);
+    index += 1;
+  }
+  const headers = splitTableRow(tableLines[0]);
+  const divider = splitTableRow(tableLines[1]);
+  const rows = tableLines.slice(2).map(splitTableRow).map((cells) => {
+    const normalized = [...cells];
+    while (normalized.length < headers.length) normalized.push("");
+    return normalized.slice(0, headers.length);
+  });
+  return {
+    startIndex,
+    endIndex: index,
+    lines: tableLines,
+    headers,
+    alignments: divider.map(alignmentFromDivider),
+    rows,
+  };
+}
+
+function extractMarkdownTables(markdown) {
+  const lines = markdown.split(/\r?\n/);
+  const tables = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const table = parseMarkdownTableBlock(lines, i);
+    if (!table) continue;
+    tables.push(table);
+    i = table.endIndex - 1;
+  }
+  return tables;
+}
+
+function markdownTableToTsv(table) {
+  return [table.headers, ...table.rows]
+    .map(row => row.map(cell => cell.replace(/<br\s*\/?>/gi, "\n")).join("\t"))
+    .join("\n");
 }
 
 function convertTables(markdown) {
   const lines = markdown.split(/\r?\n/);
   const output = [];
   for (let i = 0; i < lines.length; i += 1) {
-    if (lines[i].includes("|") && i + 1 < lines.length && isDivider(lines[i + 1])) {
-      const table = [lines[i], lines[i + 1]];
-      i += 2;
-      while (i < lines.length && lines[i].includes("|") && lines[i].trim()) {
-        table.push(lines[i]);
-        i += 1;
-      }
-      i -= 1;
-      output.push(tableToList(table));
-    } else {
-      output.push(lines[i]);
-    }
+    const table = parseMarkdownTableBlock(lines, i);
+    if (!table) { output.push(lines[i]); continue; }
+    if (output.length && output.at(-1).trim()) output.push("");
+    output.push(...table.lines);
+    if (table.endIndex < lines.length && lines[table.endIndex]?.trim()) output.push("");
+    i = table.endIndex - 1;
   }
   return output.join("\n");
 }
@@ -123,6 +193,10 @@ function cleanInternalLinks(markdown) {
   return markdown.replace(/(?<!!)\[([^\]]+)]\((?!https?:\/\/|mailto:)([^)]+)\)/g, (_match, label) => {
     return /\.(?:md|json|csv)$/i.test(label.trim()) ? "내부 검증 자료" : label;
   });
+}
+
+function stripImageLines(markdown) {
+  return markdown.replace(IMAGE_LINE_PATTERN, "").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 function extractImages(markdown, memoPath, selectedHeadings) {
@@ -146,18 +220,43 @@ function extractImages(markdown, memoPath, selectedHeadings) {
   return images;
 }
 
+function chartAnalysisSection(images) {
+  if (!images.length) return null;
+  const body = images.map((image, index) => {
+    const caption = CHART_CAPTIONS[index] || `${index + 1}번째 차트입니다.`;
+    return `![${image.alt}](${image.relativePath})\n\n차트 ${index + 1}. ${caption}`;
+  }).join("\n\n");
+  return { heading: "차트 분석", body };
+}
+
+function extractSourceLines(markdown) {
+  const lines = markdown.split(/\r?\n/);
+  const sources = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    if (!/^#{2,6}\s+(?:Sources|출처)\s*$/i.test(lines[i].trim())) continue;
+    i += 1;
+    while (i < lines.length && !/^#{2,6}\s+/.test(lines[i])) {
+      if (lines[i].trim()) sources.push(lines[i]);
+      i += 1;
+    }
+    i -= 1;
+  }
+  return sources.join("\n").trim();
+}
+
 function deriveIssue(summary) {
+  if (/KKR/.test(summary) && /AI|AX|클라우드/.test(summary)) return "KKR 전략자본과 AI 전환 검증";
   const explicitQuestion = summary.match(/핵심 질문은[^—\n]*[—-]\s*([^\n.]+)/);
   if (explicitQuestion) return explicitQuestion[1].replace(/["“”]/g, "").trim().slice(0, 68);
   const bold = summary.match(/\*\*([\s\S]*?)\*\*/);
   if (bold) return bold[1].replace(/["“”]/g, "").trim().slice(0, 68);
   const sentence = summary.split(/[.!?。]\s/)[0];
-  return sentence.replace(/[*_"“”]/g, "").trim().slice(0, 70);
+  return sentence.replace(/[*_`"“”]/g, "").trim().slice(0, 70);
 }
 
 function generateTags(company, ticker, summary) {
   const tags = [company, ticker, "주식분석"];
-  const candidates = ["딥밸류", "치지직", "글로벌", "배당", "자사주소각", "별풍선", "플랫폼"];
+  const candidates = ["딥밸류", "치지직", "글로벌", "배당", "자사주소각", "별풍선", "플랫폼", "KKR", "AI", "AX", "클라우드", "생성형AI", "삼성그룹"];
   for (const candidate of candidates) {
     if (summary.includes(candidate)) tags.push(candidate);
   }
@@ -177,11 +276,13 @@ function buildPost({ markdown, memoPath, category = null }) {
 
   const allSections = parseSections(markdown);
   const selected = allSections.filter((section) => !EXCLUDED_SECTIONS.has(section.heading.toLowerCase()));
-  const summary = allSections.find((section) => section.heading.toLowerCase() === "summary")?.body || "";
+  const summary = stripLeadingMetadataLines(allSections.find((section) => section.heading.toLowerCase() === "summary")?.body || "");
   assert(summary, "Memo must contain a Summary section");
   const issue = deriveIssue(summary);
   const title = `${company} | ${issue} | ${asOfDate}`.slice(0, 100);
   const images = extractImages(markdown, memoPath, selected);
+  const signature = researchSignature(selected, images);
+  const hasSelectedSources = selected.some(section => section.heading.toLowerCase() === "sources" || section.heading === "출처");
 
   const parts = [
     `# ${title}`,
@@ -190,9 +291,19 @@ function buildPost({ markdown, memoPath, category = null }) {
   ];
   for (const section of selected) {
     const mapped = HEADING_MAP.get(section.heading.toLowerCase()) || section.heading;
-    let body = convertTables(section.body);
+    let body = convertTables(section.heading.toLowerCase() === "summary" ? stripLeadingMetadataLines(section.body) : section.body);
+    body = stripImageLines(body);
     body = cleanInternalLinks(body);
+    if (!body) continue;
     parts.push("", `## ${mapped}`, "", body);
+    if (section.heading.toLowerCase() === "summary") {
+      const chartSection = chartAnalysisSection(images);
+      if (chartSection) parts.push("", `## ${chartSection.heading}`, "", chartSection.body);
+    }
+  }
+  if (!hasSelectedSources) {
+    const sourceLines = cleanInternalLinks(extractSourceLines(markdown));
+    if (sourceLines) parts.push("", "## 출처", "", sourceLines);
   }
   parts.push(
     "",
@@ -201,6 +312,8 @@ function buildPost({ markdown, memoPath, category = null }) {
     `기준일: ${asOfDate}`,
     "",
     "본 글은 공개된 자료를 바탕으로 작성한 개인 리서치이며, 특정 종목의 매수·매도를 권유하지 않습니다. 투자 판단과 그 결과에 대한 책임은 투자자 본인에게 있습니다.",
+    "",
+    ...signature.map(line => `> ${line}`),
   );
   const postMarkdown = `${normalizeText(parts.join("\n"))}\n`;
   return {
@@ -224,6 +337,7 @@ function buildPost({ markdown, memoPath, category = null }) {
         markdownPath: null,
         markdownSha256: sha256(postMarkdown),
         images,
+        thumbnail: null,
       },
       prepare: null,
       publish: null,
@@ -250,4 +364,14 @@ if (require.main === module) {
   try { main(); } catch (error) { console.error(error.message); process.exit(1); }
 }
 
-module.exports = { buildPost, convertTables, parseMetadata, parseSections };
+module.exports = {
+  buildPost,
+  convertTables,
+  extractMarkdownTables,
+  isDivider,
+  markdownTableToTsv,
+  parseMarkdownTableBlock,
+  parseMetadata,
+  parseSections,
+  splitTableRow,
+};
