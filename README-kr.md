@@ -1,4 +1,4 @@
-# Stock, Portfolio, And Sector Analysis Skill
+# KrResearchKit — Korean Equity Research
 
 미국 주식, 한국 주식, KRX 포트폴리오, 한국 섹터 리서치용 AI 스킬 모음입니다. **Claude Code**와 **OpenAI Codex CLI** 양쪽 네이티브입니다.
 
