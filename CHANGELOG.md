@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `manifest.json` — project-level descriptor for marketplace catalogs (KrResearchKit v0.1.0, 23 KR skills, tiered featured/standalone/bundle).
 - `.claude-plugin/plugin.json` — Claude Code plugin manifest (`kr-research-kit`, MIT, keywords for discoverability).
-- `.claude-plugin/marketplace.json` — self-hosted Claude Code marketplace manifest. Users can install via `/plugin marketplace add ray5273/stock-analysis-skill`.
+- `.claude-plugin/marketplace.json` — self-hosted Claude Code marketplace manifest. Users can install via `/plugin marketplace add ray5273/kr-research-kit`.
 - `.github/FUNDING.yml` — GitHub Sponsors (`ray5273`) + KakaoPay link.
 - `docs/MARKETPLACE.md` — submission guide for Claude community marketplace, Codex catalog, and agentskills.io with per-channel checklist + listing copy.
 - `skills/kr-market-leaders/` — KOSPI + KOSDAQ integrated leadership screener (SKILL.md, agents/openai.yaml, 3 scripts, 2 references). Now git-tracked.

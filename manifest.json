@@ -3,10 +3,10 @@
   "name": "KrResearchKit",
   "version": "0.1.0",
   "description": "AI-native Korean equity research skill pack — DART filings, sell-side consensus, foreign-IB coverage, 5-panel charts, and Naver-blog publishing in one package. Native to Codex CLI and Claude Code.",
-  "homepage": "https://github.com/ray5273/stock-analysis-skill",
+  "homepage": "https://github.com/ray5273/kr-research-kit",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ray5273/stock-analysis-skill.git"
+    "url": "https://github.com/ray5273/kr-research-kit.git"
   },
   "author": {
     "name": "Sanghyeok Park",

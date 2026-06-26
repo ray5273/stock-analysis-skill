@@ -208,7 +208,7 @@ function httpsGetBuffer(urlString, opts = {}) {
         method: "GET",
         headers: {
           "User-Agent":
-            "stock-analysis-skill/1.0 (kr-stock-dart-analysis fetch-nps-holdings)",
+            "kr-research-kit/1.0 (kr-stock-dart-analysis fetch-nps-holdings)",
           Accept: "*/*",
         },
       },

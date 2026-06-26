@@ -94,7 +94,7 @@ function fetchJson(url) {
       url,
       {
         headers: {
-          "User-Agent": "Mozilla/5.0 Codex stock-analysis-skill",
+          "User-Agent": "Mozilla/5.0 Codex kr-research-kit",
           Accept: "application/json",
         },
       },
