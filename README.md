@@ -85,7 +85,7 @@ Output: `analysis-example/kr-market/leaders-<YYYY-MM-DD>.md` + `.json` cache wit
 Use $kr-daily-market-news to create today's Korean market-wide and sector daily news report for blog publication. Write analysis-example/kr-market/daily-news-YYYY-MM-DD.md and .json, then use $kr-naver-blog-publish in scheduled mode.
 ```
 
-Output: `analysis-example/kr-market/daily-news-<YYYY-MM-DD>.md` + `.json` and a dated Naver publish manifest. Example: [daily-news-2026-06-28](analysis-example/kr-market/daily-news-2026-06-28.md), [Naver post](analysis-example/kr-market/naver-post-2026-06-28.md), [publish manifest](analysis-example/kr-market/naver-publish-2026-06-28.json). Sector collection uses the default seed list at [examples/kr/daily-sector-stocks.json](examples/kr/daily-sector-stocks.json).
+Output: `analysis-example/kr-market/daily-news-<YYYY-MM-DD>.md` + `.json` and a dated Naver publish manifest. Examples: [daily-news-2026-06-28](analysis-example/kr-market/daily-news-2026-06-28.md), [daily-news-2026-06-29](analysis-example/kr-market/daily-news-2026-06-29.md), [2026-06-29 Naver post](analysis-example/kr-market/naver-post-2026-06-29.md), [2026-06-29 publish manifest](analysis-example/kr-market/naver-publish-2026-06-29.json). Sector collection uses the default seed list at [examples/kr/daily-sector-stocks.json](examples/kr/daily-sector-stocks.json).
 
 More scenarios (sector compare, portfolio health, post-earnings update) → [docs/MARKETPLACE.md § Use cases](docs/MARKETPLACE.md). Full prompt catalog for every shipped skill → [docs/USAGE.md](docs/USAGE.md).
 

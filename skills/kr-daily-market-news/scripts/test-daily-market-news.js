@@ -4,8 +4,8 @@ const assert = require("assert");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { DEFAULT_SECTORS, buildSectorDiscoveryQueries, buildSectorStockQueries, collectDailyMarketNews, collectSectorNews, dedupeItems, normalizeNewsDate, normalizeRssPubDate, parseRssItems, readSectorStocks, readWatchlist } = require("./fetch-daily-market-news");
-const { buildPublishManifest, renderDailyReport, renderNaverPost } = require("./render-daily-report");
+const { DEFAULT_SECTORS, buildSectorDiscoveryQueries, buildSectorStockQueries, collectDailyMarketNews, collectSectorNews, dedupeItems, normalizeNewsDate, normalizeRssPubDate, parseRssItems, rankNewsItems, readSectorStocks, readWatchlist } = require("./fetch-daily-market-news");
+const { buildPublishManifest, renderDailyReport, renderNaverPost, titleCandidates } = require("./render-daily-report");
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "kr-daily-market-news-"));
 const watchlistPath = path.join(root, "watchlist.json");
@@ -55,6 +55,14 @@ assert.strictEqual(dedupeItems([
   { headline: "A", url: "https://x.test/a?utm=2" },
   { headline: "B", url: "https://x.test/b" },
 ]).length, 2);
+
+const rankedMarketNews = rankNewsItems([
+  { headline: "알엔투테크놀로지, 70억원 제3자배정 유상증자", url: "https://news.example.com/raise", publishedDate: "2026-06-28" },
+  { headline: "코스피·코스닥 상승 마감, 외국인 순매수와 환율 변수 부각", url: "https://news.example.com/close", publishedDate: "2026-06-28" },
+  { headline: "시간외 거래서 개별주 급등", url: "https://news.example.com/after", publishedDate: "2026-06-28" },
+]);
+assert.strictEqual(rankedMarketNews[0].url, "https://news.example.com/close");
+assert.strictEqual(rankedMarketNews[rankedMarketNews.length - 1].url, "https://news.example.com/raise");
 
 const sectorStocksPath = path.resolve("examples/kr/daily-sector-stocks.json");
 const sectorStocks = readSectorStocks(sectorStocksPath);
@@ -106,11 +114,13 @@ fs.writeFileSync(fixturePath, JSON.stringify({
       { headline: "SK하이닉스 DRAM 가격 반등", url: "https://news.example.com/sk-dram", publishedDate: "2026-06-28", source: "Fixture RSS" },
       { headline: "반도체 공통 뉴스", url: "https://news.example.com/common?utm_source=n", publishedDate: "2026-06-28", source: "Fixture RSS" },
       { headline: "반도체 공통 뉴스", url: "https://news.example.com/common?utm_campaign=dup", publishedDate: "2026-06-28", source: "Fixture RSS" },
+      { headline: "LH 부동산 분양 노동 이슈", url: "https://news.example.com/lh-realestate", publishedDate: "2026-06-28", source: "Fixture RSS" },
       { headline: "Google 발견 뉴스", url: "https://news.google.com/rss/articles/example", publishedDate: "2026-06-28", source: "Google News RSS", discovery: true },
     ],
   });
   assert.strictEqual(sectorGroups.find(group => group.sector === "반도체/AI").items.length, 3);
   assert(!sectorGroups.find(group => group.sector === "반도체/AI").items.some(item => item.url.includes("news.google.com")));
+  assert(!sectorGroups.flatMap(group => group.items).some(item => item.url.includes("lh-realestate")));
 
   const data = await collectDailyMarketNews({ date: "2026-06-28", watchlist: watchlistPath, fixture: fixturePath });
   assert.strictEqual(data.asOfDate, "2026-06-28");
@@ -122,10 +132,14 @@ fs.writeFileSync(fixturePath, JSON.stringify({
   assert.strictEqual(data.marketSummary.length, 2);
   assert.strictEqual(data.marketSummary[0].summaryBasis, "headline-theme");
   assert.strictEqual(data.marketSummary[1].summaryBasis, "headline-theme");
-  assert(data.marketSummary[0].summary.includes("코스피, 반도체 강세에 상승 마감"));
-  assert(data.marketSummary[0].summary.includes("반도체 주도주 수급"));
-  assert(data.marketSummary[1].summary.includes("환율 하락과 외국인 수급 개선"));
-  assert(data.marketSummary[1].summary.includes("외국인 수급"));
+  assert.strictEqual(data.marketNews[0].url, "https://news.example.com/market2");
+  assert(data.oneLine.includes("환율"));
+  assert(data.oneLine.includes("수급"));
+  assert(data.marketSummary[0].summary.includes("환율 하락과 외국인 수급 개선"));
+  assert(data.marketSummary[0].summary.includes("금리와 환율 변화"));
+  assert(data.marketSummary[1].summary.includes("코스피, 반도체 강세에 상승 마감"));
+  assert(data.marketSummary[1].summary.includes("반도체 주도주 수급"));
+  assert(!data.marketSummary.some(item => item.summary.includes("기사입니다. 시장에서는")));
   assert(!data.marketSummary.some(item => item.summary.includes("459.28포인트")));
   assert(!data.marketSummary.some(item => item.summary.includes("...")));
   assert(!data.marketSummary.some(item => item.summary.includes("한국판 나스닥")));
@@ -177,11 +191,14 @@ fs.writeFileSync(fixturePath, JSON.stringify({
   assert(markdown.includes("## 블로그 제목 후보"));
   assert(markdown.includes("## 출처"));
   assert(markdown.includes("매수·매도를 권유하지 않습니다"));
+  assert(titleCandidates(data)[0].includes("코스피"));
+  assert(titleCandidates(data)[0].includes("금리·환율"));
+  assert(!titleCandidates(data)[0].includes("반도체 / AI 흐름 체크"));
   const postMarkdown = renderNaverPost(data, { baseDir: root });
   assert(!postMarkdown.includes("## 오늘 시장 한 줄"));
   assert(postMarkdown.includes("## 시장 주요 요약"));
-  assert(postMarkdown.includes("1. 반도체 업황: 코스피, 반도체 강세에 상승 마감"));
-  assert(postMarkdown.includes("2. 금리/환율: 환율 하락과 외국인 수급 개선"));
+  assert(postMarkdown.includes("1. 금리/환율: 환율 하락과 외국인 수급 개선"));
+  assert(postMarkdown.includes("2. 반도체 업황: 코스피, 반도체 강세에 상승 마감"));
   assert(!postMarkdown.includes("459.28포인트"));
   assert(!postMarkdown.includes("한국판 나스닥"));
   assert(!postMarkdown.includes("## 블로그 제목 후보"));
@@ -191,12 +208,13 @@ fs.writeFileSync(fixturePath, JSON.stringify({
   assert(!postMarkdown.includes("- 수집모드"));
   assert(!/^- /m.test(postMarkdown));
   assert(postMarkdown.includes("| 내용 | 링크 |"));
-  assert(postMarkdown.includes("| 업종/테마 | 흐름 | 대표 뉴스 |"));
+  assert(markdown.includes("| 테마 | 대표 헤드라인 | 기사 수 |"));
+  assert(postMarkdown.includes("| 업종/테마 | 대표 뉴스 | 흐름 |"));
   assert(postMarkdown.includes("삼성전자: 반도체 업종 AI 수요 기대"));
   for (const sector of DEFAULT_SECTORS) assert(postMarkdown.includes(`| ${sector} |`));
   const marketSection = postMarkdown.split("## 시장 주요 뉴스")[1].split("## 업종/테마별 흐름")[0];
-  assert(marketSection.includes("1. 코스피, 반도체 강세에 상승 마감\nhttps://news.example.com/market1"));
-  assert(marketSection.includes("2. 환율 하락과 외국인 수급 개선\nhttps://news.example.com/market2"));
+  assert(marketSection.includes("1. 환율 하락과 외국인 수급 개선\nhttps://news.example.com/market2"));
+  assert(marketSection.includes("2. 코스피, 반도체 강세에 상승 마감\nhttps://news.example.com/market1"));
   assert(!marketSection.includes("- ["));
   assert(!marketSection.includes("]("));
   assert(!marketSection.includes("—"));
@@ -212,7 +230,12 @@ fs.writeFileSync(fixturePath, JSON.stringify({
   assert.strictEqual(manifest.automation.scheduledPublishAllowed, true);
   assert.strictEqual(manifest.automation.duplicateDate, "2026-06-28");
   assert.strictEqual(manifest.post.markdownSha256.length, 64);
-  assert.deepStrictEqual(manifest.post.linkCards, ["https://news.example.com/market1", "https://news.example.com/market2"]);
+  assert.deepStrictEqual(manifest.post.linkCards, ["https://news.example.com/market2", "https://news.example.com/market1"]);
+  const duplicateSourceMarkdown = renderDailyReport({
+    ...data,
+    sectorNews: [{ sector: "반도체/AI", query: "", items: [{ headline: "중복 출처", url: "https://news.example.com/market2?utm_source=dup", source: "Fixture News", publishedDate: "2026-06-28" }] }],
+  }, { baseDir: root });
+  assert.strictEqual((duplicateSourceMarkdown.match(/news\.example\.com\/market2/g) || []).length, 2);
   console.log("daily market-news tests passed");
 })().catch(error => {
   console.error(error);

@@ -526,9 +526,12 @@ function makeDailyCase(fixtureOverrides = {}) {
   const prepared = prepare({ fixture: test.fixture, scheduled: "yes" }, test.manifest, readJson(test.manifest));
   assert(prepared.approvalToken);
   assert.strictEqual(JSON.parse(fs.readFileSync(test.fixture, "utf8")).linkCardPasteCalls, undefined);
-  assert.strictEqual(JSON.parse(fs.readFileSync(test.fixture, "utf8")).linkCardEnterCalls, undefined);
+  assert.deepStrictEqual(JSON.parse(fs.readFileSync(test.fixture, "utf8")).linkCardEnterCalls, ["https://news.example.com/market1", "https://news.example.com/market2"]);
   assert(JSON.parse(fs.readFileSync(test.fixture, "utf8")).editor.bodyHtml.includes("<table"));
   assert(JSON.parse(fs.readFileSync(test.fixture, "utf8")).editor.body.includes("내용\t링크"));
+  const dailyBodyHtml = JSON.parse(fs.readFileSync(test.fixture, "utf8")).editor.bodyHtml;
+  assert(dailyBodyHtml.includes('data-kr-naver-spacer="true"'));
+  assert(/market1<\/span><\/p>\s*<p data-kr-naver-spacer="true"/.test(dailyBodyHtml));
   const dailyBody = JSON.parse(fs.readFileSync(test.fixture, "utf8")).editor.body;
   assert(!dailyBody.includes("관심종목 뉴스"));
   assert(!dailyBody.includes("- 기준일"));

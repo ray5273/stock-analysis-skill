@@ -106,6 +106,9 @@ const DEFAULT_DIRECT_RSS_SOURCES = [
 ];
 const GOOGLE_NEWS_RSS_BASE = "https://news.google.com/rss/search";
 const MARKET_KEYWORDS = /코스피|코스닥|증시|주식시장|시장\s*(?:흐름|마감|전망|수급)|외국인|기관|금리|환율|원화|달러|마감|상승|하락|급등|급락/i;
+const LOW_PRIORITY_NEWS_PATTERN = /유상증자|제3자배정|시간외|애프터마켓|after\s*market|신규\s*상장|상장예비심사|예심\s*청구|공모가|주요공시|취득|처분|단일판매|공급계약|투자주의|조회공시|풍문/i;
+const SECTOR_REJECT_PATTERN = /\bLH\b|한국토지주택공사|부동산\s*(?:대책|시장|거래|분양)|아파트|청약|전세|월세|노동|파업|임금|세관|관세청|밀수|압수/i;
+const BROAD_SECTOR_TERMS = new Set(["AI", "부품", "기계", "건설", "철강", "금융", "증권", "보험", "화학", "정유", "유통", "미디어", "게임", "인터넷", "소비재"]);
 
 function stripHtml(value) {
   return normalizeSpace(String(value || "")
@@ -453,16 +456,53 @@ function matchesMarketNews(item) {
 }
 
 function sectorMatchTerms(sector, stocks = []) {
-  return [...new Set([
-    ...String(sector).split(/[\/\s]+/).map(normalizeSpace).filter(Boolean),
-    ...stocks.map(stock => stock.name).filter(Boolean),
-    ...stocks.flatMap(stock => stock.keywords || []).filter(Boolean),
-  ])].filter(term => term.length >= 2);
+  const sectorTerms = String(sector).split(/[\/\s]+/)
+    .map(normalizeSpace)
+    .filter(term => term.length >= 2 && !BROAD_SECTOR_TERMS.has(term));
+  const stockNames = stocks.map(stock => stock.name).filter(Boolean);
+  const stockKeywords = stocks.flatMap(stock => stock.keywords || [])
+    .map(normalizeSpace)
+    .filter(term => term.length >= 2 && !BROAD_SECTOR_TERMS.has(term));
+  return [...new Set([...sectorTerms, ...stockNames, ...stockKeywords])];
 }
 
 function matchesSectorNews(item, sector, stocks = []) {
   const text = textForMatch(item);
+  if (SECTOR_REJECT_PATTERN.test(text)) return false;
+  if (LOW_PRIORITY_NEWS_PATTERN.test(text)) return false;
   return sectorMatchTerms(sector, stocks).some(term => text.includes(term));
+}
+
+function scorePattern(text, pattern, points) {
+  return pattern.test(text) ? points : 0;
+}
+
+function marketNewsScore(item) {
+  const text = textForMatch(item);
+  let score = 0;
+  score += scorePattern(text, /코스피|KOSPI/i, 8);
+  score += scorePattern(text, /코스닥|KOSDAQ/i, 8);
+  score += scorePattern(text, /마감|장중|개장|상승|하락|급등|급락|강세|약세|랠리|반등|조정/i, 7);
+  score += scorePattern(text, /외국인|기관|개인|순매수|순매도|수급|거래대금/i, 9);
+  score += scorePattern(text, /환율|원화|달러|엔화|위안/i, 10);
+  score += scorePattern(text, /금리|국고채|채권|연준|FOMC|물가/i, 10);
+  score += scorePattern(text, /정부|정책|세제|상법|밸류업|공매도|자사주|배당|거래소/i, 7);
+  score += scorePattern(text, /실적\s*시즌|어닝|분기\s*실적|영업이익|컨센서스/i, 6);
+  score += scorePattern(text, /반도체|HBM|DRAM|D램|낸드|AI|바이오|제약|이차전지|배터리|조선|방산|자동차|은행|증권/i, 5);
+  score -= scorePattern(text, LOW_PRIORITY_NEWS_PATTERN, 24);
+  if (!/코스피|코스닥|증시|시장|외국인|기관|금리|환율|정책|업종|테마/i.test(text)) score -= 8;
+  return score;
+}
+
+function rankNewsItems(items, limit = null, options = {}) {
+  const ranked = dedupeItems(items).map((item, index) => ({
+    item,
+    index,
+    score: marketNewsScore(item),
+  })).filter(entry => options.minScore == null || entry.score >= options.minScore)
+    .sort((a, b) => (b.score - a.score) || (a.index - b.index))
+    .map(entry => ({ ...entry.item, importanceScore: entry.score }));
+  return limit == null ? ranked : ranked.slice(0, limit);
 }
 
 function classifyThemes(items) {
@@ -485,8 +525,23 @@ function classifyThemes(items) {
 }
 
 function buildOneLine(marketNews) {
+  const events = [];
+  const text = textForMatch({ headline: marketNews.slice(0, 5).map(item => item.headline || item.title).join("\n"), description: marketNews.slice(0, 5).map(item => item.description).join("\n") });
+  const add = value => {
+    if (value && !events.includes(value)) events.push(value);
+  };
+  if (/코스피/.test(text)) add(/코스피[^\n.。]*(?:하락|약세|약보합)/.test(text) ? "코스피 약세" : (/코스피[^\n.。]*(?:급등|강세|상승)/.test(text) ? "코스피 강세" : "코스피 흐름"));
+  if (/코스닥/.test(text)) add(/코스닥[^\n.。]*(?:하락|약세|약보합)/.test(text) ? "코스닥 약세" : (/코스닥[^\n.。]*(?:급등|강세|상승)/.test(text) ? "코스닥 강세" : "코스닥 흐름"));
+  if (/환율|원화|달러/.test(text)) add(/환율[^.。]*(?:상승|급등)|원화[^.。]*약세|달러[^.。]*강세/.test(text) ? "환율 상승 압력" : "환율 변수");
+  if (/금리|국고채|채권/.test(text)) add(/금리[^.。]*(?:상승|급등)|국고채[^.。]*(?:상승|급등)/.test(text) ? "금리 상승" : "금리 변수");
+  if (/외국인|기관|수급|순매수|순매도/.test(text)) add("외국인·기관 수급");
+  if (/반도체|HBM|DRAM|D램|낸드|AI/.test(text)) add("반도체/AI");
+  if (/바이오|제약|헬스케어/.test(text)) add("바이오");
+  if (/정책|정부|세제|상법|밸류업|공매도/.test(text)) add("정책 이슈");
+  if (/실적\s*시즌|어닝|분기\s*실적/.test(text)) add("실적 시즌");
+  if (events.length >= 2) return `${events.slice(0, 3).join(", ")} 흐름이 함께 부각됐습니다.`;
   const firstMarket = marketNews[0]?.headline;
-  if (firstMarket) return firstMarket;
+  if (firstMarket && marketNewsScore(marketNews[0]) > 0) return firstMarket;
   return "수집된 기사 수가 제한적입니다. 원문 출처를 우선 확인해야 합니다.";
 }
 
@@ -567,7 +622,7 @@ function marketSummaryTheme(item) {
 
 function summaryEventText(item) {
   const headline = cleanNewsText(item.headline || item.title || "시장 뉴스");
-  const description = usableDescription(item.description);
+  const description = usableDescription(item.description).replace(/[.。]+$/, "");
   if (description && !description.includes(headline) && !headline.includes(description)) {
     return `${headline}은 ${description}`;
   }
@@ -578,7 +633,7 @@ function makeMarketSummary(item) {
   const event = summaryEventText(item);
   const theme = marketSummaryTheme(item);
   const prefix = theme.theme === "시장 뉴스" ? "" : `${theme.theme}: `;
-  const summary = `${prefix}${event} 기사입니다. 시장에서는 ${theme.implication}.`;
+  const summary = `${prefix}${event}. 투자자는 ${theme.implication}.`;
   return summary.length > 210 ? summary.slice(0, 210).replace(/[,.·\s]+$/, "") : summary;
 }
 
@@ -603,13 +658,13 @@ function normalizeSectorNews(value, asOfDate = null, warnings = null) {
   if (Array.isArray(value)) {
     return DEFAULT_SECTORS.map((sector, index) => {
       const existing = value.find(item => item.sector === sector) || value[index] || {};
-      return { sector, query: existing.query || `한국증시 ${sector} 주식 뉴스`, items: filterSameDateItems(existing.items || [], asOfDate, warnings, `${sector} 업종 뉴스`) };
+      return { sector, query: existing.query || `한국증시 ${sector} 주식 뉴스`, items: rankNewsItems(filterSameDateItems(existing.items || [], asOfDate, warnings, `${sector} 업종 뉴스`), 5) };
     });
   }
   return DEFAULT_SECTORS.map(sector => ({
     sector,
     query: `한국증시 ${sector} 주식 뉴스`,
-    items: filterSameDateItems(value?.[sector] || [], asOfDate, warnings, `${sector} 업종 뉴스`),
+    items: rankNewsItems(filterSameDateItems(value?.[sector] || [], asOfDate, warnings, `${sector} 업종 뉴스`), 5),
   }));
 }
 
@@ -623,11 +678,10 @@ async function collectSectorNews(options = {}) {
   for (const sector of DEFAULT_SECTORS) {
     const stocks = sectorStocks?.[sector] || [];
     const discoveryQuery = buildSectorDiscoveryQueries(sector, stocks);
-    const items = dedupeItems(directItems
+    const items = rankNewsItems(directItems
       .filter(isDirectRssArticle)
       .filter(item => matchesSectorNews(item, sector, stocks))
-      .map(item => ({ ...item, sector, query: discoveryQuery.query })))
-      .slice(0, perSectorLimit);
+      .map(item => ({ ...item, sector, query: discoveryQuery.query })), perSectorLimit);
     groups.push({
       sector,
       query: discoveryQuery.query,
@@ -644,7 +698,7 @@ async function collectDailyMarketNews(options) {
   if (options.fixture) {
     const fixture = JSON.parse(fs.readFileSync(path.resolve(options.fixture), "utf8"));
     const warnings = [...(fixture.warnings || [])];
-    const marketNews = filterSameDateItems(fixture.marketNews || [], date, warnings, "시장 뉴스");
+    const marketNews = rankNewsItems(filterSameDateItems(fixture.marketNews || [], date, warnings, "시장 뉴스"), Number(options.marketLimit || 12));
     const marketSummary = fixture.marketSummary || await buildMarketSummary(marketNews, { fixture: true });
     const sectorNews = normalizeSectorNews(fixture.sectorNews, date, warnings);
     const officialSources = dedupeItems(fixture.officialSources || []);
@@ -691,10 +745,9 @@ async function collectDailyMarketNews(options) {
   const directRssItems = Array.isArray(options.directRssItems)
     ? filterSameDateItems(options.directRssItems, date, warnings, "국내 RSS 기사")
     : await collectDirectRssItems({ ...options, asOfDate: date, warnings });
-  const marketNews = dedupeItems(directRssItems
+  const marketNews = rankNewsItems(directRssItems
     .filter(isDirectRssArticle)
-    .filter(matchesMarketNews))
-    .slice(0, Number(options.marketLimit || 12));
+    .filter(matchesMarketNews), Number(options.marketLimit || 12), { minScore: 1 });
   if (marketNews.length < 5) warnings.push(`시장 주요 뉴스가 기준일 기사만으로 ${marketNews.length}건 수집됐습니다.`);
   const marketSummary = await buildMarketSummary(marketNews, options);
   const sectorNews = await collectSectorNews({ ...options, asOfDate: date, warnings, sectorStocks, directRssItems });
@@ -755,7 +808,9 @@ module.exports = {
   extractArticleText,
   googleNewsRssUrl,
   isGoogleNewsUrl,
+  marketNewsScore,
   parseRssItems,
+  rankNewsItems,
   readSectorStocks,
   readWatchlist,
   normalizeRssPubDate,

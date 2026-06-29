@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "contentType": "daily-market-news",
+  "status": "prepared",
+  "source": {
+    "reportPath": "/Users/sanghyeok/workspace/stock-analysis-skill/analysis-example/kr-market/daily-news-2026-06-29.md",
+    "reportSha256": "15b5d213b0f83de18856d479ddc142af679981f5652b76a5ec78fdcac600d04c",
+    "asOfDate": "2026-06-29"
+  },
+  "post": {
+    "company": "한국 시장",
+    "ticker": "",
+    "title": "2026-06-29 코스피 약세·코스닥 8% 급등: 외국인 매도와 금리·환율 점검",
+    "issue": "코스피 약세, 코스닥 약세, 환율 상승 압력 흐름이 함께 부각됐습니다.",
+    "category": null,
+    "tags": [
+      "한국증시",
+      "코스피",
+      "코스닥",
+      "시장뉴스",
+      "20260629"
+    ],
+    "markdownPath": "/Users/sanghyeok/workspace/stock-analysis-skill/analysis-example/kr-market/naver-post-2026-06-29.md",
+    "markdownSha256": "85e3d297dc4d6514a4e063ecfcffc835c93060cf919872136fe7bea8375fefdc",
+    "images": [],
+    "linkCards": [
+      "https://www.yna.co.kr/view/AKR20260629130800008",
+      "https://www.yna.co.kr/view/AKR20260629014200009",
+      "https://www.yna.co.kr/view/AKR20260629080451008",
+      "https://www.yna.co.kr/view/AKR20260629138751008",
+      "https://www.yna.co.kr/view/AKR20260629121200008"
+    ],
+    "thumbnail": {
+      "prompt": "2026-06-29 코스피 약세·코스닥 8% 급등: 외국인 매도와 금리·환율 점검 블로그 썸네일 만들어줘",
+      "relativePath": "assets/naver-thumbnail.png",
+      "absolutePath": "/Users/sanghyeok/workspace/stock-analysis-skill/analysis-example/kr-market/assets/naver-thumbnail.png",
+      "sha256": "d082b93965a5817a05f658a94e9deb8bfc262771b18c118558ff42c482428092",
+      "source": "imagegen-local",
+      "status": "generated",
+      "generatedAt": "2026-06-29T14:20:34.727Z"
+    },
+    "publicationDate": "2026-06-29"
+  },
+  "automation": {
+    "scheduledPublishAllowed": true,
+    "duplicateScope": "daily-market-news",
+    "duplicateDate": "2026-06-29"
+  },
+  "prepare": {
+    "preparedAt": "2026-06-29T14:30:58.714Z",
+    "expiresAt": "2026-06-29T15:00:58.713Z",
+    "screenshotPath": "/Users/sanghyeok/workspace/stock-analysis-skill/analysis-example/kr-market/naver-preview.png",
+    "editorUrl": "https://blog.naver.com/PostWriteForm.naver?blogId=workingonit&Redirect=Write&redirect=Write&widgetTypeCall=true&parentCategoryNo=8&noTrackingCode=true&directAccess=false",
+    "contentFingerprint": "92395a680f80e68a63581366a48c0f63948748dd1a8e161a53fce98cbc9f3987",
+    "approvalTokenHash": "704ae2793c5ca42badb490472ea2bfe6c0c606c48b5ab83e73076d876c09dc5c",
+    "validation": {
+      "title": true,
+      "body": true,
+      "imageCount": true,
+      "sources": true,
+      "disclaimer": true,
+      "tags": false,
+      "thumbnail": true,
+      "separators": true,
+      "formatting": true,
+      "signatureQuotation": true
+    }
+  },
+  "publish": null
+}

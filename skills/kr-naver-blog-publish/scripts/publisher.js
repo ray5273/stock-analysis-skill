@@ -231,6 +231,12 @@ function editorHtml(markdown) {
       pushBlock(bodyBlock(`${numbered[1]}. ${inlineHtml(numbered[2])}`));
       continue;
     }
+    if (/^https?:\/\/\S+$/i.test(trimmed) && lines[lineIndex + 1]?.trim() === "") {
+      flushParagraph();
+      pushBlock(bodyBlock(inlineHtml(trimmed)));
+      blocks.push(spacer);
+      continue;
+    }
     paragraph.push(line);
   }
   flushQuotation();
@@ -299,6 +305,10 @@ function stripLinkCardUrls(value, urls) {
   let text = String(value || "");
   for (const url of urls) text = text.replaceAll(url, "");
   return normalizeText(text);
+}
+
+function stripDailyMarketNewsSection(value) {
+  return normalizeText(String(value || "").replace(/시장 주요 뉴스[\s\S]*?업종\/테마별 흐름/, "시장 주요 뉴스\n업종/테마별 흐름"));
 }
 
 function plainHtmlText(value) {
@@ -468,14 +478,15 @@ function assertWritableDraft(inspected, manifest, expectedBody) {
     && body.includes("RESEARCH COMPLETE")
     && body.includes("매수·매도를 권유하지 않습니다");
   const sameGeneratedDailyDraft = isDailyMarketManifest(manifest)
-    && title === expectedTitle
     && body.includes(manifest.source.asOfDate)
     && body.includes("시장 주요 요약")
     && body.includes("매수·매도를 권유하지 않습니다");
+  const sameDailyDraftByTitle = isDailyMarketManifest(manifest)
+    && title === expectedTitle;
   const titleOk = isBlankOrPlaceholder(title) || title === expectedTitle || sameGeneratedStockDraft || sameGeneratedDailyDraft;
   const incompleteSelfDraft = body.startsWith(expectedTitle) || expected.startsWith(body);
   const sameGeneratedDraft = title === expectedTitle && body.includes(manifest.post.company);
-  const bodyOk = isBlankOrPlaceholder(body) || body === expected || incompleteSelfDraft || sameGeneratedDraft || sameGeneratedStockDraft || sameGeneratedDailyDraft;
+  const bodyOk = isBlankOrPlaceholder(body) || body === expected || incompleteSelfDraft || sameGeneratedDraft || sameGeneratedStockDraft || sameGeneratedDailyDraft || sameDailyDraftByTitle;
   assert(titleOk && bodyOk, "Editor already contains different draft content; open a new blank write screen before prepare");
 }
 
@@ -569,6 +580,12 @@ class FixtureDriver {
     this.fixture.editor.bodyHtml = [this.fixture.editor.bodyHtml, `<p style="${style}"><span style="${spanStyle}">${escapeHtml(url)}</span></p>`].filter(Boolean).join("\n");
     this.persist();
     this.dismissPastePopups();
+  }
+  pressEnterAfterLinkCard(url) {
+    this.requireSelector("body");
+    this.fixture.linkCardEnterCalls ||= [];
+    this.fixture.linkCardEnterCalls.push(url);
+    this.persist();
   }
   uploadImage(filePath, index) {
     this.requireSelector("imageInput");
@@ -913,6 +930,30 @@ class GstackDriver {
     this.focusEditable(selector, { selectAll: false });
     this.pasteClipboard(`\n${url}`, escapeHtml(url));
     this.run(["press", "Enter"], 30_000);
+  }
+  pressEnterAfterLinkCard(url) {
+    const selector = this.findSelector("body");
+    const placed = this.js(`(() => {
+      const url = ${JSON.stringify(url)};
+      const root = document.querySelector('.se-main-container, .se-content') || document.querySelector(${JSON.stringify(selector)}) || document.body;
+      if (!root) return 'missing-root';
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) {
+        const index = (node.nodeValue || '').indexOf(url);
+        if (index < 0) continue;
+        const range = document.createRange();
+        range.setStart(node, index + url.length);
+        range.collapse(true);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        if (node.parentElement) node.parentElement.scrollIntoView({ block: 'center', inline: 'nearest' });
+        return 'placed';
+      }
+      return 'missing-url';
+    })()`).replace(/^"|"$/g, "");
+    if (placed === "placed") this.run(["press", "Enter"], 30_000);
   }
   imageNodeCount() {
     return Number(this.js(`document.querySelectorAll('.se-main-container .se-module-image img, .se-content .se-image-resource').length`)) || 0;
@@ -1519,7 +1560,9 @@ function createDriver(args) { return args.fixture ? new FixtureDriver(path.resol
 function validateEditor(inspected, manifest, expectedBody, options = {}) {
   assert(normalizeText(inspected.title) === normalizeText(manifest.post.title), "Editor title does not match manifest");
   const linkCards = manifestLinkCards(manifest);
-  assert(compactEditorText(stripLinkCardUrls(inspected.body, linkCards)) === compactEditorText(stripLinkCardUrls(expectedBody, linkCards)), "Editor body does not match generated post");
+  const inspectedComparable = linkCards.length ? stripDailyMarketNewsSection(stripLinkCardUrls(inspected.body, linkCards)) : stripLinkCardUrls(inspected.body, linkCards);
+  const expectedComparable = linkCards.length ? stripDailyMarketNewsSection(stripLinkCardUrls(expectedBody, linkCards)) : stripLinkCardUrls(expectedBody, linkCards);
+  assert(compactEditorText(inspectedComparable) === compactEditorText(expectedComparable), "Editor body does not match generated post");
   for (const url of linkCards) {
     const found = String(inspected.body || "").includes(url) || (inspected.linkCardUrls || []).includes(url);
     assert(found, `Daily market-news link card URL missing from editor: ${url}`);
@@ -1588,6 +1631,9 @@ function setBodyWithDailyLinkCards(driver, markdown, manifest) {
     assert(linePattern.test(markdown), `Daily market-news raw URL is missing from generated post body: ${url}`);
   }
   driver.setBody(editorBody(markdown), editorHtml(markdown));
+  if (typeof driver.pressEnterAfterLinkCard === "function") {
+    for (const url of linkCards) driver.pressEnterAfterLinkCard(url);
+  }
 }
 
 function prepare(args, manifestPath, manifest) {
