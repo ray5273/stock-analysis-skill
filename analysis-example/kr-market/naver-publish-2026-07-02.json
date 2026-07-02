@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "contentType": "daily-market-news",
+  "status": "prepared",
+  "source": {
+    "reportPath": "/Users/sanghyeok/workspace/stock-analysis-skill/analysis-example/kr-market/daily-news-2026-07-02.md",
+    "reportSha256": "1334a3bcf03a9cc0b83a41de59902c12150dc182f2d91131c666e2fdd04f2c55",
+    "asOfDate": "2026-07-02"
+  },
+  "post": {
+    "company": "한국 시장",
+    "ticker": "",
+    "title": "2026-07-02 코스피 약세·코스닥 약세: 수급과 금리·환율 점검",
+    "issue": "코스피 약세, 코스닥 약세, 환율 변수 흐름이 함께 부각됐습니다.",
+    "category": null,
+    "tags": [
+      "한국증시",
+      "코스피",
+      "코스닥",
+      "시장뉴스",
+      "20260702"
+    ],
+    "markdownPath": "/Users/sanghyeok/workspace/stock-analysis-skill/analysis-example/kr-market/naver-post-2026-07-02.md",
+    "markdownSha256": "2dde37ad5f93c66ab60dbb99ffd299917494e3781180d86b97714671454c8812",
+    "images": [],
+    "linkCards": [
+      "https://www.yna.co.kr/view/AKR20260702137900008",
+      "https://www.yna.co.kr/view/AKR20260702046751002",
+      "https://www.yna.co.kr/view/AKR20260702072000008",
+      "https://www.yna.co.kr/view/AKR20260702051251008",
+      "https://www.yna.co.kr/view/AKR20260702144751008"
+    ],
+    "thumbnail": {
+      "prompt": "2026-07-02 코스피 약세·코스닥 약세: 수급과 금리·환율 점검 블로그 썸네일 만들어줘",
+      "relativePath": "assets/naver-thumbnail-2026-07-02.png",
+      "absolutePath": "/Users/sanghyeok/workspace/stock-analysis-skill/analysis-example/kr-market/assets/naver-thumbnail-2026-07-02.png",
+      "sha256": "8dc9ac1624b82e8d04228235d0735432f05a847571ab92f9b0a683ab73894201",
+      "source": "gemini-web",
+      "status": "generated",
+      "generatedAt": "2026-07-02T13:34:06.347Z"
+    },
+    "publicationDate": "2026-07-02"
+  },
+  "automation": {
+    "scheduledPublishAllowed": true,
+    "duplicateScope": "daily-market-news",
+    "duplicateDate": "2026-07-02"
+  },
+  "prepare": {
+    "preparedAt": "2026-07-02T16:33:26.988Z",
+    "expiresAt": "2026-07-02T17:03:26.987Z",
+    "screenshotPath": "/Users/sanghyeok/workspace/stock-analysis-skill/analysis-example/kr-market/naver-preview.png",
+    "editorUrl": "https://blog.naver.com/PostWriteForm.naver?blogId=workingonit&Redirect=Write&redirect=Write&widgetTypeCall=true&parentCategoryNo=8&noTrackingCode=true&directAccess=false",
+    "contentFingerprint": "b5f804ac4c00f8e33b8410335c236d70da31307032e5d9bd532fcd3d92f74185",
+    "approvalTokenHash": "28d690d001ee2e3e4b7e820419ff6986815173be6f720a4163745a1cda684945",
+    "validation": {
+      "title": true,
+      "body": true,
+      "imageCount": true,
+      "sources": true,
+      "disclaimer": true,
+      "tags": false,
+      "thumbnail": true,
+      "separators": true,
+      "formatting": true,
+      "signatureQuotation": true
+    }
+  },
+  "publish": null
+}

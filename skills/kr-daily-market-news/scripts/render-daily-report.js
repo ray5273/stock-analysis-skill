@@ -3,7 +3,7 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
-const { DEFAULT_SECTORS, marketNewsScore } = require("./fetch-daily-market-news");
+const { DEFAULT_SECTORS, marketNewsScore, newsRankScore } = require("./fetch-daily-market-news");
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -46,13 +46,89 @@ function escapePipe(value) {
   return String(value || "").replace(/\|/g, "\\|").trim();
 }
 
+function kstTimeLabel(publishedAt) {
+  if (!publishedAt) return "";
+  const date = new Date(publishedAt);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Seoul",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+}
+
 function itemLine(item) {
   const label = item.headline || item.title || "제목 없음";
-  return item.url ? `- [${label}](${item.url}) — ${item.source || "source"}` : `- ${label}`;
+  const time = kstTimeLabel(item.publishedAt);
+  const suffix = `${item.source || "source"}${time ? ` (${time})` : ""}`;
+  return item.url ? `- [${label}](${item.url}) — ${suffix}` : `- ${label}`;
 }
 
 function sourceLabel(item) {
   return item.headline || item.title || item.name || "출처";
+}
+
+function headlineFingerprint(value) {
+  return String(value || "")
+    .replace(/\[[^\]]*속보[^\]]*\]/g, "")
+    .replace(/\([^)]*(?:종합|속보|상보)[^)]*\)/g, "")
+    .replace(/(?:종합|속보|상보)/g, "")
+    .replace(/[0-9]+(?:\.[0-9]+)?%/g, "#%")
+    .replace(/[0-9,]+/g, "#")
+    .replace(/[^\p{L}\p{N}%#]+/gu, "")
+    .toLowerCase();
+}
+
+function summaryFingerprint(item) {
+  const text = `${item?.headline || item?.title || ""} ${item?.summary || ""}`;
+  if (/반도체.*코스피.*코스닥|코스피.*반도체.*코스닥|코스피.*코스닥.*반도체/.test(text)) return "market-semiconductor-index-drop";
+  if (/사이드카.*코스피.*코스닥|코스피.*코스닥.*사이드카/.test(text)) return "market-sidecar";
+  if (/환율|고환율|원화|달러/.test(text)) return "macro-fx";
+  if (/금리|국고채|채권|연준|FOMC/.test(text)) return "macro-rates";
+  if (/외국인|기관|개인|수급|순매수|순매도/.test(text)) return "market-flow";
+  return headlineFingerprint(item?.headline || item?.title || item?.summary || "");
+}
+
+function uniqueNewsItems(items, options = {}) {
+  const seenUrls = new Set();
+  const seenTopics = new Set();
+  const output = [];
+  for (const item of items || []) {
+    const urlKey = normalizedUrl(item.url);
+    const topicKey = summaryFingerprint(item);
+    if (urlKey && seenUrls.has(urlKey)) continue;
+    if (topicKey && seenTopics.has(topicKey)) continue;
+    if (urlKey) seenUrls.add(urlKey);
+    if (topicKey) seenTopics.add(topicKey);
+    output.push(item);
+    if (options.limit && output.length >= options.limit) break;
+  }
+  return output;
+}
+
+function sectorBlogPattern(sector) {
+  const patterns = {
+    "반도체/AI": /반도체|HBM|DRAM|D램|낸드|메모리|파운드리|AI|인공지능|오픈AI|삼성전자|SK하이닉스|한미반도체|삼성전기|글라스|기판|장비|소켓|패키징/i,
+    "이차전지/전기차": /이차전지|2차전지|배터리|전기차|EV|충전|양극재|음극재|전해액|전해질|분리막|리튬|LG에너지솔루션|삼성SDI|에코프로|엘앤에프|SKIET|SK아이이테크놀로지/i,
+    "자동차/부품": /자동차|완성차|전장|차량|모비스|현대차|기아|현대모비스|HL만도|만도|현대위아|타이어|범퍼|부품|서연이화/i,
+    "조선/방산": /조선|선박|LNG|수주|KDDX|방산|방위|항공우주|잠수함|함정|한화오션|HD현대|삼성중공업|한국항공우주|LIG넥스원|현대로템|KNDS|전차/i,
+    "바이오/헬스케어": /바이오|헬스케어|제약|의약품|의료|신약|비만치료제|백신|CDMO|시밀러|한미약품|한미사이언스|셀트리온|삼성바이오|대웅|유한양행/i,
+    "인터넷/게임/미디어": /인터넷|게임|미디어|콘텐츠|콘텐트|엔터테인먼트|웹툰|OTT|극장|카카오(?!뱅크)|NAVER|네이버|엔씨소프트|넷마블|크래프톤|펄어비스|위메이드|하이브|CJ ENM|스튜디오드래곤/i,
+    "금융/증권/보험": /증권|보험|금융|카드|운용|브로커리지|증거금|예금|적금|ISA|미래에셋|키움증권|NH증권|카카오뱅크|신한은행|신한금융|KB금융|하나금융|우리금융/i,
+    "화학/정유": /화학|정유|석유화학|에너지|배터리소재|정제마진|유가|SK이노베이션|LG화학|롯데케미칼|한화솔루션|S-Oil|효성티앤씨|SKIET/i,
+    "철강/기계/건설": /철강|기계|건설|건설사|건설업|건자재|주택|부동산|도시개발|대우건설|삼성E&A|현대건설|GS건설|DL이앤씨|POSCO|포스코|두산밥캣|두산에너빌리티|SH/i,
+    "소비재/화장품/유통": /소비재|화장품|K뷰티|뷰티|유통|면세|식품|의류|패션|호텔|레저|수출|아모레|LG생활건강|코스맥스|한국콜마|CJ제일제당|오리온|신세계|이마트/i,
+  };
+  return patterns[sector] || null;
+}
+
+function blogSectorItems(group, options = {}) {
+  const pattern = sectorBlogPattern(group?.sector);
+  const candidates = pattern
+    ? (group.items || []).filter(item => pattern.test(`${item.headline || item.title || ""} ${item.description || ""}`))
+    : (group.items || []);
+  return uniqueNewsItems(candidates, options);
 }
 
 function representativeNewsLabel(item) {
@@ -93,7 +169,24 @@ function dedupeSourcesByUrl(items) {
 }
 
 function naverMarketNewsItems(data) {
-  return (data.marketNews || []).filter(item => item.url).slice(0, 5);
+  return uniqueNewsItems((data.marketNews || []).filter(item => item.url), { limit: 5 });
+}
+
+function naverSummaryItems(data) {
+  const source = data.marketSummary?.length ? data.marketSummary : data.marketNews;
+  return uniqueNewsItems(source || [], { limit: 5 });
+}
+
+function representativeSectorItems(data) {
+  return sectorGroups(data).flatMap(group => blogSectorItems(group, { limit: 1 }));
+}
+
+function naverSourceItems(data) {
+  const marketUrls = new Set(naverMarketNewsItems(data).map(item => normalizedUrl(item.url)).filter(Boolean));
+  return dedupeSourcesByUrl(uniqueNewsItems([
+    ...representativeSectorItems(data),
+    ...(data.officialSources || []),
+  ].filter(item => item.url && !marketUrls.has(normalizedUrl(item.url))), { limit: 20 }));
 }
 
 function summarizeWarningForNaver(warning) {
@@ -132,19 +225,23 @@ function findLeadershipSummary(asOfDate, baseDir) {
   return `동일 기준일 리더십 스크린 문서가 있습니다: ${path.basename(mdPath)}.`;
 }
 
+// Window a bit of text after the index name. Excludes only hard sentence
+// boundaries (newline / 。) — NOT the ASCII period, so decimals like "7.9%" and
+// the "급락" that follows stay inside the segment.
 function marketDirection(text, indexName) {
-  const pattern = new RegExp(`${indexName}[^\\n.。]{0,70}`, "i");
+  const pattern = new RegExp(`${indexName}[^\\n。]{0,70}`, "i");
   let segment = text.match(pattern)?.[0] || "";
   const otherIndex = indexName === "코스피" ? "코스닥" : "코스피";
   const otherAt = segment.indexOf(otherIndex);
   if (otherAt > 0) segment = segment.slice(0, otherAt);
+  if (/급락|폭락|↓/i.test(segment)) return "약세";
   if (/급등|강세|상승|반등|회복|후끈|랠리|↑/i.test(segment)) return "강세";
   if (/하락|약세|약보합|내린|밀리|투매/i.test(segment)) return "약세";
   return "";
 }
 
 function percentMove(text, indexName) {
-  const pattern = new RegExp(`${indexName}[^\\n.。]{0,70}`, "i");
+  const pattern = new RegExp(`${indexName}[^\\n。]{0,70}`, "i");
   let segment = text.match(pattern)?.[0] || "";
   const otherIndex = indexName === "코스피" ? "코스닥" : "코스피";
   const otherAt = segment.indexOf(otherIndex);
@@ -197,14 +294,21 @@ function titleSupportPhrase(combined, leadingTheme) {
   if (/이차전지|배터리|전기차/.test(combined)) add("이차전지");
   if (/정책|정부|세제|상법|밸류업|공매도/.test(combined)) add("정책");
   if (/실적\s*시즌|어닝|분기\s*실적/.test(combined)) add("실적");
-  return supports.slice(0, 2).join("와 ") || leadingTheme || "업종 흐름";
+  const selected = supports.slice(0, 2);
+  if (selected.length === 2) {
+    const lastCode = selected[0].charCodeAt(selected[0].length - 1);
+    const hasFinalConsonant = lastCode >= 0xac00 && lastCode <= 0xd7a3 && ((lastCode - 0xac00) % 28) !== 0;
+    return `${selected[0]}${hasFinalConsonant ? "과" : "와"} ${selected[1]}`;
+  }
+  return selected[0] || leadingTheme || "업종 흐름";
 }
 
 function titleCandidates(data) {
   const date = data.asOfDate;
   const leadingTheme = data.themes?.[0]?.theme;
   const topNews = [...(data.marketNews || [])]
-    .sort((a, b) => ((b.importanceScore ?? marketNewsScore(b)) - (a.importanceScore ?? marketNewsScore(a))))
+    .sort((a, b) => ((b.rankScore ?? newsRankScore(b)) - (a.rankScore ?? newsRankScore(a)))
+      || ((Date.parse(b.publishedAt || "") || -Infinity) - (Date.parse(a.publishedAt || "") || -Infinity)))
     .slice(0, 4);
   const topText = `${topNews[0]?.headline || topNews[0]?.title || ""} ${topNews[0]?.description || ""}`;
   const combined = topNews.map(item => `${item.headline || item.title || ""} ${item.description || ""}`).join(" ");
@@ -297,14 +401,11 @@ function renderNaverPost(data, options = {}) {
   ];
 
   parts.push("", "## 시장 주요 요약", "");
-  if (data.marketSummary?.length) {
-    for (const item of data.marketSummary.slice(0, 5)) {
+  const summaryItems = naverSummaryItems(data);
+  if (summaryItems.length) {
+    for (const item of summaryItems) {
       parts.push(`${item.rank || ""}. ${item.summary || item.title}`.replace(/^\. /, ""));
     }
-  } else if (data.marketNews?.length) {
-    data.marketNews.slice(0, 5).forEach((item, index) => {
-      parts.push(`${index + 1}. ${item.headline || item.title}`);
-    });
   } else {
     parts.push("1. 같은 기준일의 시장 뉴스가 충분히 수집되지 않았습니다.");
   }
@@ -321,7 +422,8 @@ function renderNaverPost(data, options = {}) {
 
   parts.push("", "## 업종/테마별 흐름", "", "| 업종/테마 | 대표 뉴스 | 흐름 |", "| --- | --- | --- |");
   for (const group of sectorGroups(data)) {
-    const titles = (group.items || []).slice(0, 2).map(representativeNewsLabel).filter(Boolean);
+    const uniqueItems = blogSectorItems(group, { limit: 1 });
+    const titles = uniqueItems.map(representativeNewsLabel).filter(Boolean);
     const flow = titles.length ? `${titles.length}건 확인` : "특이 뉴스 제한적";
     parts.push(`| ${escapePipe(group.sector)} | ${escapePipe(titles.join(" / ") || "특이 뉴스 제한적")} | ${flow} |`);
   }
@@ -336,11 +438,7 @@ function renderNaverPost(data, options = {}) {
   if (leadership) parts.push("", "## 리더십 스크린 요약", "", leadership);
 
   parts.push("", "## 출처", "", "| 내용 | 링크 |", "| --- | --- |");
-  const allSources = dedupeSourcesByUrl([
-    ...(data.marketNews || []),
-    ...(data.sectorNews || []).flatMap(group => group.items || []),
-    ...(data.officialSources || []),
-  ].filter(item => item.url));
+  const allSources = naverSourceItems(data);
   if (allSources.length) parts.push(...allSources.map(sourceRow));
   else parts.push("| 검증 가능한 URL 출처가 없습니다. | - |");
 
@@ -426,6 +524,8 @@ module.exports = {
   findLeadershipSummary,
   naverCollectionNotes,
   naverMarketNewsItems,
+  naverSourceItems,
+  naverSummaryItems,
   renderDailyReport,
   renderNaverPost,
   titleCandidates,
