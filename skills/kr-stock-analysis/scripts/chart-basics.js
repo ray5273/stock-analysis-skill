@@ -151,11 +151,11 @@ function usage() {
     "  - The input JSON must include bars with date and close.",
     "  - high and low are required for Bollinger and Ichimoku overlays to be fully useful.",
     "  - volume is optional but recommended for volume panel and participation read.",
-    "  - When --png-out is set, the script writes the main trend chart to that path and sibling overlay, momentum, structure, and pattern charts to *-overlay.png, *-momentum.png, *-structure.png, and *-pattern.png.",
+    "  - When --png-out is set, the script writes the main trend chart to that path and sibling volume, overlay, momentum, structure, and pattern charts to *-volume.png, *-overlay.png, *-momentum.png, *-structure.png, and *-pattern.png.",
     "  - The structure chart pairs candles with a horizontal volume-by-price gutter (POC highlighted) and ATR-tolerance clustered horizontal support/resistance zones (max 3 each, within ±30% of current price).",
     "  - A sibling *-structure-zones.csv lists every zone including broken/distance-filtered ones (type, zone_low, zone_high, center_price, touch_count, last_touch_date, score, status).",
     "  - The pattern chart overlays recent swing-pivot wave candidates and Fibonacci retracement/extension levels, with a sibling *-pattern-waves.csv for candidate/confidence details.",
-    "  - The markdown output prints all five image snippets plus Support / Resistance Zones and Pattern / Wave Candidate tables when PNG output is enabled.",
+    "  - The markdown output prints all six image snippets plus Support / Resistance Zones and Pattern / Wave Candidate tables when PNG output is enabled.",
   ].join("\n");
 }
 
@@ -1814,6 +1814,10 @@ function buildChartPngs(data, bars, metrics, options) {
     cloudBear: [239, 68, 68, 42],
     volumeUp: [34, 197, 94, 255],
     volumeDown: [239, 68, 68, 255],
+    volumeUpBorder: [22, 101, 52, 255],
+    volumeDownBorder: [153, 27, 27, 255],
+    volumeMa20: [37, 99, 235, 255],
+    volumeMa60: [124, 58, 237, 255],
     rsi: [124, 58, 237, 255],
     rsiGuide: [148, 163, 184, 255],
     macd: [37, 99, 235, 255],
@@ -1868,9 +1872,16 @@ function buildChartPngs(data, bars, metrics, options) {
     adx: metrics.adxSeriesData.adx.slice(startIndex),
     plusDi: metrics.adxSeriesData.plusDi.slice(startIndex),
     minusDi: metrics.adxSeriesData.minusDi.slice(startIndex),
+    volumeMa20: metrics.volume20Series.slice(startIndex),
+    volumeMa60: metrics.volume60Series.slice(startIndex),
   };
 
-  const volumeMax = Math.max(...barsWindow.map((bar) => (Number.isFinite(bar.volume) ? bar.volume : 0)), 1);
+  const volumeMax = Math.max(
+    ...barsWindow.map((bar) => (Number.isFinite(bar.volume) ? bar.volume : 0)),
+    ...priceSeries.volumeMa20.filter(Number.isFinite),
+    ...priceSeries.volumeMa60.filter(Number.isFinite),
+    1,
+  );
   const buildPriceRange = (seriesCollection) => {
     const values = [];
     barsWindow.forEach((bar) => {
@@ -1916,6 +1927,37 @@ function buildChartPngs(data, bars, metrics, options) {
       const value = Math.round(volumeMax - (volumeMax * tick) / 2);
       drawText(buffer, width, height, margin.left + plotWidth + 10, y - 7, formatAxisNumber(value), theme.muted, 2);
     }
+  };
+
+  const drawVolumeBars = (buffer, xForSlot, panelTop, panelHeight, totalSlotsForBars, options = {}) => {
+    const minBarWidth = options.minBarWidth ?? 5;
+    const minBarHeight = options.minBarHeight ?? 4;
+    const widthDivisor = options.widthDivisor ?? 1.45;
+    const verticalPadding = options.verticalPadding ?? 8;
+    const barWidth = Math.max(minBarWidth, Math.floor(plotWidth / Math.max(totalSlotsForBars * widthDivisor, 1)));
+    const maxBarHeight = Math.max(minBarHeight, panelHeight - verticalPadding);
+
+    barsWindow.forEach((bar, index) => {
+      if (!Number.isFinite(bar.volume)) {
+        return;
+      }
+      const x = xForSlot(index);
+      const previousClose = index === 0 ? bar.close : barsWindow[index - 1].close;
+      const isUpVolume = bar.close >= previousClose;
+      const color = isUpVolume ? theme.volumeUp : theme.volumeDown;
+      const borderColor = isUpVolume ? theme.volumeUpBorder : theme.volumeDownBorder;
+      const barHeight = Math.max(minBarHeight, Math.round((bar.volume / volumeMax) * maxBarHeight));
+      const left = Math.round(x - barWidth / 2);
+      const top = Math.round(panelTop + panelHeight - barHeight);
+
+      fillRect(buffer, width, height, left, top, barWidth, barHeight, color);
+      drawLine(buffer, width, height, left, top, left + barWidth, top, borderColor, 1);
+      drawLine(buffer, width, height, left, top + barHeight - 1, left + barWidth, top + barHeight - 1, borderColor, 2);
+      if (barWidth >= 5 && barHeight >= 6) {
+        drawLine(buffer, width, height, left, top, left, top + barHeight, borderColor, 1);
+        drawLine(buffer, width, height, left + barWidth, top, left + barWidth, top + barHeight, borderColor, 1);
+      }
+    });
   };
 
   const drawRsiAxis = (buffer, panelTop, panelHeight) => {
@@ -1996,6 +2038,7 @@ function buildChartPngs(data, bars, metrics, options) {
     momentumOutput: path.resolve(appendSuffixToPath(options.pngOut, "momentum")),
     structureOutput: path.resolve(appendSuffixToPath(options.pngOut, "structure")),
     patternOutput: path.resolve(appendSuffixToPath(options.pngOut, "pattern")),
+    volumeOutput: path.resolve(appendSuffixToPath(options.pngOut, "volume")),
     mainImagePath: options.imagePath || path.basename(options.pngOut),
     overlayImagePath: options.imagePath
       ? appendSuffixToPath(options.imagePath, "overlay")
@@ -2009,6 +2052,9 @@ function buildChartPngs(data, bars, metrics, options) {
     patternImagePath: options.imagePath
       ? appendSuffixToPath(options.imagePath, "pattern")
       : appendSuffixToPath(path.basename(options.pngOut), "pattern"),
+    volumeImagePath: options.imagePath
+      ? appendSuffixToPath(options.imagePath, "volume")
+      : appendSuffixToPath(path.basename(options.pngOut), "volume"),
   };
 
   const buildMomentumChart = () => {
@@ -2243,16 +2289,11 @@ function buildChartPngs(data, bars, metrics, options) {
       );
     }
 
-    const volumeBarWidth = Math.max(3, Math.floor(plotWidth / Math.max(barsWindow.length * 1.8, 1)));
-    barsWindow.forEach((bar, index) => {
-      if (!Number.isFinite(bar.volume)) {
-        return;
-      }
-      const x = xForSlot(index);
-      const previousClose = index === 0 ? bar.close : barsWindow[index - 1].close;
-      const color = bar.close >= previousClose ? theme.volumeUp : theme.volumeDown;
-      const barHeight = Math.max(2, Math.round((bar.volume / volumeMax) * (mainVolumeHeight - 4)));
-      fillRect(buffer, width, height, x - volumeBarWidth / 2, volumeTop + mainVolumeHeight - barHeight, volumeBarWidth, barHeight, color);
+    drawVolumeBars(buffer, xForSlot, volumeTop, mainVolumeHeight, totalSlotsForMain, {
+      minBarWidth: 4,
+      minBarHeight: 3,
+      widthDivisor: 1.6,
+      verticalPadding: 6,
     });
 
     drawTextBox(
@@ -2267,6 +2308,103 @@ function buildChartPngs(data, bars, metrics, options) {
     );
 
     writePng(chartPaths.mainOutput, buffer);
+  };
+
+  const buildVolumeChart = () => {
+    const buffer = createRgbaBuffer(width, height, theme.background);
+    const chartTitle = String(data.name || data.ticker || "UNKNOWN");
+    const totalSlotsForVolume = barsWindow.length;
+    const xForSlot = (slot) => {
+      if (totalSlotsForVolume <= 1) {
+        return margin.left + plotWidth / 2;
+      }
+      return margin.left + (plotWidth * slot) / (totalSlotsForVolume - 1);
+    };
+    const volumeTop = margin.top + headerHeight;
+    const volumeHeight = height - margin.top - margin.bottom - headerHeight - 8;
+
+    fillRect(buffer, width, height, margin.left, volumeTop, plotWidth, volumeHeight, theme.panel);
+    drawLine(buffer, width, height, margin.left, volumeTop, margin.left + plotWidth, volumeTop, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, volumeTop + volumeHeight, margin.left + plotWidth, volumeTop + volumeHeight, theme.border, 1);
+    drawLine(buffer, width, height, margin.left, volumeTop, margin.left, volumeTop + volumeHeight, theme.border, 1);
+    drawLine(buffer, width, height, margin.left + plotWidth, volumeTop, margin.left + plotWidth, volumeTop + volumeHeight, theme.border, 1);
+
+    drawText(buffer, width, height, margin.left, margin.top + 4, chartTitle, theme.text, 3);
+    drawText(buffer, width, height, margin.left, margin.top + 34, `${data.ticker || "UNKNOWN"} 거래량`, theme.muted, 2);
+    drawText(buffer, width, height, margin.left + plotWidth, margin.top + 10, `기준일 ${metrics.latest.date}`, theme.muted, 2, "right");
+
+    let legendX = margin.left;
+    const legendY = margin.top + 56;
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.volumeUp, "상승일 거래량(초록)");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.volumeDown, "하락일 거래량(빨강)");
+    legendX = drawLegendItem(buffer, width, height, legendX, legendY, theme.volumeMa20, "거래량20");
+    drawLegendItem(buffer, width, height, legendX, legendY, theme.volumeMa60, "거래량60");
+
+    drawText(buffer, width, height, margin.left - 72, volumeTop + 6, "거래량", theme.muted, 2);
+    drawVolumeAxis(buffer, volumeTop, volumeHeight);
+    drawDateTicks(buffer, xForSlot, volumeTop + volumeHeight, volumeTop + volumeHeight + 14, totalSlotsForVolume);
+    drawText(buffer, width, height, margin.left + plotWidth / 2, volumeTop + volumeHeight + 42, "날짜", theme.muted, 2, "center");
+
+    drawVolumeBars(buffer, xForSlot, volumeTop, volumeHeight, totalSlotsForVolume, {
+      minBarWidth: 5,
+      minBarHeight: 4,
+      widthDivisor: 1.35,
+      verticalPadding: 10,
+    });
+
+    const volumeMa20Points = mapSeriesToPoints(priceSeries.volumeMa20, xForSlot, 0, 0, volumeMax, volumeTop, volumeHeight, totalSlotsForVolume);
+    const volumeMa60Points = mapSeriesToPoints(priceSeries.volumeMa60, xForSlot, 0, 0, volumeMax, volumeTop, volumeHeight, totalSlotsForVolume);
+    drawSeries(buffer, width, height, volumeMa60Points, theme.volumeMa60, 3);
+    drawSeries(buffer, width, height, volumeMa20Points, theme.volumeMa20, 3);
+
+    const latest20Point = volumeMa20Points[barsWindow.length - 1];
+    if (latest20Point) {
+      drawValueCallout(
+        buffer,
+        width,
+        height,
+        margin.left + plotWidth - 8,
+        latest20Point.y,
+        `거래량20 ${formatAxisNumber(metrics.avgVolume20)}`,
+        theme,
+        volumeTop,
+        volumeHeight,
+      );
+    }
+    const latest60Point = volumeMa60Points[barsWindow.length - 1];
+    if (latest60Point) {
+      drawValueCallout(
+        buffer,
+        width,
+        height,
+        margin.left + plotWidth - 8,
+        latest60Point.y,
+        `거래량60 ${formatAxisNumber(metrics.avgVolume60)}`,
+        theme,
+        volumeTop,
+        volumeHeight,
+      );
+    }
+
+    drawTextBox(
+      buffer,
+      width,
+      height,
+      margin.left + 16,
+      volumeTop + 16,
+      Math.min(520, plotWidth - 32),
+      [
+        `거래량: ${volumeRegimeKo(metrics.volumeRegime)} (${formatPercentRatio(metrics.volumeRatio, 1)})`,
+        `현재: ${formatAxisNumber(metrics.latest.volume)}`,
+        "색상: 전일 종가 대비 상승=초록 / 하락=빨강",
+        `20일 평균: ${formatAxisNumber(metrics.avgVolume20)}`,
+        `60일 평균: ${formatAxisNumber(metrics.avgVolume60)}`,
+        "주의: 거래량 이동평균은 후행 지표",
+      ],
+      theme,
+    );
+
+    writePng(chartPaths.volumeOutput, buffer);
   };
 
   const buildOverlayChart = () => {
@@ -2739,6 +2877,7 @@ function buildChartPngs(data, bars, metrics, options) {
   };
 
   buildMainTrendChart();
+  buildVolumeChart();
   buildOverlayChart();
   buildMomentumChart();
   const structureResult = buildStructureChart();
@@ -2747,6 +2886,7 @@ function buildChartPngs(data, bars, metrics, options) {
   return {
     imagePaths: {
       main: chartPaths.mainImagePath,
+      volume: chartPaths.volumeImagePath,
       overlay: chartPaths.overlayImagePath,
       momentum: chartPaths.momentumImagePath,
       structure: chartPaths.structureImagePath,
@@ -3018,6 +3158,8 @@ function main() {
     console.log("");
     console.log(`![${data.name || data.ticker || "Chart"} main trend chart](${pngInfo.imagePaths.main})`);
     console.log("");
+    console.log(`![${data.name || data.ticker || "Chart"} volume chart](${pngInfo.imagePaths.volume})`);
+    console.log("");
     console.log(`![${data.name || data.ticker || "Chart"} overlay chart](${pngInfo.imagePaths.overlay})`);
     console.log("");
     console.log(`![${data.name || data.ticker || "Chart"} momentum chart](${pngInfo.imagePaths.momentum})`);
@@ -3027,7 +3169,7 @@ function main() {
     console.log(`![${data.name || data.ticker || "Chart"} pattern wave chart](${pngInfo.imagePaths.pattern})`);
     console.log("");
     console.log(
-      `The main chart uses OHLC candlesticks with upper and lower wicks, plus MA5, MA20, MA60, MA120, and volume. The overlay chart separates Bollinger Bands, Ichimoku cloud lines, and RSI14, and reserves ${pngInfo.leadBarsUsed} forward slots for the projected cloud. The momentum chart focuses on MACD, signal, histogram, and ADX/DMI so crossovers, momentum acceleration, and trend strength are easier to see. The structure chart pairs candles with a horizontal volume-by-price gutter (POC highlighted) and ATR-tolerance clustered support/resistance zones drawn as horizontal price bands (up to 3 each, within ±30% of current price). The pattern chart adds recent swing-pivot wave candidates and Fibonacci retracement/extension levels; labels are drawn only for candidates with confidence >= 0.55, while all candidates are exported to a sibling \`-waves.csv\`. The full zone roster — including broken or distance-filtered zones — is exported to a sibling \`-zones.csv\`.`,
+      `The main chart uses OHLC candlesticks with upper and lower wicks, plus MA5, MA20, MA60, MA120, and volume bars. The separate volume chart enlarges participation detail with volume bars plus VolMA20 / VolMA60 lines. The overlay chart separates Bollinger Bands, Ichimoku cloud lines, and RSI14, and reserves ${pngInfo.leadBarsUsed} forward slots for the projected cloud. The momentum chart focuses on MACD, signal, histogram, and ADX/DMI so crossovers, momentum acceleration, and trend strength are easier to see. The structure chart pairs candles with a horizontal volume-by-price gutter (POC highlighted) and ATR-tolerance clustered support/resistance zones drawn as horizontal price bands (up to 3 each, within ±30% of current price). The pattern chart adds recent swing-pivot wave candidates and Fibonacci retracement/extension levels; labels are drawn only for candidates with confidence >= 0.55, while all candidates are exported to a sibling \`-waves.csv\`. The full zone roster — including broken or distance-filtered zones — is exported to a sibling \`-zones.csv\`.`,
     );
     console.log("");
 
@@ -3106,6 +3248,7 @@ function main() {
   console.log(`| -DI | ${formatNumber(metrics.adx.minusDiValue)} |`);
   console.log(`| ADX State | ${metrics.adx.strengthState} / ${metrics.adx.directionState} / ${metrics.adx.slopeState} |`);
   console.log(`| Avg Volume 20 | ${formatInteger(metrics.avgVolume20)} |`);
+  console.log(`| Avg Volume 60 | ${formatInteger(metrics.avgVolume60)} |`);
   console.log(`| Volume vs Avg 20 | ${formatPercentRatio(metrics.volumeRatio, 1)} |`);
   console.log(`| 20D Breakout Level | ${formatNumber(metrics.breakoutLevel)} |`);
   console.log(`| 20D Breakdown Level | ${formatNumber(metrics.breakdownLevel)} |`);
